@@ -1,11 +1,9 @@
-package net.swipe.browser;
+package org.swipe.browser;
 
 import android.app.Activity;
-import android.content.Context;
-import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
-import net.swipe.network.SwipePrefetcher;
+import org.swipe.network.SwipePrefetcher;
 
 import org.json.JSONObject;
 

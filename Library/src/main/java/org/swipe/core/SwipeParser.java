@@ -1,7 +1,4 @@
-package net.swipe.core;
-
-import android.support.compat.BuildConfig;
-import android.util.Log;
+package org.swipe.core;
 
 import java.util.regex.Pattern;
 

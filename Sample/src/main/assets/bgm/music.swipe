@@ -1,5 +1,5 @@
 {
-    "type":"net.swipe.swipe",
+    "type":"org.swipe.swipe",
     "title": "Scenes with BGM",
     "resources":["bgm"],
     "templates": {

@@ -1,9 +1,7 @@
-package net.swipe.browser;
+package org.swipe.browser;
 
 import android.app.Activity;
-import android.content.Context;
 import android.graphics.BitmapFactory;
-import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
@@ -18,14 +16,13 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import net.swipe.core.SwipeParser;
-import net.swipe.network.SwipeAssetManager;
-import net.swipe.network.SwipePrefetcher;
+import org.swipe.core.SwipeParser;
+import org.swipe.network.SwipeAssetManager;
+import org.swipe.network.SwipePrefetcher;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.w3c.dom.Text;
 
 import java.io.IOException;
 import java.net.URL;

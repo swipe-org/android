@@ -1,14 +1,8 @@
-package net.swipe.network;
+package org.swipe.network;
 
-import android.app.Activity;
-import android.net.Uri;
-import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;

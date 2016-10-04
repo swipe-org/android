@@ -1,5 +1,5 @@
 {
-    "type":"net.swipe.list",
+    "type":"org.swipe.list",
     "rowHeight":"10%",
     "sections":[
         {

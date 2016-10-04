@@ -1,5 +1,5 @@
 {
-    "type":"net.swipe.swipe",
+    "type":"org.swipe.swipe",
     "title": "NASA HQ Images",
     "orientation":"landscape",
     "viewstate":false,

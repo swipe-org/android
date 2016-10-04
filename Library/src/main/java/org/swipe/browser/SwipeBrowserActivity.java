@@ -16,14 +16,9 @@ import android.provider.MediaStore;
 import android.util.Log;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.widget.Button;
 import android.widget.LinearLayout;
 
-import net.swipe.browser.R;
-import net.swipe.browser.SwipeBrowserView;
-import net.swipe.browser.SwipeTableBrowserView;
-import net.swipe.browser.SwipeBookBrowserView;
-import net.swipe.network.SwipeAssetManager;
+import org.swipe.network.SwipeAssetManager;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -300,11 +295,11 @@ public class SwipeBrowserActivity extends Activity implements SwipeBrowserView.D
     private void openDocument(JSONObject _document) throws JSONException {
         document = _document;
         ViewGroup viewerFrag = null;
-        String documentType = document.optString("type", "net.swipe.swipe");
+        String documentType = document.optString("type", "org.swipe.swipe");
 
-        if (documentType.equalsIgnoreCase("net.swipe.swipe")) {
+        if (documentType.equalsIgnoreCase("org.swipe.swipe")) {
             viewerFrag = new SwipeBookBrowserView(this);
-        } else if (documentType.equalsIgnoreCase("net.swipe.list")) {
+        } else if (documentType.equalsIgnoreCase("org.swipe.list")) {
             viewerFrag = new SwipeTableBrowserView(this);
         } else {
             displayError(getString(R.string.unknown_type) + ": " + documentType);

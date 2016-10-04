@@ -1,9 +1,6 @@
-package net.swipe.network;
+package org.swipe.network;
 
 import android.app.Activity;
-import android.app.ActivityManager;
-import android.content.Context;
-import android.os.Looper;
 import android.util.Log;
 
 import java.io.File;
@@ -39,7 +36,7 @@ public class SwipeAssetManager {
 
     public boolean initialize(Activity _context) {
         context = _context;
-        cacheDir = new File(context.getCacheDir(), "net.swipe.cache");
+        cacheDir = new File(context.getCacheDir(), "org.swipe.cache");
 
         if (cacheDir.exists()) {
             if (cacheDir.isDirectory()) {
