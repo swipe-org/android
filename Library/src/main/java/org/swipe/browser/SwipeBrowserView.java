@@ -29,11 +29,12 @@ public abstract class SwipeBrowserView extends LinearLayout {
         String getFileName();
     }
 
-    private final static String TAG = "SDocViewerFrag";
+    private final static String TAG = "SwBrowserView";
+    protected SwipeBrowserView.Delegate delegate = null;
     protected SwipePrefetcher prefetcher = null;
     protected JSONObject document = null;
-    protected SwipeBrowserView.Delegate delegate = null;
     protected List<URL> resourceURLs = null;
+    protected URL baseURL = null;
 
     // Returns the list of URLs of required resources for this element (including children)
     public abstract List<URL> getResourceURLs();
@@ -42,8 +43,9 @@ public abstract class SwipeBrowserView extends LinearLayout {
         return document.optString("title", "");
     }
 
-    public void loadDocument(JSONObject _document) {
+    public void loadDocument(JSONObject _document, URL url) {
         document = _document;
+        baseURL = url;
     }
 
     public boolean landscape() {

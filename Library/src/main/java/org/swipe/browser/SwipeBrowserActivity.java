@@ -41,7 +41,7 @@ import java.util.Locale;
  */
 
 public class SwipeBrowserActivity extends Activity implements SwipeBrowserView.Delegate {
-    private static final String TAG = "SampleActivity";
+    private static final String TAG = "SwBrowserActivity";
     private static final String ARG_URL = "org.swipe.arg.url";
     private static final String ACTION_BROWSE_TO = "org.swipe.action.browseTo";
 
@@ -58,13 +58,17 @@ public class SwipeBrowserActivity extends Activity implements SwipeBrowserView.D
      */
 
 
-    public URL makeFullURL(String url) {
+    public static URL makeFullURL(String url, URL baseURL) {
         try {
             return new URL(baseURL, url);
         } catch (MalformedURLException e) {
-            displayError(e.toString());
+            Log.e("makeFullUrl", e.toString());
             return null;
         }
+    }
+
+    public URL makeFullURL(String url) {
+        return SwipeBrowserActivity.makeFullURL(url, baseURL);
     }
 
     public void browseTo(String url) {
@@ -91,42 +95,16 @@ public class SwipeBrowserActivity extends Activity implements SwipeBrowserView.D
 
             if (intent.getAction().equals(Intent.ACTION_VIEW))
             {
+                // TODO
                 Uri dataUri = intent.getData();
-                String runArchiveName = getContentName(getContentResolver(), dataUri);
-                if (runArchiveName != null)
+                try
                 {
-                    String runPath = getCacheDir() + File.separator + runArchiveName;
-                    Log.d(TAG, runPath);
+                    //InputStream in = getContentResolver().openInputStream(dataUri);
 
-                    try
-                    {
-                        InputStream in = getContentResolver().openInputStream(dataUri);
-                        File fout = new File(runPath);
-                        fout.createNewFile();
-                        FileOutputStream out = new FileOutputStream(runPath);
-                        byte[] buffer = new byte[4000];
-                        int byteCount = 0;
-
-                        do
-                        {
-                            byteCount = in.read(buffer);
-                            if (byteCount > 0)
-                            {
-                                out.write(buffer, 0, byteCount);
-                            }
-                        }
-                        while (byteCount > 0);
-
-                        in.close();
-                        out.close();
-
-
-                        fout.delete();
-                    }
-                    catch (Exception e)
-                    {
-                        Log.e(TAG, String.format(Locale.US, "Copy run exception %s", e));
-                    }
+                }
+                catch (Exception e)
+                {
+                    Log.e(TAG, String.format(Locale.US, "Copy run exception %s", e));
                 }
             } else if (intent.getAction().equals(ACTION_BROWSE_TO)) {
                 openUrl(intent.getStringExtra(ARG_URL));
@@ -136,21 +114,11 @@ public class SwipeBrowserActivity extends Activity implements SwipeBrowserView.D
         } else {
             openUrl(getDefaultUrl());
         }
-
-        // Add the first fragment
-        //
-        // However, if we're being restored from a previous state,
-        // then we don't need to do anything and should return or else
-        // we could end up with overlapping fragments.
-        if (savedInstanceState != null)
-        {
-            return;
-        }
     }
 
     protected String getDefaultUrl()
     {
-        return "file:///android_asset/index.swipe";
+        return "file:///android_asset/port.swipe";
     }
 
     public static String getContentName(ContentResolver resolver, Uri uri)
@@ -250,57 +218,56 @@ public class SwipeBrowserActivity extends Activity implements SwipeBrowserView.D
             if (baseURL.getProtocol().equalsIgnoreCase("file")) {
                 String path = urlStr.substring("file:///android_asset/".length()); // remove path
                 String data = convertStreamToString(getResources().getAssets().open(path));
-                Log.d(TAG, data);
+                //Log.d(TAG, data);
                 openDocument(new JSONObject(data));
             } else {
                 URL url = new URL(urlStr);
-                SwipeAssetManager.sharedInstance().loadAsset(url,
-                        true /* bypassCache for Swipe files*/,
-                        new SwipeAssetManager.LoadAssetRunnable() {
-                            @Override
-                            public void run() {
-                                if (this.success && this.in != null) {
-                                    try {
-                                        String data = convertStreamToString(this.in);
-                                        Log.d(TAG, data);
-                                        openDocument(new JSONObject(data));
-                                    } catch (Exception e) {
-                                        displayError(e.toString());
-                                        try {
-                                            openDocument(new JSONObject("{}"));
-                                        } catch (JSONException e1) {
-                                            e1.printStackTrace();
-                                        }
-                                    }
-                                } else {
-                                    try {
-                                        openDocument(new JSONObject("{}"));
-                                    } catch (JSONException e1) {
-                                        e1.printStackTrace();
-                                    }
+                SwipeAssetManager.sharedInstance().loadAsset(url, true /* bypassCache for Swipe files*/, new SwipeAssetManager.LoadAssetRunnable() {
+                    @Override
+                    public void run() {
+                        if (this.success && this.in != null) {
+                            try {
+                                String data = convertStreamToString(this.in);
+                                openDocument(new JSONObject(data));
+                            } catch (Exception e) {
+                                displayError(e.toString());
+                                try {
+                                    openDocument(new JSONObject("{}"));
+                                } catch (JSONException e1) {
+                                    e1.printStackTrace();
                                 }
                             }
-                        });
+                        } else {
+                            try {
+                                openDocument(new JSONObject("{}"));
+                            } catch (JSONException e1) {
+                                e1.printStackTrace();
+                            }
+                        }
+                    }
+                });
             }
-        } catch (Exception e) {
+        } catch (JSONException e) {
             displayError(e.toString());
-            try {
-                openDocument(new JSONObject("{}"));
-            } catch (JSONException e1) {
-                e1.printStackTrace();
-            }
+            try { openDocument(new JSONObject("{}"));} catch (JSONException e1) { e1.printStackTrace(); }
+        } catch (MalformedURLException e) {
+            displayError(e.toString());
+            try { openDocument(new JSONObject("{}"));} catch (JSONException e1) { e1.printStackTrace(); }
+        } catch (IOException e) {
+            displayError(e.toString());
+            try { openDocument(new JSONObject("{}"));} catch (JSONException e1) { e1.printStackTrace(); }
         }
 
     }
     private void openDocument(JSONObject _document) throws JSONException {
         document = _document;
-        ViewGroup viewerFrag = null;
-        String documentType = document.optString("type", "org.swipe.swipe");
+        ViewGroup vg = null;
+        String documentType = document.optString("type", "net.swipe.swipe");
 
-        if (documentType.equalsIgnoreCase("org.swipe.swipe")) {
-            viewerFrag = new SwipeBookBrowserView(this);
-        } else if (documentType.equalsIgnoreCase("org.swipe.list")) {
-            viewerFrag = new SwipeTableBrowserView(this);
+        if (documentType.equalsIgnoreCase("net.swipe.swipe")) {
+            vg = new SwipeBookBrowserView(this);
+        } else if (documentType.equalsIgnoreCase("net.swipe.list")) {
+            vg = new SwipeTableBrowserView(this);
         } else {
             displayError(getString(R.string.unknown_type) + ": " + documentType);
             return;
@@ -312,9 +279,9 @@ public class SwipeBrowserActivity extends Activity implements SwipeBrowserView.D
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         }
 
-        SwipeBrowserView viewer = (SwipeBrowserView) viewerFrag;
+        SwipeBrowserView viewer = (SwipeBrowserView) vg;
         viewer.setDelegate(this);
-        viewer.loadDocument(document);
+        viewer.loadDocument(document, baseURL);
 
         LinearLayout ll = (LinearLayout) findViewById(R.id.main_activity_fragment_container);
         ll.addView(viewer, new LinearLayout.LayoutParams(

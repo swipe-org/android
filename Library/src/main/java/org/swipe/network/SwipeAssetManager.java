@@ -17,7 +17,7 @@ import java.util.Date;
  */
 
 public class SwipeAssetManager {
-    private static final String TAG = "SAssetMgr";
+    private static final String TAG = "SwAssetMgr";
     private static final SwipeAssetManager sSharedInstance = new SwipeAssetManager();
 
     private File cacheDir = null;

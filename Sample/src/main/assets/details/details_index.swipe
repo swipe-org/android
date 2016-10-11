@@ -1,5 +1,5 @@
 {
-    "type":"org.swipe.list",
+    "type":"net.swipe.list",
     "rowHeight":"10%",
     "items":[
         { "url":"transition_animation.swipe", "title":"Transition Animation", "icon":"../more.png" },

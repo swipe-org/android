@@ -20,7 +20,7 @@ public class SwipePrefetcher {
         public void progress(SwipePrefetcher prefetcher);
     }
 
-    private static final String TAG = "SPrefetcher";
+    private static final String TAG = "SwPref";
     protected List<URL> urls = new ArrayList<>();
     protected List<URL> urlsFetching = new ArrayList<>();
     protected Map<URL, URL> urlsFetched = new HashMap<>();
@@ -74,7 +74,7 @@ public class SwipePrefetcher {
                         }
                     }
                     if (localURL != null) {
-                        Log.d(TAG, "fetched " + localURL);
+                        //Log.d(TAG, "fetched " + localURL);
                         urlsFetched.put(url, localURL);
                     }else{
                         urlsFailed.add(url);
@@ -100,7 +100,7 @@ public class SwipePrefetcher {
     public URL map(URL url) {
         URL found = urlsFetched.get(url);
         if (found != null) {
-            Log.d(TAG, "found " + url.toString());
+            //Log.d(TAG, "found " + url.toString());
         } else {
             Log.d(TAG, "not found " + url.toString());
         }

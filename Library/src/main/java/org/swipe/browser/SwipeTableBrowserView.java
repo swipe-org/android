@@ -35,7 +35,7 @@ import static android.content.Context.LAYOUT_INFLATER_SERVICE;
  * Created by pete on 9/12/16.
  */
 public class SwipeTableBrowserView extends SwipeBrowserView implements SwipePrefetcher.Listener {
-    private final static String TAG = "STableViewerFrag";
+    private final static String TAG = "SwTblBrowser";
     protected LayoutInflater inflater = null;
     protected ArrayList<JSONObject> items = new ArrayList<>();
     protected TextView titleView = null;
@@ -51,7 +51,7 @@ public class SwipeTableBrowserView extends SwipeBrowserView implements SwipePref
 
         titleView = new TextView(getContext());
         titleView.setGravity(Gravity.CENTER_VERTICAL);
-        int pixels = (int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 45, getResources().getDisplayMetrics());
+        final int pixels = (int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 45, getResources().getDisplayMetrics());
         titleView.setMinHeight(pixels);
         titleView.setTextAlignment(TEXT_ALIGNMENT_CENTER);
         titleView.setText(R.string.tbd);
@@ -62,20 +62,6 @@ public class SwipeTableBrowserView extends SwipeBrowserView implements SwipePref
         addView(listView, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.MATCH_PARENT));
-        /*
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="45dp"
-            android:text="@string/tbd"
-            android:gravity="center_vertical"
-            android:textAlignment="center"
-            android:id="@+id/list_view_title" />
-    </LinearLayout>
-    <ListView
-        android:id="@+id/list_view"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-         */
     }
 
     // Returns the list of URLs of required resources for this element (including children)
@@ -97,8 +83,8 @@ public class SwipeTableBrowserView extends SwipeBrowserView implements SwipePref
     }
 
     @Override
-    public void loadDocument(JSONObject _document) {
-        super.loadDocument(_document);
+    public void loadDocument(JSONObject _document, URL url) {
+        super.loadDocument(_document, url);
 
         try {
             if (document.has("sections")) {
@@ -204,10 +190,7 @@ public class SwipeTableBrowserView extends SwipeBrowserView implements SwipePref
                         // title
                         TextView tv = (TextView) view.findViewById(R.id.list_view_text);
                         tv.setMinHeight(rowHeight);
-                        //tv.setHeight(itemHeight);
                         tv.setText(items.get(position).optString("title", urlStr));
-                        Log.d(TAG, "minHeight=" + tv.getMinHeight() + " h=" + tv.getHeight());
-                        Log.d(TAG, "view for " + position + ", " + items.get(position).optString("title"));
                         return view;
                     }
                 };
