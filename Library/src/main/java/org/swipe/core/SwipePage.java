@@ -1,5 +1,7 @@
 package org.swipe.core;
 
+import android.animation.Animator;
+import android.animation.AnimatorSet;
 import android.content.Context;
 import android.graphics.PointF;
 import android.util.Log;
@@ -13,6 +15,7 @@ import org.swipe.browser.SwipeBrowserActivity;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -46,13 +49,15 @@ public class SwipePage extends SwipeView implements SwipeElement.Delegate {
     private static final String TAG = "SwPage";
     protected Delegate delegate = null;
     protected int index = -1;
-    protected  SwipePageTemplate pageTemplate = null;
+    protected SwipePageTemplate pageTemplate = null;
+    protected double duration = 0.2;
 
     public SwipePage(Context _context, CGSize _dimension, int _index, JSONObject _info, SwipePage.Delegate _delegate) {
         super(_context, _dimension, _info);
         index = _index;
         delegate = _delegate;
 
+        // Expand tempates first
         pageTemplate = delegate.pageTemplateWith(info.optString("template"));
         if (pageTemplate == null) {
             pageTemplate = delegate.pageTemplateWith(info.optString("scene"));
@@ -60,17 +65,27 @@ public class SwipePage extends SwipeView implements SwipeElement.Delegate {
                 Log.w(TAG, "DEPRECATED 'scene'; use 'template'");
             }
         }
+
         super.info = SwipeParser.inheritProperties(_info, pageTemplate != null ? pageTemplate.pageTemplateInfo : null);
+
+        duration = info.optDouble("duration", duration);
+
+        List<Animator> animations = new ArrayList<>();
 
         JSONArray elementsInfo = info.optJSONArray("elements");
         if (elementsInfo != null) {
-            CGSize scaleDummy = new CGSize(1, 1);
+            CGSize scale = new CGSize(1, 1);
             for (int i = 0; i < elementsInfo.length(); i++) {
-                SwipeElement element = new SwipeElement(getContext(), dimension, elementsInfo.optJSONObject(i), scaleDummy, this, this);
+                SwipeElement element = new SwipeElement(getContext(), dimension, elementsInfo.optJSONObject(i), scale, this, this);
                 children.add(element);
                 viewGroup.addView(element.getView());
+                animations.addAll(element.getAnimations());
             }
         }
+
+        AnimatorSet animator = new AnimatorSet();
+        animator.playTogether(animations);
+        animator.start();
     }
 
     @Override
@@ -105,8 +120,10 @@ public class SwipePage extends SwipeView implements SwipeElement.Delegate {
         return resourceURLs;
     }
 
-
     // SwipeElement.Delegate
+
+    @Override
+    public double durationSec() { return duration; }
 
     @Override
     public URL baseURL() {

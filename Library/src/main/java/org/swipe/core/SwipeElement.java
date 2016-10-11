@@ -1,9 +1,16 @@
 package org.swipe.core;
 
+import android.animation.Animator;
+import android.animation.ArgbEvaluator;
+import android.animation.ObjectAnimator;
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.PointF;
+import android.graphics.drawable.ColorDrawable;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.ViewGroup;
 
 import org.json.JSONArray;
@@ -21,6 +28,7 @@ import java.util.List;
 
 public class SwipeElement extends SwipeView {
     public interface Delegate {
+        double durationSec();
         /* TODO
         func prototypeWith(name:String?) -> [String:AnyObject]?
         func pathWith(name:String?) -> AnyObject?
@@ -42,6 +50,9 @@ public class SwipeElement extends SwipeView {
 
     private static final String TAG = "SwElem";
     protected SwipeElement.Delegate delegate = null;
+    protected List<Animator> animations = new ArrayList<>();
+
+    public List<Animator> getAnimations() { return animations; }
 
     public SwipeElement(Context _context, CGSize _dimension, JSONObject _info, CGSize scale, SwipeNode parent, SwipeElement.Delegate _delegate) {
         super(_context, _dimension, _info);
@@ -78,7 +89,7 @@ public class SwipeElement extends SwipeView {
                 }
             }
             dvalue = info.optDouble("h");
-            if (dvalue != Double.NaN) {
+            if (!Double.isNaN(dvalue)) {
                 h0 = (float)dvalue;
                 fNaturalH = false;
             } else {
@@ -161,31 +172,41 @@ public class SwipeElement extends SwipeView {
         } else {
             String value = info.optString("x", null);
             if (value != null) {
-                if (value.equals("right")) {
-                    x = dimension.width - w0;
-                } else if (value.equals("left")) {
-                    x = 0;
-                } else if (value.equals("center")) {
-                    x = (dimension.width - w0) / 2.0f;
-                } else {
-                    x = SwipeParser.parsePercent(value, dimension.width, 0);
+                switch (value) {
+                    case "right":
+                        x = dimension.width - w0;
+                        break;
+                    case "left":
+                        x = 0;
+                        break;
+                    case "center":
+                        x = (dimension.width - w0) / 2.0f;
+                        break;
+                    default:
+                        x = SwipeParser.parsePercent(value, dimension.width, 0);
+                        break;
                 }
             }
         }
         dvalue = info.optDouble("y");
-        if (dvalue != Double.NaN){
+        if (!Double.isNaN(dvalue)){
             y = (float)dvalue;
         } else  {
             String value = info.optString("y");
             if (value != null) {
-                if (value.equals("bottom")) {
-                    y = dimension.height - h0;
-                }else if (value.equals("top")) {
-                    y = 0;
-                }else if (value.equals("center")) {
-                    y = (dimension.height - h0) / 2.0f;
-                }else{
-                    y = SwipeParser.parsePercent(value, dimension.height, 0);
+                switch (value) {
+                    case "bottom":
+                        y = dimension.height - h0;
+                        break;
+                    case "top":
+                        y = 0;
+                        break;
+                    case "center":
+                        y = (dimension.height - h0) / 2.0f;
+                        break;
+                    default:
+                        y = SwipeParser.parsePercent(value, dimension.height, 0);
+                        break;
                 }
             }
         }
@@ -195,9 +216,10 @@ public class SwipeElement extends SwipeView {
         y *= scale.height;
 
         // TODO let view = InternalView(wrapper: self, frame: frame)
-        viewGroup.setX(x);
-        viewGroup.setY(y);
-        viewGroup.setLayoutParams(new ViewGroup.LayoutParams((int)w,(int) h));
+        DisplayMetrics dm = getContext().getResources().getDisplayMetrics();
+        viewGroup.setX(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, x, dm));
+        viewGroup.setY(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, y, dm));
+        viewGroup.setLayoutParams(new ViewGroup.LayoutParams((int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, w, dm),(int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, h, dm)));
         /*
         #if os(OSX)
         let layer = view.makeBackingLayer()
@@ -554,17 +576,23 @@ public class SwipeElement extends SwipeView {
         if let visible = info["visible"] as? Bool where !visible {
             layer.opacity = 0.0
         }
+        */
 
-        if let to = info["to"] as? [String:AnyObject] {
-            let start, duration:Double
-            if let timing = to["timing"] as? [Double]
-            where timing.count == 2 && timing[0] >= 0 && timing[0] <= timing[1] && timing[1] <= 1 {
-                start = timing[0] == 0 ? 1e-10 : timing[0]
-                duration = timing[1] - start
-            } else {
-                start = 1e-10
-                duration = 1.0
+        JSONObject to = info.optJSONObject("to");
+        if (to != null) {
+            double start = 1e-10;
+            double duration = 1.0;
+
+            JSONArray timingJA = to.optJSONArray("timing");
+            if (timingJA != null && (timingJA.length() == 2)) {
+                double timing[] = { timingJA.optDouble(0), timingJA.optDouble(1) };
+                if (!Double.isNaN(timing[0]) && !Double.isNaN(timing[1]) && timing[0] >= 0 && timing[0] <= timing[1] && timing[1] <= 1) {
+                    start = timing[0] == 0 ? 1e-10 : timing[0];
+                    duration = timing[1] - start;
+                }
             }
+
+            /*
             var fSkipTranslate = false
 
             if let path = parsePath(to["pos"], w: w0, h: h0, scale:scale) {
@@ -609,16 +637,20 @@ public class SwipeElement extends SwipeView {
                 ani.duration = duration
                 layer.addAnimation(ani, forKey: "opacity")
             }
+            */
 
-            if let backgroundColor:AnyObject = to["bc"] {
-                let ani = CABasicAnimation(keyPath: "backgroundColor")
-                ani.fromValue = layer.backgroundColor
-                ani.toValue = SwipeParser.parseColor(backgroundColor)
-                ani.fillMode = kCAFillModeBoth
-                ani.beginTime = start
-                ani.duration = duration
-                layer.addAnimation(ani, forKey: "backgroundColor")
+            String bcString = to.optString("bc", null);
+            if (bcString != null) {
+                ColorDrawable viewColor = (ColorDrawable) viewGroup.getBackground();
+                int color = viewColor.getColor();
+                ObjectAnimator ani = ObjectAnimator.ofObject(viewGroup, "backgroundColor", new ArgbEvaluator(), color, Color.parseColor(bcString));
+                //ani.fillMode = kCAFillModeBoth
+                ani.setStartDelay((int)(start * delegate.durationSec() * 1000));
+                ani.setDuration((int)(duration * delegate.durationSec() * 1000));
+                animations.add(ani);
             }
+
+            /*
             if let borderColor:AnyObject = to["borderColor"] {
                 let ani = CABasicAnimation(keyPath: "borderColor")
                 ani.fromValue = layer.borderColor
@@ -759,8 +791,9 @@ public class SwipeElement extends SwipeView {
                     shapeLayer.addAnimation(ani, forKey: "strokeEnd")
                 }
             }
+            */
         }
-
+        /*
         if let fRepeat = info["repeat"] as? Bool where fRepeat {
             //NSLog("SE detected an element with repeat")
             self.fRepeat = fRepeat

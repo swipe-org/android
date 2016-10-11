@@ -87,7 +87,6 @@ public class SwipeBook implements SwipePage.Delegate {
                 collection.removeView((View) view);
             }
 
-
             @Override
             public boolean isViewFromObject(View view, Object object) {
                 return view == object;

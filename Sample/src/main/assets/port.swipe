@@ -2,10 +2,11 @@
     "bc":"lightGray",
     "pages": [
         {
+            "duration":2,
             "bc":"#00ff00",
             "elements": [
-                { "x":50, "y":100, "w":100, "h":100, "bc":"red" },
-                { "x":100, "y":150, "w":100, "h":100, "bc":"blue" }
+                { "x":50, "y":100, "w":100, "h":100, "bc":"red", "to":{ "bc":"#ffaaaa" } },
+                { "x":100, "y":150, "w":100, "h":100, "bc":"blue", "to":{ "timing":[0, 0.5], "bc":"#aaaaff" } }
             ]
         },
         {

@@ -3,6 +3,7 @@ package org.swipe.browser;
 import android.app.Activity;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.ViewGroup;
 
 import org.json.JSONObject;

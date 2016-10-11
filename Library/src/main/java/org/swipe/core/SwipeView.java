@@ -44,8 +44,7 @@ public class SwipeView extends SwipeNode {
                 for (int c = 0; c < this.getChildCount(); c++) {
                     View v = this.getChildAt(c);
                     ViewGroup.LayoutParams lp = v.getLayoutParams();
-                    Log.d(TAG, "layout " + c + " w:" + lp.width + " h:" + lp.height);
-
+                    //Log.d(TAG, "layout " + c + " w:" + lp.width + " h:" + lp.height);
                     v.layout(0, 0, lp.width, lp.height);
                 }
             }
