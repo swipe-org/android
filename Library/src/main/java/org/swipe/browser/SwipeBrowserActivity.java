@@ -16,7 +16,9 @@ import android.provider.MediaStore;
 import android.util.Log;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 
 import org.swipe.network.SwipeAssetManager;
 
@@ -118,7 +120,7 @@ public class SwipeBrowserActivity extends Activity implements SwipeBrowserView.D
 
     protected String getDefaultUrl()
     {
-        return "file:///android_asset/port.swipe";
+        return "file:///android_asset/index.swipe";
     }
 
     public static String getContentName(ContentResolver resolver, Uri uri)
@@ -282,6 +284,8 @@ public class SwipeBrowserActivity extends Activity implements SwipeBrowserView.D
         SwipeBrowserView viewer = (SwipeBrowserView) vg;
         viewer.setDelegate(this);
         viewer.loadDocument(document, baseURL);
+
+
 
         LinearLayout ll = (LinearLayout) findViewById(R.id.main_activity_fragment_container);
         ll.addView(viewer, new LinearLayout.LayoutParams(

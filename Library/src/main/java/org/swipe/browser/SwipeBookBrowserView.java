@@ -38,11 +38,16 @@ public class SwipeBookBrowserView extends SwipeBrowserView implements SwipeBook.
     public void loadDocument(JSONObject _document, URL url) {
         super.loadDocument(_document, url);
         DisplayMetrics dm = getResources().getDisplayMetrics();
-        float fwidth = dm.widthPixels;
-        float fheight = dm.heightPixels;
+        float fwidth = dm.widthPixels / dm.density;
+        float fheight = dm.heightPixels / dm.density;
+        if (landscape() && fwidth < fheight || !landscape() && fwidth > fheight) {
+            float temp = fwidth;
+            fwidth = fheight;
+            fheight = temp;
+        }
         Log.d(TAG, "display w=" + fwidth + " h=" + fheight);
+
         book = new SwipeBook(getContext(), fwidth, fheight, document, baseURL, this);
-        addView(book.getView(), new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         /* TODO
         if let languages = self.book.languages(),
@@ -69,7 +74,8 @@ public class SwipeBookBrowserView extends SwipeBrowserView implements SwipeBook.
 
     @Override
     public void didComplete(SwipePrefetcher prefetcher) {
-
+        ;
+        addView(book.loadView(), new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     }
 
     @Override

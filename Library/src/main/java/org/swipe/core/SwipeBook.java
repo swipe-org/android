@@ -2,11 +2,17 @@ package org.swipe.core;
 
 import android.content.Context;
 import android.graphics.Color;
-import android.support.v4.view.PagerAdapter;
-import android.support.v4.view.ViewPager;
-import android.view.LayoutInflater;
+import android.graphics.Point;
+import android.util.DisplayMetrics;
+import android.util.Log;
+import android.util.TypedValue;
+import android.view.DragEvent;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -25,28 +31,54 @@ public class SwipeBook implements SwipePage.Delegate {
 
     }
 
-    protected SwipeBook.Delegate delegate = null;
-    protected JSONObject bookInfo = null;
-    protected URL baseURL = null;
-    protected List<URL> resourceURLs = null;
+    private static final String TAG = "SwBook";
+    private SwipeBook.Delegate delegate = null;
+    private JSONObject bookInfo = null;
+    private URL baseURL = null;
+    private List<URL> resourceURLs = null;
     protected List<SwipePage> pages = new ArrayList<>();
-    protected ViewPager viewPager = null;
+    private SwipeScrollView scrollView = null;
     protected Context context = null;
-    protected String paging = "vertical";
-    protected boolean viewstate = true;
-    protected String orientation = "portrait";
+    private String paging = "vertical";
+    private boolean viewstate = true;
+    private boolean fAdvancing = true;
+    private float scrWidth = 0;
+    private float scrHeight = 0;
+    private int width = 0;
+    private int height = 0;
+    private String orientation = "portrait";
+    private int pageIndex = 0;
 
-    public View getView() { return viewPager; }
+    public View getView() { return scrollView; }
     public boolean viewstate() { return viewstate; }
     public boolean horizontal() { return paging.equals("leftToRight"); }
     public String orientation() { return orientation; }
 
+    private SwipePage currentPage() { return pages.get(pageIndex); }
+
     protected Context getContext() { return context; }
 
+    private void MyLog(String tag, String text) {
+        MyLog(tag, text, 0);
+    }
 
+    private void MyLog(String tag, String text, int level) {
+        if (level <= 10) {
+            Log.d(tag, text);
+        }
+    }
 
-    public SwipeBook(Context _context, float scrWidth, float scrHeight, JSONObject document, URL url, SwipeBook.Delegate _delegate) {
+    private GestureDetector gestureDetector = null;
+    private boolean didOverScroll = false;
+
+    public SwipeBook(Context _context, float _scrWidth, float _scrHeight, JSONObject document, URL url, SwipeBook.Delegate _delegate) {
         context = _context;
+        scrWidth = _scrWidth;
+        scrHeight = _scrHeight;
+        // Convert DIP to PX
+        DisplayMetrics dm = getContext().getResources().getDisplayMetrics();
+        width = (int)(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, scrWidth, dm));
+        height = (int)(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, scrHeight, dm));
         bookInfo = document;
         baseURL = url;
         delegate = _delegate;
@@ -61,43 +93,6 @@ public class SwipeBook implements SwipePage.Delegate {
                 pages.add(page);
             }
         }
-
-        if (horizontal()) {
-            viewPager = new SwipeHorizontalPager(getContext());
-        } else {
-            viewPager = new SwipeVerticalPager(getContext());
-        }
-
-        class SwipePagerAdapter extends PagerAdapter {
-
-            @Override
-            public int getCount() {
-                return pages.size();
-            }
-
-            @Override
-            public Object instantiateItem(ViewGroup collection, int position) {
-                View view = pages.get(position).getView();
-                collection.addView(view);
-                return view;
-            }
-
-            @Override
-            public void destroyItem(ViewGroup collection, int position, Object view) {
-                collection.removeView((View) view);
-            }
-
-            @Override
-            public boolean isViewFromObject(View view, Object object) {
-                return view == object;
-            }
-        }
-
-        viewPager.setAdapter(new SwipePagerAdapter());
-
-        String bcString = bookInfo.optString("bc", "black");
-        int bc = Color.parseColor(bcString);
-        viewPager.setBackgroundColor(bc);
     }
 
     public List<URL> getResourceURLs() {
@@ -115,6 +110,173 @@ public class SwipeBook implements SwipePage.Delegate {
         return resourceURLs;
     }
 
+    public ViewGroup loadView() {
+        LinearLayout ll = new LinearLayout(getContext());
+
+        if (horizontal()) {
+            // TODO: impelment "horizontal"
+            Log.e(TAG, "horizontal not implemented");
+            ll.setOrientation(LinearLayout.HORIZONTAL);
+            scrollView = new SwipeScrollView(getContext());
+        } else {
+            ll.setOrientation(LinearLayout.VERTICAL);
+            scrollView = new SwipeScrollView(getContext());
+        }
+
+        scrollView.setOnTouchListener( new View.OnTouchListener() {
+
+            MotionEvent downEvent = null;
+            int prevPosition = -1;
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                boolean didFling = gestureDetector.onTouchEvent(event);
+
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        Log.d(TAG, "onTouch ACTION_DOWN");
+                        didOverScroll = false;
+                        downEvent = MotionEvent.obtain(event);
+                        break;
+                    case MotionEvent.ACTION_MOVE:
+                        Log.d(TAG, "onTouch ACTION_MOVE");
+                        break;
+                    case MotionEvent.ACTION_UP: {
+                        Log.d(TAG, "onTouch ACTION_UP");
+
+                        final int curPage = currentPageIndex();
+                        final int distance = (int) (downEvent.getY() - event.getY());
+                        int offset = (int) (curPage * height);  // stay on this page by default unless distance dragged is > 50% of page
+                        int pgOffset = 0;
+
+                        if (distance > 0 && (distance >= (height / 2) || didFling) && curPage < pages.size() - 1) {
+                            // Scroll to next page
+                            pgOffset = 1;
+                        } else if (distance < 0 && (Math.abs(distance) >= (height / 2) || didFling) && curPage > 0) {
+                            // Scroll to prev page
+                            pgOffset = -1;
+                        }
+
+                        final int position = curPage + pgOffset;
+
+                        if (prevPosition >= 0) {
+                            if (position != curPage) {
+                                MyLog(TAG, "scrolling from " + prevPosition + " to " + position, 2);
+                                final SwipePage prevPage = pages.get(prevPosition);
+                                prevPage.willLeave(fAdvancing);
+                                final SwipePage page = pages.get(position);
+                                fAdvancing = position > prevPosition;
+                                page.willEnter(fAdvancing);
+                            } else if (position == 0 && didOverScroll && distance < 0 && Math.abs(distance) >= (height / 8)) {
+                                final SwipePage page = pages.get(position);
+                                MyLog(TAG, "overscrolling detected", 1);
+                                page.willLeave(false);
+                                page.willEnter(true);
+                                page.didEnter(true);
+                            }
+                        }
+
+                        offset += pgOffset * height;
+                        scrollView.smoothScrollTo(0, offset);
+                        // Delay update of position until after scrolling is finished.
+                        // TODO:  Need a way to detect that scrolling is finished
+                        scrollView.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                adjustIndex(position);
+                            }
+                        }, 200);
+                        prevPosition = position;
+                        return true;
+                    }
+                    case MotionEvent.ACTION_CANCEL:
+                        Log.d(TAG, "onTouch ACTION_CANCEL");
+                        break;
+                    default:
+                        Log.d(TAG, "onTouch other: " + event.getAction() + " " + event.toString());
+                        break;
+                }
+
+                return false;
+            }
+        });
+
+        gestureDetector = new GestureDetector(getContext(), new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                // Determine if we consider this a 'fling'
+                return (Math.abs(velocityY) > 500 && Math.abs(e1.getY() - e2.getY()) > height / 8);
+            }
+        });
+
+        scrollView.setOverScrollListener(new SwipeScrollView.OnOverScrollListener()
+        {
+            @Override
+            public void onOverScrolled(int delta) {
+                didOverScroll = true;
+            }
+        });
+
+        for (SwipePage page : pages) {
+            ll.addView(page.loadView(), new ViewGroup.LayoutParams(width, height));
+        }
+
+        scrollView.addView(ll, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        scrollView.setBackgroundColor(Color.parseColor(bookInfo.optString("bc", "black")));
+
+        adjustIndex(pageIndex, true);
+
+        return scrollView;
+    }
+
+    private boolean adjustIndex(int newPageIndex) {
+        return adjustIndex(newPageIndex, false);
+    }
+
+    private boolean adjustIndex(int newPageIndex, boolean fForced) {
+        if (pages.size() == 0) {
+            Log.d(TAG, "adjustIndex ### No Pages");
+            return false;
+        }
+
+        if (newPageIndex == pageIndex && !fForced) {
+            return false;
+        }
+
+        if (!fForced) {
+            SwipePage pagePrev = currentPage();
+            pagePrev.didLeave(newPageIndex < pageIndex);
+        }
+
+        pageIndex = newPageIndex;
+        currentPage().prepare();
+        setActivePage(currentPage());
+        MyLog(TAG, "adjustIndex " + pageIndex);
+
+        if (fForced) {
+            currentPage().willEnter(true);
+        }
+
+        currentPage().didEnter(fAdvancing || fForced);
+
+        return true;
+    }
+
+    private void setActivePage(SwipePage page) {
+        /* TODO
+        if self.pageTemplateActive != page.pageTemplate {
+            MyLog("SwipeBook setActive \(self.pageTemplateActive), \(page.pageTemplate)", level:1)
+            if let pageTemplate = self.pageTemplateActive {
+                pageTemplate.didLeave()
+            }
+            if let pageTemplate = page.pageTemplate {
+                pageTemplate.didEnter(page.prefetcher)
+            }
+            self.pageTemplateActive = page.pageTemplate
+        }
+        */
+    }
+
     @Override
     public SwipePageTemplate pageTemplateWith(String name) {
         // TODO
@@ -125,4 +287,7 @@ public class SwipeBook implements SwipePage.Delegate {
     public URL baseURL() {
         return baseURL;
     }
+
+    @Override
+    public int currentPageIndex() { return pageIndex; }
 }

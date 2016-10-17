@@ -1,0 +1,22 @@
+{
+    "orientation":"landscape",
+    "bc":"lightGray",
+    "pages": [
+        {
+            "duration":2,
+            "bc":"#00ff00",
+            "elements": [
+                { "x":50,  "y":100, "w":100, "h":100, "bc":"red",  "to":{ "bc":"#ffdddd" } },
+                { "x":100, "y":150, "w":100, "h":100, "bc":"blue", "to":{ "timing":[0, 0.5], "bc":"#ddddff" } }
+            ]
+        },
+        {
+            "duration":2.0,
+            "bc":"#aaffaa",
+            "elements": [
+                { "x":"50%", "y":"50%", "w":"40%", "h":"40%", "bc":"#ffff00", "to":{ "bc":"#ffffdd" } },
+                { "x":"80%", "y":"80%", "w":"10%", "h":"10%", "bc":"#00ffff", "to":{ "timing":[0, 0.5], "bc":"#ddffff" } }
+            ]
+        }
+    ]
+}

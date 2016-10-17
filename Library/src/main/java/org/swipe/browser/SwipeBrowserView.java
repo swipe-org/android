@@ -35,6 +35,7 @@ public abstract class SwipeBrowserView extends LinearLayout {
     protected JSONObject document = null;
     protected List<URL> resourceURLs = null;
     protected URL baseURL = null;
+    private boolean landscape = false;
 
     // Returns the list of URLs of required resources for this element (including children)
     public abstract List<URL> getResourceURLs();
@@ -46,15 +47,10 @@ public abstract class SwipeBrowserView extends LinearLayout {
     public void loadDocument(JSONObject _document, URL url) {
         document = _document;
         baseURL = url;
+        landscape = document.optString("orientation").equalsIgnoreCase("landscape");
     }
 
-    public boolean landscape() {
-        if (document.optString("orientation", "").equalsIgnoreCase("landscape")) {
-            return true;
-        } else {
-            return false;
-        }
-    }
+    public boolean landscape() { return landscape; }
 
     public void setDelegate(SwipeBrowserView.Delegate _delegate) {
         delegate = _delegate;

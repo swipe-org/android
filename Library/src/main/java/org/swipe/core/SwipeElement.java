@@ -27,7 +27,7 @@ import java.util.List;
  */
 
 public class SwipeElement extends SwipeView {
-    public interface Delegate {
+    interface Delegate {
         double durationSec();
         /* TODO
         func prototypeWith(name:String?) -> [String:AnyObject]?
@@ -49,15 +49,42 @@ public class SwipeElement extends SwipeView {
     }
 
     private static final String TAG = "SwElem";
-    protected SwipeElement.Delegate delegate = null;
-    protected List<Animator> animations = new ArrayList<>();
+    private SwipeElement.Delegate delegate = null;
+    private List<ObjectAnimator> animations = new ArrayList<>();
+    private boolean fRepeat = false;
 
-    public List<Animator> getAnimations() { return animations; }
+    // Video Element Specific
+    private Object videoPlayer = null;
+    private boolean fSeeking = false;
+    private boolean fNeedRewind = false;
+    private boolean fPlaying = false;
+    private Float pendingOffset = null;
+    private Float videoStart = 0.0f;
+    private Float videoDuration = 1.0f;
+    private CGSize scale = null;
 
-    public SwipeElement(Context _context, CGSize _dimension, JSONObject _info, CGSize scale, SwipeNode parent, SwipeElement.Delegate _delegate) {
+    List<ObjectAnimator> getAllAnimations() {
+        List<ObjectAnimator> allAni = new ArrayList<>();
+        allAni.addAll(animations);
+        for (SwipeNode c : children) {
+            if (c instanceof SwipeElement) {
+                SwipeElement e = (SwipeElement)c;
+                allAni.addAll(e.getAllAnimations());
+            }
+        }
+        return allAni;
+    }
+
+    SwipeElement(Context _context, CGSize _dimension, JSONObject _info, CGSize _scale, SwipeNode parent, SwipeElement.Delegate _delegate) {
         super(_context, _dimension, _info);
+        scale = _scale;
         delegate = _delegate;
-        
+    }
+
+    @Override
+    ViewGroup loadView() {
+        super.loadView();
+
         URL baseURL = delegate.baseURL();
         float x = 0;
         float y = 0;
@@ -78,7 +105,7 @@ public class SwipeElement extends SwipeView {
             h0 = dimension.height; // we'll adjust it later
         } else {
             double dvalue = info.optDouble("w");
-            if (dvalue != Double.NaN) {
+            if (!Double.isNaN(dvalue)) {
                 w0 = (float)dvalue;
                 fNaturalW = false;
             } else {
@@ -167,7 +194,7 @@ public class SwipeElement extends SwipeView {
         float h = h0 * scale.height;
 
         double dvalue = info.optDouble("x");
-        if (dvalue != Double.NaN){
+        if (!Double.isNaN(dvalue)){
             x = (float)dvalue;
         } else {
             String value = info.optString("x", null);
@@ -216,6 +243,7 @@ public class SwipeElement extends SwipeView {
         y *= scale.height;
 
         // TODO let view = InternalView(wrapper: self, frame: frame)
+        // Convert DIP to PX
         DisplayMetrics dm = getContext().getResources().getDisplayMetrics();
         viewGroup.setX(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, x, dm));
         viewGroup.setY(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, y, dm));
@@ -953,7 +981,7 @@ public class SwipeElement extends SwipeView {
         if (elementsInfo != null) {
             for (int e = 0; e < elementsInfo.length(); e++) {
                 SwipeElement element = new SwipeElement(getContext(), new CGSize(w0, h0), elementsInfo.optJSONObject(e), scale, this, delegate);
-                viewGroup.addView(element.getView());
+                viewGroup.addView(element.loadView());
                 children.add(element);
             }
         }
@@ -965,6 +993,96 @@ public class SwipeElement extends SwipeView {
             execute(self, actions: actions)
         }
         */
+
+        return viewGroup;
+    }
+
+    void setTimeOffsetTo(final float offset) {
+        setTimeOffsetTo(offset, false, false);
+    }
+
+    void setTimeOffsetTo(final float offset, final boolean fAutoPlay) {
+        setTimeOffsetTo(offset, fAutoPlay, false);
+    }
+
+    void setTimeOffsetTo(final float offset, final boolean fAutoPlay, final boolean fElementRepeat) {
+        if (offset < 0.0 || offset > 1.0) {
+            return;
+        }
+
+        // TODO if let layer = self.layer where layer.speed == 0 {
+            // independently animated
+            for (ObjectAnimator ani : animations) {
+                ani.setCurrentFraction(offset);
+            }
+        //}
+
+        for (SwipeNode c : children) {
+            if (c instanceof SwipeElement) {
+                SwipeElement element = (SwipeElement) c;
+                element.setTimeOffsetTo(offset, fAutoPlay, fElementRepeat);
+            }
+        }
+
+        if (fElementRepeat && !fRepeat) {
+            return;
+        }
+
+        if (videoPlayer != null) {
+            if (fAutoPlay) {
+                return;
+            }
+            if (fSeeking) {
+                pendingOffset = offset;
+                return;
+            }
+            double timeSec = videoStart + offset * videoDuration;
+            /* TODO
+            double time = CMTimeMakeWithSeconds(Float64(timeSec), 600)
+            let tolerance = CMTimeMake(10, 600) // 1/60sec
+            if player.status == AVPlayerStatus.ReadyToPlay {
+                self.fSeeking = true
+                SwipeElement.objectCount -= 1 // to avoid false memory leak detection
+                player.seekToTime(time, toleranceBefore: tolerance, toleranceAfter: tolerance) { (_:Bool) -> Void in
+                    assert(NSThread.currentThread() == NSThread.mainThread(), "thread error")
+                    SwipeElement.objectCount += 1
+                    self.fSeeking = false
+                    if let pendingOffset = self.pendingOffset {
+                        self.pendingOffset = nil
+                        self.setTimeOffsetTo(pendingOffset, fAutoPlay: false, fElementRepeat: fElementRepeat)
+                    }
+                }
+            }
+            */
+        }
+    }
+
+    boolean isVideoElement() {
+        if (videoPlayer != null) {
+            return true;
+        }
+        for (SwipeNode c : children) {
+            if (c instanceof SwipeElement) {
+                if (((SwipeElement) c).isVideoElement()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    boolean isRepeatElement() {
+        if (fRepeat) {
+            return true;
+        }
+        for (SwipeNode c : children) {
+            if (c instanceof SwipeElement) {
+                if (((SwipeElement) c).isRepeatElement()) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Override
