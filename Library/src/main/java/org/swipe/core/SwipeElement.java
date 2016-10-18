@@ -61,7 +61,6 @@ public class SwipeElement extends SwipeView {
     private Float pendingOffset = null;
     private Float videoStart = 0.0f;
     private Float videoDuration = 1.0f;
-    private CGSize scale = null;
 
     List<ObjectAnimator> getAllAnimations() {
         List<ObjectAnimator> allAni = new ArrayList<>();
@@ -75,9 +74,8 @@ public class SwipeElement extends SwipeView {
         return allAni;
     }
 
-    SwipeElement(Context _context, CGSize _dimension, JSONObject _info, CGSize _scale, SwipeNode parent, SwipeElement.Delegate _delegate) {
-        super(_context, _dimension, _info);
-        scale = _scale;
+    SwipeElement(Context _context, CGSize _dimension, CGSize _scale, JSONObject _info, SwipeNode parent, SwipeElement.Delegate _delegate) {
+        super(_context, _dimension, _scale, _info);
         delegate = _delegate;
     }
 
@@ -980,7 +978,7 @@ public class SwipeElement extends SwipeView {
         JSONArray elementsInfo = info.optJSONArray("elements");
         if (elementsInfo != null) {
             for (int e = 0; e < elementsInfo.length(); e++) {
-                SwipeElement element = new SwipeElement(getContext(), new CGSize(w0, h0), elementsInfo.optJSONObject(e), scale, this, delegate);
+                SwipeElement element = new SwipeElement(getContext(), new CGSize(w0, h0), scale, elementsInfo.optJSONObject(e), this, delegate);
                 viewGroup.addView(element.loadView());
                 children.add(element);
             }
@@ -1108,7 +1106,7 @@ public class SwipeElement extends SwipeView {
             if (elementsInfo != null) {
                 final CGSize scaleDummy = new CGSize(1, 1);
                 for (int e = 0; e < elementsInfo.length(); e++) {
-                    SwipeElement element = new SwipeElement(getContext(), dimension, elementsInfo.optJSONObject(e), scaleDummy, this, delegate);
+                    SwipeElement element = new SwipeElement(getContext(), dimension, scaleDummy, elementsInfo.optJSONObject(e), this, delegate);
                     resourceURLs.addAll(element.getResourceURLs());
                 }
             }
@@ -1124,7 +1122,7 @@ public class SwipeElement extends SwipeView {
                             if (elementsInfo != null) {
                                 final CGSize scaleDummy = new CGSize(1, 1);
                                 for (int e = 0; e < elementsInfo.length(); e++) {
-                                    SwipeElement element = new SwipeElement(getContext(), dimension, elementsInfo.optJSONObject(e), scaleDummy, this, delegate);
+                                    SwipeElement element = new SwipeElement(getContext(), dimension, scaleDummy, elementsInfo.optJSONObject(e), this, delegate);
                                     resourceURLs.addAll(element.getResourceURLs());
                                 }
                             }

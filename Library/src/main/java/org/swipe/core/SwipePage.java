@@ -5,6 +5,7 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.graphics.Point;
 import android.graphics.PointF;
 import android.util.Log;
 import android.util.Size;
@@ -119,8 +120,8 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     private Float offsetPaused = null;
     private AnimatorSet animator = new AnimatorSet();
 
-    SwipePage(Context _context, CGSize _dimension, int _index, JSONObject _info, SwipePage.Delegate _delegate) {
-        super(_context, _dimension, _info);
+    SwipePage(Context _context, CGSize _dimension, CGSize _scale, int _index, JSONObject _info, SwipePage.Delegate _delegate) {
+        super(_context, _dimension, _scale, _info);
         index = _index;
         delegate = _delegate;
 
@@ -165,9 +166,8 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
 
         JSONArray elementsInfo = info.optJSONArray("elements");
         if (elementsInfo != null) {
-            CGSize scale = new CGSize(1, 1);
             for (int i = 0; i < elementsInfo.length(); i++) {
-                SwipeElement element = new SwipeElement(getContext(), dimension, elementsInfo.optJSONObject(i), scale, this, this);
+                SwipeElement element = new SwipeElement(getContext(), dimension, scale, elementsInfo.optJSONObject(i), this, this);
                 children.add(element);
                 viewGroup.addView(element.loadView());
                 List<ObjectAnimator> eAnimations = element.getAllAnimations();
@@ -402,7 +402,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
             if (elementsInfo != null) {
                 CGSize scaleDummy = new CGSize(0.1f, 0.1f);
                 for (int i = 0; i < elementsInfo.length(); i++) {
-                    SwipeElement element = new SwipeElement(getContext(), dimension, elementsInfo.optJSONObject(i), scaleDummy, this, this);
+                    SwipeElement element = new SwipeElement(getContext(), dimension, scaleDummy, elementsInfo.optJSONObject(i), this, this);
                     resourceURLs.addAll(element.getResourceURLs());
                 }
             }

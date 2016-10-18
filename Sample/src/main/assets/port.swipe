@@ -1,7 +1,7 @@
 {
     "bc":"lightGray",
     "_paging":"leftToRight",
-    "dimension":[1000, 1000],
+    "dimension":[200, 1000],
     "pages": [
         {
             "duration":2,

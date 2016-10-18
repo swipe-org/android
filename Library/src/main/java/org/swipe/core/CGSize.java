@@ -5,8 +5,8 @@ package org.swipe.core;
  */
 
 public class CGSize {
-    float width = 0;
-    float height = 0;
+    public float width = 0;
+    public float height = 0;
 
     public CGSize(float w, float h) {
         width = w;

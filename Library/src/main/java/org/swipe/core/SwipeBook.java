@@ -12,6 +12,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 
 import org.json.JSONArray;
@@ -41,17 +42,17 @@ public class SwipeBook implements SwipePage.Delegate {
     protected Context context = null;
     private String paging = "vertical";
     private boolean viewstate = true;
+    private boolean horizontal = false;
     private boolean fAdvancing = true;
-    private float scrWidth = 0;
-    private float scrHeight = 0;
-    private int width = 0;
-    private int height = 0;
+    public int viewWidthDIP = 0;
+    public int viewHeightDIP = 0;
+    public CGSize dimension = new CGSize(320, 568);
     private String orientation = "portrait";
+    public float scale = 1;
     private int pageIndex = 0;
 
     public View getView() { return scrollView; }
     public boolean viewstate() { return viewstate; }
-    public boolean horizontal() { return paging.equals("leftToRight"); }
     public String orientation() { return orientation; }
 
     private SwipePage currentPage() { return pages.get(pageIndex); }
@@ -71,28 +72,47 @@ public class SwipeBook implements SwipePage.Delegate {
     private GestureDetector gestureDetector = null;
     private boolean didOverScroll = false;
 
-    public SwipeBook(Context _context, float _scrWidth, float _scrHeight, JSONObject document, URL url, SwipeBook.Delegate _delegate) {
+    public SwipeBook(Context _context, float scrWidth, float scrHeight, JSONObject document, URL url, SwipeBook.Delegate _delegate) {
         context = _context;
-        scrWidth = _scrWidth;
-        scrHeight = _scrHeight;
-        // Convert DIP to PX
         DisplayMetrics dm = getContext().getResources().getDisplayMetrics();
-        width = (int)(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, scrWidth, dm));
-        height = (int)(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, scrHeight, dm));
+
+
         bookInfo = document;
         baseURL = url;
         delegate = _delegate;
         viewstate =  bookInfo.optBoolean("viewstate", true);
         paging = bookInfo.optString("paging", paging);
+        horizontal = paging.equals("leftToRight");
         orientation = bookInfo.optString("orientation", orientation);
 
-        JSONArray pageInfos = bookInfo.optJSONArray("pages");
-        if (pageInfos != null) {
-            for (int i = 0; i < pageInfos.length(); i++) {
-                SwipePage page = new SwipePage(getContext(), new CGSize(scrWidth, scrHeight), i, pageInfos.optJSONObject(i), this);
-                pages.add(page);
+        JSONArray dimensionA = bookInfo.optJSONArray("dimension");
+        if (dimensionA != null && dimensionA.length() == 2) {
+            int dim0 = dimensionA.optInt(0);
+            int dim1 = dimensionA.optInt(1);
+            if (dim0 == 0) {
+                dimension = new CGSize(dim1 / scrHeight * scrWidth, dim1);
+            } else if (dim1 == 0) {
+                dimension = new CGSize(dim0, dim0 / scrWidth * scrHeight);
+            } else {
+                dimension = new CGSize(dim0, dim1);
             }
         }
+
+        if (dimension.height > dimension.width) {
+            scale = scrHeight / dimension.height;
+        } else {
+            scale = scrWidth / dimension.width;
+        }
+
+        final float ratioView = scrHeight / scrWidth;
+        final float ratioBook = dimension.height / dimension.width;
+        if (ratioBook > ratioView) {
+            scrWidth = scrHeight / ratioBook;
+        } else {
+            scrHeight = scrWidth * ratioBook;
+        }
+        viewWidthDIP = (int)(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, scrWidth, dm));
+        viewHeightDIP = (int)(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, scrHeight, dm));
     }
 
     public List<URL> getResourceURLs() {
@@ -111,9 +131,17 @@ public class SwipeBook implements SwipePage.Delegate {
     }
 
     public ViewGroup loadView() {
+        JSONArray pageInfos = bookInfo.optJSONArray("pages");
+        if (pageInfos != null) {
+            for (int i = 0; i < pageInfos.length(); i++) {
+                SwipePage page = new SwipePage(getContext(), dimension, new CGSize(scale, scale), i, pageInfos.optJSONObject(i), this);
+                pages.add(page);
+            }
+        }
+
         LinearLayout ll = new LinearLayout(getContext());
 
-        if (horizontal()) {
+        if (horizontal) {
             ll.setOrientation(LinearLayout.HORIZONTAL);
             SwipeHorizontalScrollView sv = new SwipeHorizontalScrollView(getContext());
             scrollView = sv;
@@ -144,11 +172,11 @@ public class SwipeBook implements SwipePage.Delegate {
                 int pgSize;
                 int distance;
 
-                if (horizontal()) {
-                    pgSize = width;
+                if (horizontal) {
+                    pgSize = viewWidthDIP;
                     distance = (int)Math.abs(e1.getX() - e2.getX());
                 } else {
-                    pgSize = height;
+                    pgSize = viewHeightDIP;
                     distance = (int)Math.abs(e1.getY() - e2.getY());
                 }
 
@@ -181,12 +209,12 @@ public class SwipeBook implements SwipePage.Delegate {
                         int distance;
                         int pgSize;
 
-                        if (horizontal()) {
+                        if (horizontal) {
                             distance = (int) (downEvent.getX() - event.getX());
-                            pgSize = width;
+                            pgSize = viewWidthDIP;
                         } else {
                             distance = (int) (downEvent.getY() - event.getY());
-                            pgSize = height;
+                            pgSize = viewHeightDIP;
                         }
 
                         int offset = (int) (curPage * pgSize);  // stay on this page by default unless distance dragged is > 50% of page
@@ -221,7 +249,7 @@ public class SwipeBook implements SwipePage.Delegate {
 
                         offset += pgOffset * pgSize;
 
-                        if (horizontal()) {
+                        if (horizontal) {
                             SwipeHorizontalScrollView sv = (SwipeHorizontalScrollView) scrollView;
                             sv.smoothScrollTo(offset, 0);
                         } else {
@@ -253,7 +281,7 @@ public class SwipeBook implements SwipePage.Delegate {
         });
 
         for (SwipePage page : pages) {
-            ll.addView(page.loadView(), new ViewGroup.LayoutParams(width, height));
+            ll.addView(page.loadView(), new LinearLayout.LayoutParams(viewWidthDIP, viewHeightDIP));
         }
 
         scrollView.addView(ll, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));

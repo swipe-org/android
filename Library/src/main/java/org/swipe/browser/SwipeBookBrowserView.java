@@ -1,17 +1,24 @@
 package org.swipe.browser;
 
 import android.app.Activity;
+import android.graphics.RectF;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
+import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.RelativeLayout;
 
 import org.json.JSONObject;
+import org.swipe.core.CGSize;
 import org.swipe.core.SwipeBook;
 import org.swipe.network.SwipePrefetcher;
 
 import java.net.URL;
 import java.util.List;
+
+import static android.widget.RelativeLayout.CENTER_IN_PARENT;
 
 /**
  * Created by pete on 9/12/16.
@@ -74,8 +81,12 @@ public class SwipeBookBrowserView extends SwipeBrowserView implements SwipeBook.
 
     @Override
     public void didComplete(SwipePrefetcher prefetcher) {
-        ;
-        addView(book.loadView(), new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        RelativeLayout rl = new RelativeLayout(getContext());
+        RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(book.viewWidthDIP, book.viewHeightDIP);
+        lp.addRule(CENTER_IN_PARENT, 1);
+        rl.setBackgroundColor(0xffc0c0c0);
+        rl.addView(book.loadView(), lp);
+        addView(rl, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     }
 
     @Override

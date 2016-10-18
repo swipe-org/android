@@ -285,12 +285,8 @@ public class SwipeBrowserActivity extends Activity implements SwipeBrowserView.D
         viewer.setDelegate(this);
         viewer.loadDocument(document, baseURL);
 
-
-
         LinearLayout ll = (LinearLayout) findViewById(R.id.main_activity_fragment_container);
-        ll.addView(viewer, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.MATCH_PARENT));
+        ll.addView(viewer, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
     }
 
     private void displayError(final String msg) {
