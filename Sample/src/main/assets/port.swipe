@@ -1,5 +1,6 @@
 {
     "bc":"lightGray",
+    "_paging":"leftToRight",
     "dimension":[1000, 1000],
     "pages": [
         {

@@ -37,7 +37,7 @@ public class SwipeBook implements SwipePage.Delegate {
     private URL baseURL = null;
     private List<URL> resourceURLs = null;
     protected List<SwipePage> pages = new ArrayList<>();
-    private SwipeScrollView scrollView = null;
+    private ViewGroup scrollView = null;
     protected Context context = null;
     private String paging = "vertical";
     private boolean viewstate = true;
@@ -114,16 +114,49 @@ public class SwipeBook implements SwipePage.Delegate {
         LinearLayout ll = new LinearLayout(getContext());
 
         if (horizontal()) {
-            // TODO: impelment "horizontal"
-            Log.e(TAG, "horizontal not implemented");
             ll.setOrientation(LinearLayout.HORIZONTAL);
-            scrollView = new SwipeScrollView(getContext());
+            SwipeHorizontalScrollView sv = new SwipeHorizontalScrollView(getContext());
+            scrollView = sv;
+
+            sv.setOverScrollListener(new SwipeHorizontalScrollView.OnOverScrollListener() {
+                @Override
+                public void onOverScrolled(int delta) {
+                    didOverScroll = true;
+                }
+            });
         } else {
             ll.setOrientation(LinearLayout.VERTICAL);
-            scrollView = new SwipeScrollView(getContext());
+            SwipeScrollView sv = new SwipeScrollView(getContext());
+            scrollView = sv;
+
+            sv.setOverScrollListener(new SwipeScrollView.OnOverScrollListener() {
+                @Override
+                public void onOverScrolled(int delta) {
+                    didOverScroll = true;
+                }
+            });
         }
 
-        scrollView.setOnTouchListener( new View.OnTouchListener() {
+        gestureDetector = new GestureDetector(getContext(), new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                // Determine if we consider this a 'fling'
+                int pgSize;
+                int distance;
+
+                if (horizontal()) {
+                    pgSize = width;
+                    distance = (int)Math.abs(e1.getX() - e2.getX());
+                } else {
+                    pgSize = height;
+                    distance = (int)Math.abs(e1.getY() - e2.getY());
+                }
+
+                return (Math.abs(velocityY) > 500 && distance > 50);
+            }
+        });
+
+        scrollView.setOnTouchListener(new View.OnTouchListener() {
 
             MotionEvent downEvent = null;
             int prevPosition = -1;
@@ -145,14 +178,24 @@ public class SwipeBook implements SwipePage.Delegate {
                         Log.d(TAG, "onTouch ACTION_UP");
 
                         final int curPage = currentPageIndex();
-                        final int distance = (int) (downEvent.getY() - event.getY());
-                        int offset = (int) (curPage * height);  // stay on this page by default unless distance dragged is > 50% of page
+                        int distance;
+                        int pgSize;
+
+                        if (horizontal()) {
+                            distance = (int) (downEvent.getX() - event.getX());
+                            pgSize = width;
+                        } else {
+                            distance = (int) (downEvent.getY() - event.getY());
+                            pgSize = height;
+                        }
+
+                        int offset = (int) (curPage * pgSize);  // stay on this page by default unless distance dragged is > 50% of page
                         int pgOffset = 0;
 
-                        if (distance > 0 && (distance >= (height / 2) || didFling) && curPage < pages.size() - 1) {
+                        if (distance > 0 && (distance >= (pgSize / 2) || didFling) && curPage < pages.size() - 1) {
                             // Scroll to next page
                             pgOffset = 1;
-                        } else if (distance < 0 && (Math.abs(distance) >= (height / 2) || didFling) && curPage > 0) {
+                        } else if (distance < 0 && (Math.abs(distance) >= (pgSize / 2) || didFling) && curPage > 0) {
                             // Scroll to prev page
                             pgOffset = -1;
                         }
@@ -167,17 +210,25 @@ public class SwipeBook implements SwipePage.Delegate {
                                 final SwipePage page = pages.get(position);
                                 fAdvancing = position > prevPosition;
                                 page.willEnter(fAdvancing);
-                            } else if (position == 0 && didOverScroll && distance < 0 && Math.abs(distance) >= (height / 8)) {
+                            } else if (position == 0 && didOverScroll && distance < 0 && Math.abs(distance) >= (pgSize / 8)) {
                                 final SwipePage page = pages.get(position);
-                                MyLog(TAG, "overscrolling detected", 1);
+                                MyLog(TAG, "overscrolling detected", 2);
                                 page.willLeave(false);
                                 page.willEnter(true);
                                 page.didEnter(true);
                             }
                         }
 
-                        offset += pgOffset * height;
-                        scrollView.smoothScrollTo(0, offset);
+                        offset += pgOffset * pgSize;
+
+                        if (horizontal()) {
+                            SwipeHorizontalScrollView sv = (SwipeHorizontalScrollView) scrollView;
+                            sv.smoothScrollTo(offset, 0);
+                        } else {
+                            SwipeScrollView sv = (SwipeScrollView) scrollView;
+                            sv.smoothScrollTo(0, offset);
+                        }
+
                         // Delay update of position until after scrolling is finished.
                         // TODO:  Need a way to detect that scrolling is finished
                         scrollView.postDelayed(new Runnable() {
@@ -198,22 +249,6 @@ public class SwipeBook implements SwipePage.Delegate {
                 }
 
                 return false;
-            }
-        });
-
-        gestureDetector = new GestureDetector(getContext(), new GestureDetector.SimpleOnGestureListener() {
-            @Override
-            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-                // Determine if we consider this a 'fling'
-                return (Math.abs(velocityY) > 500 && Math.abs(e1.getY() - e2.getY()) > height / 8);
-            }
-        });
-
-        scrollView.setOverScrollListener(new SwipeScrollView.OnOverScrollListener()
-        {
-            @Override
-            public void onOverScrolled(int delta) {
-                didOverScroll = true;
             }
         });
 
