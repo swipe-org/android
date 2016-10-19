@@ -11,6 +11,7 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
@@ -21,6 +22,7 @@ import org.json.JSONObject;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ServiceConfigurationError;
 
 /**
  * Created by pete on 10/5/16.
@@ -74,9 +76,6 @@ public class SwipeBook implements SwipePage.Delegate {
 
     public SwipeBook(Context _context, float scrWidth, float scrHeight, JSONObject document, URL url, SwipeBook.Delegate _delegate) {
         context = _context;
-        DisplayMetrics dm = getContext().getResources().getDisplayMetrics();
-
-
         bookInfo = document;
         baseURL = url;
         delegate = _delegate;
@@ -111,6 +110,7 @@ public class SwipeBook implements SwipePage.Delegate {
         } else {
             scrHeight = scrWidth * ratioBook;
         }
+        DisplayMetrics dm = getContext().getResources().getDisplayMetrics();
         viewWidthDIP = (int)(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, scrWidth, dm));
         viewHeightDIP = (int)(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, scrHeight, dm));
     }
@@ -130,6 +130,129 @@ public class SwipeBook implements SwipePage.Delegate {
         return resourceURLs;
     }
 
+    private float scrollOffset() {
+        if (horizontal) {
+            return ((HorizontalScrollView)scrollView).getScrollX();
+        } else {
+            return ((ScrollView)scrollView).getScrollY();
+        }
+    }
+    private float scrollPos() {
+        if (horizontal) {
+            HorizontalScrollView sv = (HorizontalScrollView)scrollView;
+            return pagePosition(sv.getScrollX(), sv.getScrollY());
+        } else {
+            ScrollView sv = (ScrollView)scrollView;
+            return pagePosition(sv.getScrollX(), sv.getScrollY());
+        }
+    }
+
+    private int scrollIndex() {
+        return (int)(scrollPos() + 0.5);
+    }
+
+    private float pagePosition(float offsetX, float offsetY) {
+        int svW = scrollView.getMeasuredWidth();
+        int svH = scrollView.getMeasuredHeight();
+        return horizontal ? offsetX / svW : offsetY / svH;
+    }
+
+    private void onMove() {
+        final float pos = scrollPos(); // int part is page number, fraction is offset into page (0.0 - 0.999)
+        final int index = (int)pos;
+        if (index >= 0) {
+            final SwipePage pagePrev = pages.get(index);
+            if (pagePrev.fixed) {
+                if (horizontal) {
+                    pagePrev.getView().setX(scrollOffset());
+                } else {
+                    pagePrev.getView().setY(scrollOffset());
+                }
+            }
+        }
+        if (index + 1 <pages.size()) {
+            final SwipePage pageNext = pages.get(index + 1);
+            final float offset = pos - index; // offset into page (0.0 - 0.999)
+            pageNext.setTimeOffsetWhileDragging(offset);
+            if (pageNext.fixed) {
+                final View viewNext = pageNext.getView();
+                if (offset > 0.0 && pageNext.replace) {
+                    viewNext.setAlpha(1);
+                }else{
+                    viewNext.setAlpha(offset);
+                }
+                if (horizontal) {
+                    viewNext.setX(scrollOffset());
+                } else {
+                    viewNext.setY(scrollOffset());
+                }
+            }
+        }
+        if (index + 2 < pages.size()) {
+            final SwipePage pageNext2 = pages.get(index + 2);
+            if (pageNext2.fixed) {
+                pageNext2.getView().setAlpha(0);
+            }
+        }
+    }
+
+    private void endMove(final int index) {
+        for (int i = index - 1; i < index + 2; i++) {
+            if (i >= 0 && i < pages.size()) {
+                final SwipePage page = pages.get(i);
+                if (page.fixed) {
+                    final View view = page.getView();
+                    view.setAlpha(1);
+                    if (horizontal) {
+                        view.setX(i * viewWidthDIP);
+                    } else {
+                        view.setY(i * viewHeightDIP);
+                    }
+                }
+            }
+        }
+    }
+
+    final int ANI_FRAME_MSEC = 30; // 30fps
+    final int ANI_MSEC = 200;
+    final int ANI_FRAMES = ANI_MSEC / ANI_FRAME_MSEC;
+
+    private void smoothScrollTo(final int position, final int toOffset) {
+        scrollView.postDelayed(new Runnable() {
+
+            @Override
+            public void run() {
+                boolean finished = false;
+
+                if (horizontal) {
+                    SwipeHorizontalScrollView sv = (SwipeHorizontalScrollView) scrollView;
+                    final int deltaOffset = (toOffset - sv.getScrollX()) / ANI_FRAMES;
+                    if (Math.abs(deltaOffset) == 0) {
+                        finished = true;
+                    } else {
+                        sv.scrollBy(deltaOffset, 0);
+                        onMove();
+                    }
+                } else {
+                    SwipeScrollView sv = (SwipeScrollView) scrollView;
+                    final int deltaOffset = (toOffset - sv.getScrollY()) / ANI_FRAMES;
+                    if (Math.abs(deltaOffset) == 0) {
+                        finished = true;
+                    } else {
+                        sv.scrollBy(0, deltaOffset);
+                        onMove();
+                    }
+                }
+
+                if (!finished) {
+                    smoothScrollTo(position, toOffset);
+                }else{
+                    endMove(position);
+                    adjustIndex(position);
+                }
+            }
+        }, ANI_FRAME_MSEC);
+    }
     public ViewGroup loadView() {
         JSONArray pageInfos = bookInfo.optJSONArray("pages");
         if (pageInfos != null) {
@@ -139,13 +262,9 @@ public class SwipeBook implements SwipePage.Delegate {
             }
         }
 
-        LinearLayout ll = new LinearLayout(getContext());
-
-        if (horizontal) {
-            ll.setOrientation(LinearLayout.HORIZONTAL);
+         if (horizontal) {
             SwipeHorizontalScrollView sv = new SwipeHorizontalScrollView(getContext());
             scrollView = sv;
-
             sv.setOverScrollListener(new SwipeHorizontalScrollView.OnOverScrollListener() {
                 @Override
                 public void onOverScrolled(int delta) {
@@ -153,7 +272,6 @@ public class SwipeBook implements SwipePage.Delegate {
                 }
             });
         } else {
-            ll.setOrientation(LinearLayout.VERTICAL);
             SwipeScrollView sv = new SwipeScrollView(getContext());
             scrollView = sv;
 
@@ -199,9 +317,11 @@ public class SwipeBook implements SwipePage.Delegate {
                         didOverScroll = false;
                         downEvent = MotionEvent.obtain(event);
                         break;
-                    case MotionEvent.ACTION_MOVE:
-                        Log.d(TAG, "onTouch ACTION_MOVE");
+                    case MotionEvent.ACTION_MOVE: {
+                        //Log.d(TAG, "onTouch ACTION_MOVE");
+                        onMove();
                         break;
+                    }
                     case MotionEvent.ACTION_UP: {
                         Log.d(TAG, "onTouch ACTION_UP");
 
@@ -248,23 +368,7 @@ public class SwipeBook implements SwipePage.Delegate {
                         }
 
                         offset += pgOffset * pgSize;
-
-                        if (horizontal) {
-                            SwipeHorizontalScrollView sv = (SwipeHorizontalScrollView) scrollView;
-                            sv.smoothScrollTo(offset, 0);
-                        } else {
-                            SwipeScrollView sv = (SwipeScrollView) scrollView;
-                            sv.smoothScrollTo(0, offset);
-                        }
-
-                        // Delay update of position until after scrolling is finished.
-                        // TODO:  Need a way to detect that scrolling is finished
-                        scrollView.postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                adjustIndex(position);
-                            }
-                        }, 200);
+                        smoothScrollTo(position, offset);
                         prevPosition = position;
                         return true;
                     }
@@ -280,11 +384,37 @@ public class SwipeBook implements SwipePage.Delegate {
             }
         });
 
+        ViewGroup layout = new ViewGroup(getContext()) {
+            @Override
+            protected void onLayout(boolean changed, int l, int t, int r, int b) {
+                for (int c = 0; c < this.getChildCount(); c++) {
+                    View v = this.getChildAt(c);
+                    ViewGroup.LayoutParams lp = v.getLayoutParams();
+                    v.layout(0, 0, lp.width, lp.height);
+                }
+            }
+
+            @Override
+            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                if (horizontal) {
+                    setMeasuredDimension(pages.size() * viewWidthDIP, viewHeightDIP);
+                } else {
+                    setMeasuredDimension(viewWidthDIP, pages.size() * viewHeightDIP);
+                }
+            }
+        };
+
         for (SwipePage page : pages) {
-            ll.addView(page.loadView(), new LinearLayout.LayoutParams(viewWidthDIP, viewHeightDIP));
+            ViewGroup pgView = page.loadView();
+            if (horizontal) {
+                pgView.setX(page.getIndex() * viewWidthDIP);
+            } else {
+                pgView.setY(page.getIndex() * viewHeightDIP);
+            }
+            layout.addView(pgView, new LinearLayout.LayoutParams(viewWidthDIP, viewHeightDIP));
         }
 
-        scrollView.addView(ll, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        scrollView.addView(layout, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         scrollView.setBackgroundColor(Color.parseColor(bookInfo.optString("bc", "black")));
 
         adjustIndex(pageIndex, true);

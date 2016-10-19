@@ -114,6 +114,8 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     private boolean autoplay = false;
     private boolean always = false;
     private boolean scroll = false;
+    boolean fixed = false;
+    boolean replace = false;
     private boolean fSeeking = false;
     private boolean fEntered = false;
     private boolean fPausing = false;
@@ -136,6 +138,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         super.info = SwipeParser.inheritProperties(_info, pageTemplate != null ? pageTemplate.pageTemplateInfo : null);
     }
 
+    int getIndex() { return index; }
     @Override
     ViewGroup loadView() {
         super.loadView();
@@ -153,7 +156,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
             animation = info.optString("play", animation);
         }
 
-        transition = info.optString("transition", transition);
+        transition = info.optString("transition", null);
         if (transition == null) {
             transition = (animation.equals("scroll")) ? "replace" : "scroll"; // default
         }
@@ -161,6 +164,8 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         autoplay = animation.equals("auto") || animation.equals("always");
         always = animation.equals("always");
         scroll = animation.equals("scroll");
+        fixed = !transition.equals("scroll");
+        replace = transition.equals("replace");
 
         List<Animator> animations = new ArrayList<>();
 
@@ -184,6 +189,16 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         return viewGroup;
     }
 
+    void setTimeOffsetWhileDragging(float offset) {
+        if (scroll) {
+            fEntered = false; // stops the element animation
+            for (SwipeNode c : children) {
+                if (c instanceof SwipeElement) {
+                    ((SwipeElement) c).setTimeOffsetTo(offset);
+                }
+            }
+        }
+    }
     void willLeave(boolean fAdvancing) {
         MyLog(TAG, "willLeave " + (index) + " " + fAdvancing, 2);
         /* TODO
@@ -350,8 +365,6 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
 
             }
         }, 1000 / fps);
-
-
     }
 
     private void didStartPlayingInternal() {
