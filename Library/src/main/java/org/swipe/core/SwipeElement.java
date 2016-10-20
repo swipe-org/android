@@ -665,11 +665,10 @@ public class SwipeElement extends SwipeView {
             }
             */
 
-            String bcString = to.optString("bc", null);
-            if (bcString != null) {
+            if (to.has("bc")) {
                 ColorDrawable viewColor = (ColorDrawable) viewGroup.getBackground();
                 int color = viewColor.getColor();
-                ObjectAnimator ani = ObjectAnimator.ofObject(viewGroup, "backgroundColor", new ArgbEvaluator(), color, Color.parseColor(bcString));
+                ObjectAnimator ani = ObjectAnimator.ofObject(viewGroup, "backgroundColor", new ArgbEvaluator(), color, SwipeParser.parseColor(to, "bc", Color.TRANSPARENT));
                 //ani.fillMode = kCAFillModeBoth
                 ani.setStartDelay((int)(start * delegate.durationSec() * 1000));
                 ani.setDuration((int)(duration * delegate.durationSec() * 1000));

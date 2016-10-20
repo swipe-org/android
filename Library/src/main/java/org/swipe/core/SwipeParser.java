@@ -1,5 +1,6 @@
 package org.swipe.core;
 
+import android.graphics.Color;
 import android.util.Log;
 
 import org.json.JSONArray;
@@ -9,6 +10,7 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -16,12 +18,26 @@ import java.util.regex.Pattern;
  */
 
 public class SwipeParser {
+    private final static String TAG = "SwParser";
+    private static final String regexColor = "^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3}|[A-Fa-f0-9]{8}|[A-Fa-f0-9]{4})$";
+    private static final Pattern patternColor = Pattern.compile(regexColor);
+
     static {
         // Self test
-        assert SwipeParser.parsePercent("10", 100, -1) == -1;
-        assert SwipeParser.parsePercent("10%", 100, -1) == 10.0;
-        assert SwipeParser.parsePercent("100%", 100, -1) == 100.0;
-        assert SwipeParser.parsePercent("1.5%", 100, -1) == 1.5;
+        if (SwipeParser.parsePercent("10", 100, -1) != -1) throw new AssertionError();
+        if (SwipeParser.parsePercent("10%", 100, -1) != 10.0) throw new AssertionError();
+        if (SwipeParser.parsePercent("100%", 100, -1) != 100.0) throw new AssertionError();
+        if (SwipeParser.parsePercent("1.5%", 100, -1) != 1.5) throw new AssertionError();
+
+        try {
+            if (SwipeParser.parseColor(new JSONObject("{ }"), "bc", 0x01020304) != 0x01020304) throw new AssertionError();
+            if (SwipeParser.parseColor(new JSONObject("{ \"bc\":\"#1234\" }"), "bc", 0) != 0x04010203) throw new AssertionError();
+            if (SwipeParser.parseColor(new JSONObject("{ \"bc\":\"#01020304\" }"), "bc", 0) != 0x04010203) throw new AssertionError();
+            if (SwipeParser.parseColor(new JSONObject("{ \"bc\":\"#123\" }"), "bc", 0) != 0xff010203) throw new AssertionError();
+            if (SwipeParser.parseColor(new JSONObject("{ \"bc\":\"#010203\" }"), "bc", 0) != 0xff010203) throw new AssertionError();
+        } catch (JSONException e) {
+            assert e != null;
+        }
     }
 
     public static float parsePercent(String value, float full, float defaultValue)  {
@@ -33,6 +49,98 @@ public class SwipeParser {
         }
     }
 
+
+    static int parseColor(JSONObject info, String valKey, int defaultColor) {
+        if (info == null) {
+            return defaultColor;
+        }
+
+        JSONObject rgba = info.optJSONObject(valKey);
+        if (rgba != null) {
+            double red = rgba.optDouble("r", 0);
+            double green = rgba.optDouble("g", 0);
+            double blue = rgba.optDouble("b", 0);
+            double alpha = rgba.optDouble("a", 1);
+            int c = Color.argb((int)(alpha * 255), (int)(red * 255), (int)(green * 255), (int)(blue * 255));
+            Log.d(TAG, String.format("parseColor rgba %s = 0x%08x", rgba.toString(), c));
+            return c;
+        } else {
+            String value = info.optString(valKey);
+            if (value.isEmpty()) {
+                return defaultColor;
+            }
+            
+            switch (value) {
+                case "red":
+                    return Color.RED;
+                case "black":
+                    return Color.BLACK;
+                case "blue":
+                    return Color.BLUE;
+                case "white":
+                    return Color.WHITE;
+                case "green":
+                    return Color.GREEN;
+                case "yellow":
+                    return Color.YELLOW;
+                case "purple":
+                    return Color.argb(0xFF, 0x80, 0x00, 0x80);
+                case "gray":
+                    return Color.GRAY;
+                case "darkGray":
+                    return Color.DKGRAY;
+                case "lightGray":
+                    return Color.LTGRAY;
+                case "brown":
+                    return Color.argb(0xFF, 0xA5, 0x2A, 0x2A);
+                case "orange":
+                    return Color.argb(0xFF, 0xFF, 0xA5, 0x00);
+                case "cyan":
+                    return Color.CYAN;
+                case "magenta":
+                    return Color.MAGENTA;
+                default:
+                    if (patternColor.matcher(value).matches()) {
+                        final long v = Long.decode(value);
+                        Log.d(TAG, String.format("parseColor(%s) -> 0x%08x)", value, v));
+                        long r = 0;
+                        long g = 0;
+                        long b = 0;
+                        long a = 255;
+                        switch (value.length() - 1) {
+                            case 3:
+                                r = v >> 8 & 0x00f;
+                                g = v >> 4 & 0x00f;
+                                b = v & 0x00f;
+                                break;
+                            case 4:
+                                r = v >> 12 & 0x000f;
+                                g = v >> 8 & 0x000f;
+                                b = v >> 4 & 0x000f;;
+                                a = v & 0x000f;
+                                break;
+                            case 6:
+                                r = v >> 16 & 0x0000ff;
+                                g = v >> 8 & 0x0000ff;
+                                b = v & 0x0000ff;
+                                break;
+                            case 8:
+                                r = v >> 24 & 0x0000ff;
+                                g = v >> 16 & 0x0000ff;
+                                b = v >> 8 & 0x0000ff;
+                                a = v & 0x0000ff;
+                                break;
+                            default:
+                                break;
+                        }
+                        int c = Color.argb((int)a, (int)r, (int)g, (int)b);
+                        Log.d(TAG, String.format("parseColor(%s) a:%02x r:%02x g:%02x b:%02x 0x%08x", value, a, r, g, b, c));
+                        return c;
+                    }
+                    return Color.RED;
+            }
+        }
+    }
 
     //
     // This function performs the "deep inheritance"

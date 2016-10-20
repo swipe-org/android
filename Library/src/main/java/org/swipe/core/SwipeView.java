@@ -58,8 +58,7 @@ public class SwipeView extends SwipeNode {
             }
         };
 
-        String bcString = info.optString("bc", "black");
-        int bc = Color.parseColor(bcString);
+        int bc = SwipeParser.parseColor(info, "bc", Color.TRANSPARENT);
         viewGroup.setBackgroundColor(bc);
         return viewGroup;
     }

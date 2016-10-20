@@ -213,11 +213,11 @@ public class SwipeBook implements SwipePage.Delegate {
         }
     }
 
-    final int ANI_FRAME_MSEC = 30; // 30fps
-    final int ANI_MSEC = 200;
-    final int ANI_FRAMES = ANI_MSEC / ANI_FRAME_MSEC;
-
     private void smoothScrollTo(final int position, final int toOffset) {
+        final int ANI_FRAME_MSEC = 30; // 30fps
+        final int ANI_MSEC = 200;
+        final int ANI_FRAMES = ANI_MSEC / ANI_FRAME_MSEC;
+
         scrollView.postDelayed(new Runnable() {
 
             @Override
@@ -415,7 +415,7 @@ public class SwipeBook implements SwipePage.Delegate {
         }
 
         scrollView.addView(layout, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        scrollView.setBackgroundColor(Color.parseColor(bookInfo.optString("bc", "black")));
+        scrollView.setBackgroundColor(SwipeParser.parseColor(bookInfo, "bc", Color.BLACK));
 
         adjustIndex(pageIndex, true);
 
