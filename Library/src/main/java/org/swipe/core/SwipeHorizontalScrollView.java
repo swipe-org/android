@@ -26,17 +26,12 @@ public class SwipeHorizontalScrollView extends HorizontalScrollView {
     private static final String TAG = "SwHScrollView";
 
     @Override
-    public boolean onInterceptTouchEvent (MotionEvent ev) {
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
         return super.onInterceptTouchEvent(ev);
     }
 
     @Override
-    public boolean onTouchEvent (MotionEvent ev) {
-        return super.onTouchEvent(ev);
-    }
-
-    @Override
-    protected void onOverScrolled (int scrollX, int scrollY, boolean clampedX, boolean clampedY) {
+    protected void onOverScrolled(int scrollX, int scrollY, boolean clampedX, boolean clampedY) {
         if (clampedX || clampedY) {
             if (overScrollListener != null) {
                 overScrollListener.onOverScrolled(0);
@@ -44,5 +39,20 @@ public class SwipeHorizontalScrollView extends HorizontalScrollView {
         }
 
         super.onOverScrolled(scrollX, scrollY, clampedX, clampedY);
+    }
+
+    private boolean touchable = true;
+
+    void setTouchable(boolean val) {
+        touchable = val;
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (touchable) {
+            return super.onTouchEvent(event);
+        } else {
+            return false;
+        }
     }
 }

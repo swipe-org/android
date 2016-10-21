@@ -1,6 +1,9 @@
 package org.swipe.core;
 
 import android.graphics.Color;
+import android.graphics.Matrix;
+import android.graphics.Path;
+import android.graphics.RectF;
 import android.util.Log;
 
 import org.json.JSONArray;
@@ -18,9 +21,9 @@ import java.util.regex.Pattern;
  */
 
 public class SwipeParser {
-    private final static String TAG = "SwParser";
-    private static final String regexColor = "^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3}|[A-Fa-f0-9]{8}|[A-Fa-f0-9]{4})$";
-    private static final Pattern patternColor = Pattern.compile(regexColor);
+    private static final String TAG = "SwParser";
+    private static final Pattern patternPercent = Pattern.compile("^[0-9\\\\.]+%$");
+    private static final Pattern patternColor = Pattern.compile("^#([a-f0-9]{6}|[a-f0-9]{3}|[a-f0-9]{8}|[a-f0-9]{4})$", Pattern.CASE_INSENSITIVE);
 
     static {
         // Self test
@@ -41,7 +44,7 @@ public class SwipeParser {
     }
 
     public static float parsePercent(String value, float full, float defaultValue)  {
-        if (value != null && Pattern.matches("^[0-9\\\\.]+%$", value)) {
+        if (value != null && patternPercent.matcher(value).matches()) {
             Float v = new Float(value.trim().replace("%", ""));
             return v.floatValue() / 100.0f * full;
         } else {
@@ -49,6 +52,18 @@ public class SwipeParser {
         }
     }
 
+    static float parseFloat(JSONObject info, String valKey, float defaultValue) {
+        if (info == null) {
+            return defaultValue;
+        }
+
+        Double val = info.optDouble(valKey);
+        if (val.isNaN()) {
+            return defaultValue;
+        } else {
+            return val.floatValue();
+        }
+    }
 
     static int parseColor(JSONObject info, String valKey, int defaultColor) {
         if (info == null) {
@@ -62,7 +77,7 @@ public class SwipeParser {
             double blue = rgba.optDouble("b", 0);
             double alpha = rgba.optDouble("a", 1);
             int c = Color.argb((int)(alpha * 255), (int)(red * 255), (int)(green * 255), (int)(blue * 255));
-            Log.d(TAG, String.format("parseColor rgba %s = 0x%08x", rgba.toString(), c));
+            //Log.d(TAG, String.format("parseColor rgba %s = 0x%08x", rgba.toString(), c));
             return c;
         } else {
             String value = info.optString(valKey);
@@ -102,7 +117,7 @@ public class SwipeParser {
                 default:
                     if (patternColor.matcher(value).matches()) {
                         final long v = Long.decode(value);
-                        Log.d(TAG, String.format("parseColor(%s) -> 0x%08x)", value, v));
+                        //Log.d(TAG, String.format("parseColor(%s) -> 0x%08x)", value, v));
                         long r = 0;
                         long g = 0;
                         long b = 0;
@@ -134,13 +149,48 @@ public class SwipeParser {
                                 break;
                         }
                         int c = Color.argb((int)a, (int)r, (int)g, (int)b);
-                        Log.d(TAG, String.format("parseColor(%s) a:%02x r:%02x g:%02x b:%02x 0x%08x", value, a, r, g, b, c));
+                        //Log.d(TAG, String.format("parseColor(%s) a:%02x r:%02x g:%02x b:%02x 0x%08x", value, a, r, g, b, c));
                         return c;
                     }
                     return Color.RED;
             }
         }
     }
+
+    public static Path transformedPath(final Path path, final JSONObject info, final String key, final float w, final float h)  {
+        if (info == null) {
+            return null;
+        }
+
+        CGSize scale = null;
+        Double d = info.optDouble(key);
+        if (!d.isNaN()) {
+            float s = d.floatValue();
+            scale = new CGSize(s, s);
+        } else {
+            JSONArray scales = info.optJSONArray(key);
+            if (scales != null &&  scales.length() == 2) {
+                Double d0 = scales.optDouble(0);
+                Double d1 = scales.optDouble(1);
+                if (!d0.isNaN() && !d1.isNaN()) {
+                    scale = new CGSize(d0.floatValue(), d1.floatValue());
+                }
+            }
+        }
+
+        if (scale == null) {
+            return null;
+        }
+
+        Matrix xform = new Matrix();
+        xform.setTranslate(-w / 2, -h / 2);
+        xform.postScale(scale.width, scale.height);
+        xform.postTranslate(w / 2, h / 2);
+        Path xpath = new Path();
+        path.transform(xform, xpath);
+        return xpath;
+    }
+
 
     //
     // This function performs the "deep inheritance"

@@ -3,15 +3,6 @@
 
     <item
         is-multidex="false"
-        jar="/Users/pete/Development/swipe-android/Sample/build/intermediates/exploded-aar/com.android.support.constraint/constraint-layout/1.0.0-alpha1/jars/classes.jar"
-        jumboMode="false"
-        optimize="true"
-        revision="24.0.2"
-        sha1="ea579447f9afb1fbcb28e150e1cd4bfe7f56e75b">
-        <dex dex="/Users/pete/Development/swipe-android/Sample/build/intermediates/pre-dexed/debug/com.android.support.constraint-constraint-layout-1.0.0-alpha1_0efd2f203a78367711ae7013a9660b6a868c4901.jar" />
-    </item>
-    <item
-        is-multidex="false"
         jar="/Users/pete/Development/swipe-android/Sample/build/intermediates/exploded-aar/com.android.support/support-core-utils/24.2.1/jars/classes.jar"
         jumboMode="false"
         optimize="true"
@@ -39,20 +30,11 @@
     </item>
     <item
         is-multidex="false"
-        jar="/Users/pete/Library/Android/sdk/extras/android/m2repository/com/android/support/constraint/constraint-layout-solver/1.0.0-alpha1/constraint-layout-solver-1.0.0-alpha1.jar"
-        jumboMode="false"
-        optimize="true"
-        revision="24.0.2"
-        sha1="78d61c347aa5002119e3c17bffcbebf28fe07b0b">
-        <dex dex="/Users/pete/Development/swipe-android/Sample/build/intermediates/pre-dexed/debug/constraint-layout-solver-1.0.0-alpha1_d024cba9d0d0f1d50f095d0d8ef55f47a534ce20.jar" />
-    </item>
-    <item
-        is-multidex="false"
         jar="/Users/pete/Development/swipe-android/Sample/build/intermediates/exploded-aar/swipe-android/Library/unspecified/jars/classes.jar"
         jumboMode="false"
         optimize="true"
         revision="24.0.2"
-        sha1="dade6a893fba3f87d4dfc3438f82fcd9de5f3b3a">
+        sha1="06277cff7d6132e7297301fd672dce452c1f774d">
         <dex dex="/Users/pete/Development/swipe-android/Sample/build/intermediates/pre-dexed/debug/swipe-android-Library-unspecified_70bbb9fc5cb8f75f79e271f5aeee527b672a2efc.jar" />
     </item>
     <item
@@ -63,6 +45,15 @@
         revision="24.0.2"
         sha1="935a969265b2a166b2d20415423f5f6e90fe16e0">
         <dex dex="/Users/pete/Development/swipe-android/Sample/build/intermediates/pre-dexed/debug/internal_impl-24.2.1_a3220ce16aa7acab72441ffd6d835482af76ec6a.jar" />
+    </item>
+    <item
+        is-multidex="false"
+        jar="/Users/pete/Library/Android/sdk/extras/m2repository/com/android/support/constraint/constraint-layout-solver/1.0.0-beta1/constraint-layout-solver-1.0.0-beta1.jar"
+        jumboMode="false"
+        optimize="true"
+        revision="24.0.2"
+        sha1="ac4965ed6786f8d63f1960a996a6be667064cd28">
+        <dex dex="/Users/pete/Development/swipe-android/Sample/build/intermediates/pre-dexed/debug/constraint-layout-solver-1.0.0-beta1_a76c95d60d37f84b7da8745165fe7e8d97e6588d.jar" />
     </item>
     <item
         is-multidex="false"
@@ -81,6 +72,15 @@
         revision="24.0.2"
         sha1="0ecb4b595fa0f0f8018a149ace3ea6525624f94e">
         <dex dex="/Users/pete/Development/swipe-android/Sample/build/intermediates/pre-dexed/debug/com.android.support-support-compat-24.2.1_b8f014b67f9ac922d1a8d7e55a8712a1ef2e4c53.jar" />
+    </item>
+    <item
+        is-multidex="false"
+        jar="/Users/pete/Development/swipe-android/Sample/build/intermediates/exploded-aar/com.android.support.constraint/constraint-layout/1.0.0-beta1/jars/classes.jar"
+        jumboMode="false"
+        optimize="true"
+        revision="24.0.2"
+        sha1="c4ad8321cff5fa475cb39daf387b3cb581aab17f">
+        <dex dex="/Users/pete/Development/swipe-android/Sample/build/intermediates/pre-dexed/debug/com.android.support.constraint-constraint-layout-1.0.0-beta1_f9b71132f53df082c79d3c39454db259025a173f.jar" />
     </item>
     <item
         is-multidex="false"

@@ -9,6 +9,7 @@ import android.util.TypedValue;
 import android.view.DragEvent;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
+import android.view.TouchDelegate;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.HorizontalScrollView;
@@ -73,6 +74,7 @@ public class SwipeBook implements SwipePage.Delegate {
 
     private GestureDetector gestureDetector = null;
     private boolean didOverScroll = false;
+    private boolean canSmoothScroll = true;
 
     public SwipeBook(Context _context, float scrWidth, float scrHeight, JSONObject document, URL url, SwipeBook.Delegate _delegate) {
         context = _context;
@@ -157,6 +159,16 @@ public class SwipeBook implements SwipePage.Delegate {
         return horizontal ? offsetX / svW : offsetY / svH;
     }
 
+    private void setTouchable(boolean val) {
+        if (horizontal) {
+            SwipeHorizontalScrollView sv = (SwipeHorizontalScrollView)scrollView;
+            sv.setTouchable(val);
+        } else {
+            SwipeScrollView sv = (SwipeScrollView)scrollView;
+            sv.setTouchable(val);
+        }
+    }
+
     private void onMove() {
         final float pos = scrollPos(); // int part is page number, fraction is offset into page (0.0 - 0.999)
         final int index = (int)pos;
@@ -214,9 +226,10 @@ public class SwipeBook implements SwipePage.Delegate {
     }
 
     private void smoothScrollTo(final int position, final int toOffset) {
-        final int ANI_FRAME_MSEC = 30; // 30fps
-        final int ANI_MSEC = 200;
+        final int ANI_FRAME_MSEC = 16; // 60fps
+        final int ANI_MSEC = 100;
         final int ANI_FRAMES = ANI_MSEC / ANI_FRAME_MSEC;
+        canSmoothScroll = true;
 
         scrollView.postDelayed(new Runnable() {
 
@@ -244,7 +257,7 @@ public class SwipeBook implements SwipePage.Delegate {
                     }
                 }
 
-                if (!finished) {
+                if (!finished && canSmoothScroll) {
                     smoothScrollTo(position, toOffset);
                 }else{
                     endMove(position);
@@ -315,6 +328,7 @@ public class SwipeBook implements SwipePage.Delegate {
                     case MotionEvent.ACTION_DOWN:
                         Log.d(TAG, "onTouch ACTION_DOWN");
                         didOverScroll = false;
+                        canSmoothScroll = false;
                         downEvent = MotionEvent.obtain(event);
                         break;
                     case MotionEvent.ACTION_MOVE: {

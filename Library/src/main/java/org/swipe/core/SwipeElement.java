@@ -1,16 +1,21 @@
 package org.swipe.core;
 
-import android.animation.Animator;
 import android.animation.ArgbEvaluator;
 import android.animation.ObjectAnimator;
 import android.content.Context;
+import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Point;
-import android.graphics.PointF;
+import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.RectF;
 import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.ShapeDrawable;
+import android.graphics.drawable.shapes.PathShape;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
+import android.view.View;
 import android.view.ViewGroup;
 
 import org.json.JSONArray;
@@ -19,8 +24,9 @@ import org.swipe.browser.SwipeBrowserActivity;
 
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
+
+import static android.R.attr.defaultValue;
 
 /**
  * Created by pete on 10/5/16.
@@ -52,6 +58,7 @@ public class SwipeElement extends SwipeView {
     private SwipeElement.Delegate delegate = null;
     private List<ObjectAnimator> animations = new ArrayList<>();
     private boolean fRepeat = false;
+    private SwipeShapeDrawable shapeLayer = null;
 
     // Video Element Specific
     private Object videoPlayer = null;
@@ -61,6 +68,7 @@ public class SwipeElement extends SwipeView {
     private Float pendingOffset = null;
     private Float videoStart = 0.0f;
     private Float videoDuration = 1.0f;
+
 
     List<ObjectAnimator> getAllAnimations() {
         List<ObjectAnimator> allAni = new ArrayList<>();
@@ -77,6 +85,31 @@ public class SwipeElement extends SwipeView {
     SwipeElement(Context _context, CGSize _dimension, CGSize _scale, JSONObject _info, SwipeNode parent, SwipeElement.Delegate _delegate) {
         super(_context, _dimension, _scale, _info);
         delegate = _delegate;
+    }
+
+    @Override
+    void createViewGroup() {
+        viewGroup = new ViewGroup(getContext()) {
+
+            @Override
+            protected void onDraw(Canvas canvas) {
+                if (shapeLayer != null) {
+                    shapeLayer.draw(canvas);
+                }
+            }
+
+            @Override
+            protected void onLayout(boolean changed, int l, int t, int r, int b) {
+                //Log.d(TAG, "onLayout");
+                setClipChildren(false);
+                for (int c = 0; c < this.getChildCount(); c++) {
+                    View v = this.getChildAt(c);
+                    ViewGroup.LayoutParams lp = v.getLayoutParams();
+                    //Log.d(TAG, "layout " + c + " w:" + lp.width + " h:" + lp.height);
+                    v.layout(0, 0, lp.width, lp.height);
+                }
+            }
+        };
     }
 
     @Override
@@ -102,9 +135,9 @@ public class SwipeElement extends SwipeView {
             w0 = dimension.width; // we'll adjust it later
             h0 = dimension.height; // we'll adjust it later
         } else {
-            double dvalue = info.optDouble("w");
-            if (!Double.isNaN(dvalue)) {
-                w0 = (float)dvalue;
+            Double dvalue = info.optDouble("w");
+            if (!dvalue.isNaN()) {
+                w0 = dvalue.floatValue();
                 fNaturalW = false;
             } else {
                 String value = info.optString("w", null);
@@ -114,8 +147,8 @@ public class SwipeElement extends SwipeView {
                 }
             }
             dvalue = info.optDouble("h");
-            if (!Double.isNaN(dvalue)) {
-                h0 = (float)dvalue;
+            if (!dvalue.isNaN(dvalue)) {
+                h0 = dvalue.floatValue();
                 fNaturalH = false;
             } else {
                 String value = info.optString("h", null);
@@ -151,49 +184,54 @@ public class SwipeElement extends SwipeView {
                 }
             }
         }
+        */
+        Path path = parsePath(info, w0, h0, scale, dm);
 
-        pathSrc = parsePath(info["path"], w: w0, h: h0, scale:scale)
-        
         // The natural size is determined by the contents (either image or mask)
-        var sizeContents:CGSize?
+        CGSize sizeContents = null;
+
+        /*
         if imageRef != nil {
             sizeContents = CGSizeMake(CGFloat(CGImageGetWidth(imageRef!)),
             CGFloat(CGImageGetHeight(imageRef!)))
         } else if maskSrc != nil {
             sizeContents = CGSizeMake(CGFloat(CGImageGetWidth(maskSrc!)),
             CGFloat(CGImageGetHeight(maskSrc!)))
-        } else  if let path = pathSrc {
-            let rc = CGPathGetPathBoundingBox(path)
-            sizeContents = CGSizeMake(rc.origin.x + rc.width, rc.origin.y + rc.height)
+        } else  */ if (path != null) {
+            RectF rc = new RectF();
+            path.computeBounds(rc, false /* unused */);
+            sizeContents = new CGSize(rc.left + rc.width(), rc.top + rc.height());
+            sizeContents.width /= dm.density;
+            sizeContents.height /= dm.density;
         }
 
-        if let sizeNatural = sizeContents {
-            if fScaleToFill {
-                if w0 / sizeNatural.width * sizeNatural.height > h0 {
-                    h0 = w0 / sizeNatural.width * sizeNatural.height
+        if (sizeContents != null) {
+            if (fScaleToFill) {
+                if (w0 / sizeContents.width * sizeContents.height > h0) {
+                    h0 = w0 / sizeContents.width * sizeContents.height;
                 } else {
-                    w0 = h0 / sizeNatural.height * sizeNatural.width
+                    w0 = h0 / sizeContents.height * sizeContents.width;
                 }
-            } else if fNaturalW {
-                if fNaturalH {
-                    w0 = sizeNatural.width
-                    h0 = sizeNatural.height
+            } else if (fNaturalW) {
+                if (fNaturalH) {
+                    w0 = sizeContents.width;
+                    h0 = sizeContents.height;
                 } else {
-                    w0 = h0 / sizeNatural.height * sizeNatural.width
+                    w0 = h0 / sizeContents.height * sizeContents.width;
                 }
             } else {
-                if fNaturalH {
-                    h0 = w0 / sizeNatural.width * sizeNatural.height
+                if (fNaturalH) {
+                    h0 = w0 / sizeContents.width * sizeContents.height;
                 }
             }
         }
-        */
+
         float w = w0 * scale.width;
         float h = h0 * scale.height;
 
-        double dvalue = info.optDouble("x");
-        if (!Double.isNaN(dvalue)){
-            x = (float)dvalue;
+        Double dvalue = info.optDouble("x");
+        if (!dvalue.isNaN()){
+            x = dvalue.floatValue();
         } else {
             String value = info.optString("x", null);
             if (value != null) {
@@ -214,8 +252,8 @@ public class SwipeElement extends SwipeView {
             }
         }
         dvalue = info.optDouble("y");
-        if (!Double.isNaN(dvalue)){
-            y = (float)dvalue;
+        if (!dvalue.isNaN()){
+            y = dvalue.floatValue();
         } else  {
             String value = info.optString("y");
             if (value != null) {
@@ -242,10 +280,13 @@ public class SwipeElement extends SwipeView {
 
         // TODO let view = InternalView(wrapper: self, frame: frame)
         // Convert DIP to PX
-        DisplayMetrics dm = getContext().getResources().getDisplayMetrics();
-        viewGroup.setX(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, x, dm));
-        viewGroup.setY(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, y, dm));
-        viewGroup.setLayoutParams(new ViewGroup.LayoutParams((int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, w, dm),(int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, h, dm)));
+        final float dipX = px2Dip(x);
+        final float dipY = px2Dip(y);
+        final float dipW = px2Dip(w);
+        final float dipH = px2Dip(h);
+        viewGroup.setX(dipX);
+        viewGroup.setY(dipY);
+        viewGroup.setLayoutParams(new ViewGroup.LayoutParams((int)dipW,(int)dipH));
         /*
         #if os(OSX)
         let layer = view.makeBackingLayer()
@@ -419,26 +460,27 @@ public class SwipeElement extends SwipeView {
             layer.borderWidth = borderWidth * scale.width
             layer.borderColor = SwipeParser.parseColor(info["borderColor"], defaultColor: blackColor)
         }
-
-        if let path = pathSrc {
-            let shapeLayer = CAShapeLayer()
-            shapeLayer.contentsScale = contentScale
-            if let xpath = SwipeParser.transformedPath(path, param: info, size:frame.size) {
-                shapeLayer.path = xpath
+        */
+        if (path != null) {
+            //shapeLayer.contentsScale = contentScale
+            Path xpath = SwipeParser.transformedPath(path, info, "scale", dipW, dipH);
+            if (xpath != null){
+                shapeLayer = new SwipeShapeDrawable(xpath, dipW, dipH);
             } else {
-                shapeLayer.path = path
+                shapeLayer = new SwipeShapeDrawable(path, dipW, dipH);
             }
-            shapeLayer.fillColor = SwipeParser.parseColor(info["fillColor"])
-            shapeLayer.strokeColor = SwipeParser.parseColor(info["strokeColor"], defaultColor: blackColor)
-            shapeLayer.lineWidth = SwipeParser.parseCGFloat(info["lineWidth"]) * self.scale.width
+            shapeLayer.setFillColor(SwipeParser.parseColor(info, "fillColor", Color.TRANSPARENT));
+            shapeLayer.setStrokeColor(SwipeParser.parseColor(info, "strokeColor", Color.BLACK));
+            shapeLayer.setLineWidth(px2Dip(SwipeParser.parseFloat(info, "lineWidth", 1) * scale.width));
 
-            SwipeElement.processShadow(info, scale:scale, layer: shapeLayer)
+            // TODO SwipeElement.processShadow(info, scale:scale, layer: shapeLayer);
 
-            shapeLayer.lineCap = "round"
-            shapeLayer.strokeStart = SwipeParser.parseCGFloat(info["strokeStart"], defaultValue: 0.0)
-            shapeLayer.strokeEnd = SwipeParser.parseCGFloat(info["strokeEnd"], defaultValue: 1.0)
-            layer.addSublayer(shapeLayer)
-            self.shapeLayer = shapeLayer
+            shapeLayer.setLineCap(Paint.Cap.ROUND);
+            shapeLayer.setStrokeStart(SwipeParser.parseFloat(info, "strokeStart", 0));
+            shapeLayer.setStrokeEnd(SwipeParser.parseFloat(info, "strokeEnd", 1));
+
+            //layer.addSublayer(shapeLayer)
+            /*
             if let tiling = info["tiling"] as? Bool where tiling {
                 let hostLayer = CALayer()
                 innerLayer = hostLayer
@@ -469,8 +511,9 @@ public class SwipeElement extends SwipeView {
                     subLayer.strokeEnd = shapeLayer.strokeEnd
                     hostLayer.addSublayer(subLayer)
                 }
+            */
             }
-
+        /*
         } else {
             SwipeElement.processShadow(info, scale:scale, layer: layer)
         }
@@ -1080,6 +1123,18 @@ public class SwipeElement extends SwipeView {
             }
         }
         return false;
+    }
+
+    private Path parsePath(JSONObject shape, float w, float h, CGSize scale, DisplayMetrics dm) {
+        JSONObject shape0 = shape;
+        JSONObject refs = shape.optJSONObject("path");
+        if (refs != null) {
+            String key = refs.optString("ref");
+            if (!key.isEmpty()) {
+                // TODO shape0 = delegate.pathWith(key)
+            }
+        }
+        return SwipePath.parse(shape0, w, h, scale, dm);
     }
 
     @Override

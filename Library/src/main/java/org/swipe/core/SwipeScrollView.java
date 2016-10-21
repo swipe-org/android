@@ -34,9 +34,20 @@ public class SwipeScrollView extends ScrollView {
         return super.onInterceptTouchEvent(ev);
     }
 
+
+    private boolean touchable = true;
+
+    void setTouchable(boolean val) {
+        touchable = val;
+    }
+
     @Override
-    public boolean onTouchEvent (MotionEvent ev) {
-        return super.onTouchEvent(ev);
+    public boolean onTouchEvent(MotionEvent event) {
+        if (touchable) {
+            return super.onTouchEvent(event);
+        } else {
+            return false;
+        }
     }
 
     @Override

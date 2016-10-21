@@ -3,6 +3,7 @@ package org.swipe.core;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Point;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
@@ -29,6 +30,7 @@ public class SwipeView extends SwipeNode {
     protected Context getContext() { return context; }
     protected CGSize dimension = null;
     protected CGSize scale = null;
+    DisplayMetrics dm = null;
 
     View getView() { return viewGroup; }
 
@@ -37,17 +39,19 @@ public class SwipeView extends SwipeNode {
         context = _context;
         dimension = _dimension;
         scale = _scale;
+        dm = getContext().getResources().getDisplayMetrics();
     }
 
     public List<URL> getResourceURLs() {
         return resourceURLs;
     }
 
-    ViewGroup loadView() {
+    void createViewGroup() {
         viewGroup = new ViewGroup(getContext()) {
             @Override
             protected void onLayout(boolean changed, int l, int t, int r, int b) {
                 //Log.d(TAG, "onLayout");
+                setClipChildren(false);
 
                 for (int c = 0; c < this.getChildCount(); c++) {
                     View v = this.getChildAt(c);
@@ -57,9 +61,16 @@ public class SwipeView extends SwipeNode {
                 }
             }
         };
+    }
 
+    ViewGroup loadView() {
+        createViewGroup();
         int bc = SwipeParser.parseColor(info, "bc", Color.TRANSPARENT);
         viewGroup.setBackgroundColor(bc);
         return viewGroup;
+    }
+
+    public float px2Dip(float px) {
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, px, dm);
     }
 }
