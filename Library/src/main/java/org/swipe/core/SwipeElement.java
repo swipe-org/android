@@ -10,6 +10,8 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
 import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.PaintDrawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.PathShape;
 import android.util.DisplayMetrics;
@@ -24,6 +26,7 @@ import org.swipe.browser.SwipeBrowserActivity;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import static android.R.attr.defaultValue;
@@ -60,6 +63,8 @@ public class SwipeElement extends SwipeView {
     private boolean fRepeat = false;
     private SwipeShapeDrawable shapeLayer = null;
 
+    private SwipeBackgroundDrawable bgDrawable = new SwipeBackgroundDrawable();
+
     // Video Element Specific
     private Object videoPlayer = null;
     private boolean fSeeking = false;
@@ -68,7 +73,6 @@ public class SwipeElement extends SwipeView {
     private Float pendingOffset = null;
     private Float videoStart = 0.0f;
     private Float videoDuration = 1.0f;
-
 
     List<ObjectAnimator> getAllAnimations() {
         List<ObjectAnimator> allAni = new ArrayList<>();
@@ -93,6 +97,7 @@ public class SwipeElement extends SwipeView {
 
             @Override
             protected void onDraw(Canvas canvas) {
+
                 if (shapeLayer != null) {
                     shapeLayer.draw(canvas);
                 }
@@ -117,7 +122,8 @@ public class SwipeElement extends SwipeView {
         super.loadView();
 
         int bc = SwipeParser.parseColor(info, "bc", Color.TRANSPARENT);
-        viewGroup.setBackgroundColor(bc);
+        bgDrawable.setBackgroundColor(bc);
+        viewGroup.setBackground(bgDrawable);
 
         URL baseURL = delegate.baseURL();
         float x = 0;
@@ -454,16 +460,12 @@ public class SwipeElement extends SwipeView {
             imageLayer.contents = image
             layer.mask = imageLayer
         }
-        if let radius = info["cornerRadius"] as? CGFloat {
-            layer.cornerRadius = radius * scale.width;
-            //view.clipsToBounds = true;
-        }
-
-        if let borderWidth = info["borderWidth"] as? CGFloat {
-            layer.borderWidth = borderWidth * scale.width
-            layer.borderColor = SwipeParser.parseColor(info["borderColor"], defaultColor: blackColor)
-        }
         */
+
+        bgDrawable.setCornerRadius(px2Dip((float) info.optDouble("cornerRadius", 0) * scale.width));
+        bgDrawable.setBorderWidth(px2Dip((float) info.optDouble("borderWidth", 0) * scale.width));
+        bgDrawable.setBorderColor(SwipeParser.parseColor(info.opt("borderColor"), Color.BLACK));
+
         if (path != null) {
             //shapeLayer.contentsScale = contentScale
             Path xpath = SwipeParser.transformedPath(path, info, "scale", dipW, dipH);
@@ -712,44 +714,36 @@ public class SwipeElement extends SwipeView {
             */
 
             if (to.has("bc")) {
-                ColorDrawable viewColor = (ColorDrawable) viewGroup.getBackground();
-                int color = viewColor.getColor();
-                ObjectAnimator ani = ObjectAnimator.ofObject(viewGroup, "backgroundColor", new ArgbEvaluator(), color, SwipeParser.parseColor(to, "bc", Color.TRANSPARENT));
-                //ani.fillMode = kCAFillModeBoth
+                ObjectAnimator ani = ObjectAnimator.ofObject(bgDrawable, "backgroundColor", new ArgbEvaluator(), bgDrawable.getBackgroundColor(), SwipeParser.parseColor(to, "bc", Color.TRANSPARENT));
+                ani.setStartDelay((int)(start * delegate.durationSec() * 1000));
+                ani.setDuration((int)(duration * delegate.durationSec() * 1000));
+                animations.add(ani);
+            }
+
+            Object opt = to.opt("borderColor");
+            if (opt != null){
+                ObjectAnimator ani = ObjectAnimator.ofObject(bgDrawable, "borderColor", new ArgbEvaluator(), bgDrawable.getBorderColor(), SwipeParser.parseColor(opt));
+                ani.setStartDelay((int)(start * delegate.durationSec() * 1000));
+                ani.setDuration((int)(duration * delegate.durationSec() * 1000));
+                animations.add(ani);
+            }
+
+            Double dopt = to.optDouble("borderWidth");
+            if (!dopt.isNaN()){
+                ObjectAnimator ani = ObjectAnimator.ofFloat(bgDrawable, "borderWidth",  px2Dip(dopt.floatValue() * scale.width));
+                ani.setStartDelay((int)(start * delegate.durationSec() * 1000));
+                ani.setDuration((int)(duration * delegate.durationSec() * 1000));
+                animations.add(ani);
+            }
+            dopt = to.optDouble("cornerRadius");
+            if (!dopt.isNaN()){
+                ObjectAnimator ani = ObjectAnimator.ofFloat(bgDrawable, "cornerRadius",  px2Dip(dopt.floatValue() * scale.width));
                 ani.setStartDelay((int)(start * delegate.durationSec() * 1000));
                 ani.setDuration((int)(duration * delegate.durationSec() * 1000));
                 animations.add(ani);
             }
 
             /*
-            if let borderColor:AnyObject = to["borderColor"] {
-                let ani = CABasicAnimation(keyPath: "borderColor")
-                ani.fromValue = layer.borderColor
-                ani.toValue = SwipeParser.parseColor(borderColor)
-                ani.fillMode = kCAFillModeBoth
-                ani.beginTime = start
-                ani.duration = duration
-                layer.addAnimation(ani, forKey: "borderColor")
-            }
-            if let borderWidth = to["borderWidth"] as? CGFloat {
-                let ani = CABasicAnimation(keyPath: "borderWidth")
-                ani.fromValue = layer.borderWidth
-                ani.toValue = borderWidth * scale.width
-                ani.fillMode = kCAFillModeBoth
-                ani.beginTime = start
-                ani.duration = duration
-                layer.addAnimation(ani, forKey: "borderWidth")
-            }
-            if let borderWidth = to["cornerRadius"] as? CGFloat {
-                let ani = CABasicAnimation(keyPath: "cornerRadius")
-                ani.fromValue = layer.cornerRadius
-                ani.toValue = borderWidth * scale.width
-                ani.fillMode = kCAFillModeBoth
-                ani.beginTime = start
-                ani.duration = duration
-                layer.addAnimation(ani, forKey: "cornerRadius")
-            }
-
             if let textLayer = self.textLayer {
                 if let textColor:AnyObject = to["textColor"] {
                     let ani = CABasicAnimation(keyPath: "foregroundColor")
@@ -819,7 +813,7 @@ public class SwipeElement extends SwipeView {
                 }
                 */
 
-                Object opt = to.opt("fillColor");
+                opt = to.opt("fillColor");
                 if (opt != null){
                     ObjectAnimator ani = ObjectAnimator.ofObject(shapeLayer, "fillColor", new ArgbEvaluator(), SwipeParser.parseColor(opt));
                     ani.setStartDelay((int)(start * delegate.durationSec() * 1000));
@@ -834,7 +828,7 @@ public class SwipeElement extends SwipeView {
                     animations.add(ani);
                 }
 
-                Double dopt = to.optDouble("lineWidth");
+                dopt = to.optDouble("lineWidth");
                 if (!dopt.isNaN()){
                     ObjectAnimator ani = ObjectAnimator.ofFloat(shapeLayer, "lineWidth",  px2Dip(dopt.floatValue() * scale.width));
                     ani.setStartDelay((int)(start * delegate.durationSec() * 1000));

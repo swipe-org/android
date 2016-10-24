@@ -222,11 +222,11 @@ public class SwipeParser {
     //
     static JSONObject inheritProperties(JSONObject object, JSONObject proto) {
         try {
-            JSONObject ret = new JSONObject(object.toString());
-            JSONObject prototype = new JSONObject(proto.toString());
+            JSONObject ret = new JSONObject(object.toString()); // copy
 
             final String TAG = "SwInheritProperties";
-            if (prototype != null) {
+            if (proto != null) {
+                JSONObject prototype = new JSONObject(proto.toString()); // copy
                 Iterator<String> keyStrings = prototype.keys();
                 while (keyStrings.hasNext()) {
                     try {
@@ -281,7 +281,6 @@ public class SwipeParser {
                     }
                 }
             }
-            Log.d(TAG, "ret=" + ret.toString());
             return ret;
         } catch (JSONException e) {
             return object;
