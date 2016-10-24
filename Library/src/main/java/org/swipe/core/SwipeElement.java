@@ -781,8 +781,9 @@ public class SwipeElement extends SwipeView {
                     imageLayer.addAnimation(ani, forKey: "contents")
                 }
             }
-
-            if let shapeLayer = self.shapeLayer {
+            */
+            if (shapeLayer != null) {
+                /*
                 if let params = to["path"] as? [AnyObject] {
                     var values = [shapeLayer.path!]
                     for param in params {
@@ -813,53 +814,45 @@ public class SwipeElement extends SwipeView {
                     ani.fillMode = kCAFillModeBoth
                     shapeLayer.addAnimation(ani, forKey: "path")
                 }
-                if let fillColor:AnyObject = to["fillColor"] {
-                    let ani = CABasicAnimation(keyPath: "fillColor")
-                    ani.fromValue = shapeLayer.fillColor
-                    ani.toValue = SwipeParser.parseColor(fillColor)
-                    ani.beginTime = start
-                    ani.duration = duration
-                    ani.fillMode = kCAFillModeBoth
-                    shapeLayer.addAnimation(ani, forKey: "fillColor")
+                */
+
+                Object opt = to.opt("fillColor");
+                if (opt != null){
+                    ObjectAnimator ani = ObjectAnimator.ofObject(shapeLayer, "fillColor", new ArgbEvaluator(), SwipeParser.parseColor(opt));
+                    ani.setStartDelay((int)(start * delegate.durationSec() * 1000));
+                    ani.setDuration((int)(duration * delegate.durationSec() * 1000));
+                    animations.add(ani);
                 }
-                if let strokeColor:AnyObject = to["strokeColor"] {
-                    let ani = CABasicAnimation(keyPath: "strokeColor")
-                    ani.fromValue = shapeLayer.strokeColor
-                    ani.toValue = SwipeParser.parseColor(strokeColor)
-                    ani.beginTime = start
-                    ani.duration = duration
-                    ani.fillMode = kCAFillModeBoth
-                    shapeLayer.addAnimation(ani, forKey: "strokeColor")
+                opt = to.opt("strokeColor");
+                if (opt != null){
+                    ObjectAnimator ani = ObjectAnimator.ofObject(shapeLayer, "strokeColor", new ArgbEvaluator(), SwipeParser.parseColor(opt));
+                    ani.setStartDelay((int)(start * delegate.durationSec() * 1000));
+                    ani.setDuration((int)(duration * delegate.durationSec() * 1000));
+                    animations.add(ani);
                 }
-                if let lineWidth = to["lineWidth"] as? CGFloat {
-                    let ani = CABasicAnimation(keyPath: "lineWidth")
-                    ani.fromValue = shapeLayer.lineWidth
-                    ani.toValue = lineWidth * scale.width
-                    ani.beginTime = start
-                    ani.duration = duration
-                    ani.fillMode = kCAFillModeBoth
-                    shapeLayer.addAnimation(ani, forKey: "lineWidth")
+
+                Double dopt = to.optDouble("lineWidth");
+                if (!dopt.isNaN()){
+                    ObjectAnimator ani = ObjectAnimator.ofFloat(shapeLayer, "lineWidth",  px2Dip(dopt.floatValue() * scale.width));
+                    ani.setStartDelay((int)(start * delegate.durationSec() * 1000));
+                    ani.setDuration((int)(duration * delegate.durationSec() * 1000));
+                    animations.add(ani);
                 }
-                if let strokeStart = to["strokeStart"] as? CGFloat {
-                    let ani = CABasicAnimation(keyPath: "strokeStart")
-                    ani.fromValue = shapeLayer.strokeStart
-                    ani.toValue = strokeStart
-                    ani.beginTime = start
-                    ani.duration = duration
-                    ani.fillMode = kCAFillModeBoth
-                    shapeLayer.addAnimation(ani, forKey: "strokeStart")
+                dopt = to.optDouble("strokeStart");
+                if (!dopt.isNaN()){
+                    ObjectAnimator ani = ObjectAnimator.ofFloat(shapeLayer, "strokeStart", dopt.floatValue());
+                    ani.setStartDelay((int)(start * delegate.durationSec() * 1000));
+                    ani.setDuration((int)(duration * delegate.durationSec() * 1000));
+                    animations.add(ani);
                 }
-                if let strokeEnd = to["strokeEnd"] as? CGFloat {
-                    let ani = CABasicAnimation(keyPath: "strokeEnd")
-                    ani.fromValue = shapeLayer.strokeEnd
-                    ani.toValue = strokeEnd
-                    ani.beginTime = start
-                    ani.duration = duration
-                    ani.fillMode = kCAFillModeBoth
-                    shapeLayer.addAnimation(ani, forKey: "strokeEnd")
+                dopt = to.optDouble("fillColor");
+                if (!dopt.isNaN()){
+                    ObjectAnimator ani = ObjectAnimator.ofFloat(shapeLayer, "strokeEnd", dopt.floatValue());
+                    ani.setStartDelay((int)(start * delegate.durationSec() * 1000));
+                    ani.setDuration((int)(duration * delegate.durationSec() * 1000));
+                    animations.add(ani);
                 }
             }
-            */
         }
         /*
         if let fRepeat = info["repeat"] as? Bool where fRepeat {
@@ -1064,6 +1057,8 @@ public class SwipeElement extends SwipeView {
             }
         }
 
+        viewGroup.invalidate();
+        
         if (fElementRepeat && !fRepeat) {
             return;
         }
