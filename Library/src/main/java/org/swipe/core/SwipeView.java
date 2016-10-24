@@ -65,8 +65,6 @@ public class SwipeView extends SwipeNode {
 
     ViewGroup loadView() {
         createViewGroup();
-        int bc = SwipeParser.parseColor(info, "bc", Color.TRANSPARENT);
-        viewGroup.setBackgroundColor(bc);
         return viewGroup;
     }
 

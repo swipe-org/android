@@ -3,6 +3,7 @@ package org.swipe.core;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Point;
+import android.support.annotation.Nullable;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
@@ -22,7 +23,10 @@ import org.json.JSONObject;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.ServiceConfigurationError;
 
 /**
@@ -53,6 +57,9 @@ public class SwipeBook implements SwipePage.Delegate {
     private String orientation = "portrait";
     public float scale = 1;
     private int pageIndex = 0;
+    private Map<String, SwipePageTemplate> templatePages = new HashMap<>();
+    private JSONObject templateElements = null;
+    private JSONObject templates = null;
 
     public View getView() { return scrollView; }
     public boolean viewstate() { return viewstate; }
@@ -85,6 +92,30 @@ public class SwipeBook implements SwipePage.Delegate {
         paging = bookInfo.optString("paging", paging);
         horizontal = paging.equals("leftToRight");
         orientation = bookInfo.optString("orientation", orientation);
+        templates = bookInfo.optJSONObject("templates");
+        JSONObject pageTemplates = null;
+        if (templates != null) {
+            templateElements = templates.optJSONObject("elements");
+            pageTemplates = templates.optJSONObject("pages");
+        }
+
+        if (templateElements == null && bookInfo.has("elements")) {
+            MyLog(TAG, "DEPRECATED named elements; use 'templates'");
+            templateElements = bookInfo.optJSONObject("elements");
+        }
+
+        if (pageTemplates == null && bookInfo.has("scenes")) {
+            MyLog(TAG, "DEPRECATED scenes; use 'templates'");
+            pageTemplates = bookInfo.optJSONObject("scenes");
+        }
+
+        if (pageTemplates != null) {
+            Iterator<String> it = pageTemplates.keys();
+            while (it.hasNext()) {
+                String key = it.next();
+                templatePages.put(key, new SwipePageTemplate(pageTemplates.optJSONObject(key)));
+            }
+        }
 
         JSONArray dimensionA = bookInfo.optJSONArray("dimension");
         if (dimensionA != null && dimensionA.length() == 2) {
@@ -484,10 +515,24 @@ public class SwipeBook implements SwipePage.Delegate {
         */
     }
 
+
     @Override
     public SwipePageTemplate pageTemplateWith(String name) {
-        // TODO
-        return null;
+        String key = name == null || name.isEmpty() ? "*" : name;
+        if (key == null) {
+            return null;
+        }
+
+        return templatePages.get(key);
+    }
+
+    @Override
+    public JSONObject prototypeWith(String name) {
+        if (name == null || templateElements == null) {
+            return null;
+        }
+
+        return templateElements.optJSONObject(name);
     }
 
     @Override

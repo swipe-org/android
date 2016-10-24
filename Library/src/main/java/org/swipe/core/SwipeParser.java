@@ -4,6 +4,7 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Path;
 import android.graphics.RectF;
+import android.graphics.drawable.shapes.PathShape;
 import android.util.Log;
 
 import org.json.JSONArray;
@@ -219,64 +220,72 @@ public class SwipeParser {
     //   Object property: Instance properties overrides Base properties
     //   Array property: Merge (inherit properties in case of "id" matches, otherwise, just append)
     //
-    static JSONObject inheritProperties(JSONObject ret, JSONObject prototype) {
-        final String TAG = "SwInheritProperties";
-        if (prototype != null) {
-            Iterator<String> keyStrings = prototype.keys();
-            while (keyStrings.hasNext()) {
-                try {
-                    String keyString = keyStrings.next();
-                    if (!ret.has(keyString)) {
-                        // Only the baseObject has the property
-                        ret.put(keyString, prototype.get(keyString));
-                    } else if (ret.optJSONArray(keyString) != null && prototype.optJSONArray(keyString) != null) {
-                        // Each has the property array. We need to merge them
-                        JSONArray arrayObject = ret.optJSONArray(keyString);
-                        JSONArray retArray = prototype.optJSONArray(keyString);
-                        Map<String, Integer> idMap = new HashMap<>();
-                        for (int index = 0; index < retArray.length(); index++) {
-                            JSONObject item = retArray.getJSONObject(index);
-                            String key = item.optString("id");
-                            if (key != null) {
-                                idMap.put(key, index);
-                            }
-                        }
+    static JSONObject inheritProperties(JSONObject object, JSONObject proto) {
+        try {
+            JSONObject ret = new JSONObject(object.toString());
+            JSONObject prototype = new JSONObject(proto.toString());
 
-                        for (int i = 0; i < arrayObject.length(); i++) {
-                            JSONObject item = arrayObject.getJSONObject(i);
-                            String key = item.optString("id");
-                            if (key != null) {
-                                Integer index = idMap.get(key);
-                                if (index != null) {
-                                    // id matches, merge them
-                                    retArray.put(index,SwipeParser.inheritProperties(item, retArray.getJSONObject(index)));
+            final String TAG = "SwInheritProperties";
+            if (prototype != null) {
+                Iterator<String> keyStrings = prototype.keys();
+                while (keyStrings.hasNext()) {
+                    try {
+                        String keyString = keyStrings.next();
+                        if (!ret.has(keyString)) {
+                            // Only the baseObject has the property
+                            ret.put(keyString, prototype.get(keyString));
+                        } else if (ret.optJSONArray(keyString) != null && prototype.optJSONArray(keyString) != null) {
+                            // Each has the property array. We need to merge them
+                            JSONArray arrayObject = ret.optJSONArray(keyString);
+                            JSONArray retArray = prototype.optJSONArray(keyString);
+                            Map<String, Integer> idMap = new HashMap<>();
+                            for (int index = 0; index < retArray.length(); index++) {
+                                JSONObject item = retArray.getJSONObject(index);
+                                String key = item.optString("id");
+                                if (key != null) {
+                                    idMap.put(key, index);
+                                }
+                            }
+
+                            for (int i = 0; i < arrayObject.length(); i++) {
+                                JSONObject item = arrayObject.getJSONObject(i);
+                                String key = item.optString("id");
+                                if (key != null) {
+                                    Integer index = idMap.get(key);
+                                    if (index != null) {
+                                        // id matches, merge them
+                                        retArray.put(index, SwipeParser.inheritProperties(item, retArray.getJSONObject(index)));
+                                    } else {
+                                        // no id match, just append
+                                        retArray.put(item);
+                                    }
                                 } else {
-                                    // no id match, just append
+                                    // no id, just append
                                     retArray.put(item);
                                 }
-                            } else {
-                                // no id, just append
-                                retArray.put(item);
                             }
+                            ret.put(keyString, retArray);
+                        } else if (ret.optJSONObject(keyString) != null && prototype.optJSONObject(keyString) != null) {
+                            // Each has the property objects. We need to merge them.  Example: '"events" { }'
+                            JSONObject objects = ret.getJSONObject(keyString);
+                            JSONObject retObjects = prototype.getJSONObject(keyString);
+                            Iterator<String> keys = objects.keys();
+                            while (keys.hasNext()) {
+                                String key = keys.next();
+                                retObjects.put(key, objects.get(key));
+                            }
+                            ret.put(keyString, retObjects);
                         }
-                        ret.put(keyString, retArray);
-                    } else if (ret.optJSONObject(keyString) != null && prototype.optJSONObject(keyString) != null) {
-                        // Each has the property objects. We need to merge them.  Example: '"events" { }'
-                        JSONObject objects = ret.getJSONObject(keyString);
-                        JSONObject retObjects = prototype.getJSONObject(keyString);
-                        Iterator<String> keys = objects.keys();
-                        while (keys.hasNext()) {
-                            String key = keys.next();
-                            retObjects.put(key, objects.get(key));
-                        }
-                        ret.put(keyString, retObjects);
+                    } catch (JSONException e) {
+                        Log.e(TAG, e.toString());
                     }
-                } catch (JSONException e) {
-                    Log.e(TAG, e.toString());
                 }
             }
+            Log.d(TAG, "ret=" + ret.toString());
+            return ret;
+        } catch (JSONException e) {
+            return object;
         }
-        return ret;
     }
 
 }

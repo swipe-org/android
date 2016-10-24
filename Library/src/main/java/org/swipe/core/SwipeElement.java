@@ -35,8 +35,8 @@ import static android.R.attr.defaultValue;
 public class SwipeElement extends SwipeView {
     interface Delegate {
         double durationSec();
+        JSONObject prototypeWith(String name);
         /* TODO
-        func prototypeWith(name:String?) -> [String:AnyObject]?
         func pathWith(name:String?) -> AnyObject?
         func shouldRepeat(element:SwipeElement) -> Bool
         func onAction(element:SwipeElement)
@@ -115,6 +115,9 @@ public class SwipeElement extends SwipeView {
     @Override
     ViewGroup loadView() {
         super.loadView();
+
+        int bc = SwipeParser.parseColor(info, "bc", Color.TRANSPARENT);
+        viewGroup.setBackgroundColor(bc);
 
         URL baseURL = delegate.baseURL();
         float x = 0;
@@ -1058,7 +1061,7 @@ public class SwipeElement extends SwipeView {
         }
 
         viewGroup.invalidate();
-        
+
         if (fElementRepeat && !fRepeat) {
             return;
         }

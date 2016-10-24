@@ -5,6 +5,7 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.util.Log;
@@ -33,8 +34,8 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         /* TODO
         func dimension(page:SwipePage) -> CGSize
         func scale(page:SwipePage) -> CGSize
-        func prototypeWith(name:String?) -> [String:AnyObject]?
         */
+        JSONObject prototypeWith(String name);
         SwipePageTemplate pageTemplateWith(String name);
         /*
         func pathWith(name:String?) -> AnyObject?
@@ -142,6 +143,9 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     @Override
     ViewGroup loadView() {
         super.loadView();
+        int bc = SwipeParser.parseColor(info, "bc", Color.WHITE);
+        viewGroup.setBackgroundColor(bc);
+
         duration = (float)info.optDouble("duration", duration);
         fps = info.optInt("fps", fps);
         vibrate = info.optBoolean("vibrate", vibrate);
@@ -432,6 +436,9 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
 
     @Override
     public double durationSec() { return duration; }
+
+    @Override
+    public JSONObject prototypeWith(String name) { return delegate.prototypeWith(name); }
 
     @Override
     public URL baseURL() {

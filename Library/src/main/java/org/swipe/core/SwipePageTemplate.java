@@ -14,6 +14,12 @@ public class SwipePageTemplate {
 
     public JSONObject pageTemplateInfo = null;
 
+    private SwipePageTemplate() {}
+
+    public SwipePageTemplate(JSONObject info) {
+        pageTemplateInfo = info;
+    }
+
     protected List<URL> resourceURLs = null;
 
     public List<URL> getResourceURLs() {

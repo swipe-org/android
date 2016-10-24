@@ -4,6 +4,7 @@
     "sections":[
         {
             "items":[
+                { "url":"vectors.swipe", "title":"vectors", "icon":"Icon-180.png" },
                 { "url":"port.swipe", "title":"port", "icon":"Icon-180.png" },
                 { "url":"portH.swipe", "title":"port horizontal", "icon":"Icon-180.png" },
                 { "url":"tutorial/swipe.swipe", "title":"Swipe Overview", "icon":"Icon-180.png" },
