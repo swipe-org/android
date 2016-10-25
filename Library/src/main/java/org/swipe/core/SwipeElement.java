@@ -3,22 +3,16 @@ package org.swipe.core;
 import android.animation.ArgbEvaluator;
 import android.animation.ObjectAnimator;
 import android.animation.TypeEvaluator;
-import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PathMeasure;
 import android.graphics.RectF;
-import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.GradientDrawable;
-import android.graphics.drawable.PaintDrawable;
-import android.graphics.drawable.ShapeDrawable;
-import android.graphics.drawable.shapes.PathShape;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -28,7 +22,6 @@ import org.swipe.browser.SwipeBrowserActivity;
 
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import static android.R.attr.defaultValue;
@@ -93,26 +86,43 @@ public class SwipeElement extends SwipeView {
         delegate = _delegate;
     }
 
-    public class MatrixEvaluator implements TypeEvaluator<Matrix> {
-        public Matrix evaluate(float fraction,
-                               Matrix startValue,
-                               Matrix endValue) {
-            float[] startEntries = new float[9];
-            float[] endEntries = new float[9];
-            float[] currentEntries = new float[9];
+    private class PathRotationEvaluator implements TypeEvaluator<Number> {
+        private PathMeasure pm = null;
+        private float[] tan = new float[2];
+        private float[] pos = new float[2];
 
-            startValue.getValues(startEntries);
-            endValue.getValues(endEntries);
+        private float len = 0;
 
-            for (int i=0; i<9; i++)
-                currentEntries[i] = (1-fraction)*startEntries[i]
-                        + fraction*endEntries[i];
+        PathRotationEvaluator(Path path) {
+            pm = new PathMeasure(path, false);
+            len = pm.getLength();
+        }
 
-            Matrix matrix = new Matrix();
-            matrix.setValues(currentEntries);
-            return matrix;
+        public Number evaluate(float fraction, Number startValue, Number endValue) {
+            pm.getPosTan(fraction * len, pos, tan);
+            return(float) (Math.atan2(tan[1], tan[0]) * 180.0 / Math.PI);
         }
     }
+
+    private class PathReverseRotationEvaluator implements TypeEvaluator<Number> {
+        private PathMeasure pm = null;
+        private float[] tan = new float[2];
+        private float[] pos = new float[2];
+
+        private float len = 0;
+
+        PathReverseRotationEvaluator(Path path) {
+            pm = new PathMeasure(path, false);
+            len = pm.getLength();
+        }
+
+        public Number evaluate(float fraction, Number startValue, Number endValue) {
+            pm.getPosTan(fraction * len, pos, tan);
+            float degrees = (float) (Math.atan2(tan[1], tan[0]) * 180.0 / Math.PI);
+            return ((int)degrees + 180) % 360;
+        }
+    }
+
     @Override
     void createViewGroup() {
         viewGroup = new ViewGroup(getContext()) {
@@ -147,7 +157,6 @@ public class SwipeElement extends SwipeView {
         bgDrawable.setBackgroundColor(bc);
         viewGroup.setBackground(bgDrawable);
 
-        URL baseURL = delegate.baseURL();
         float x = 0;
         float y = 0;
         float w0 = dimension.width;
@@ -178,7 +187,7 @@ public class SwipeElement extends SwipeView {
                 }
             }
             dvalue = info.optDouble("h");
-            if (!dvalue.isNaN(dvalue)) {
+            if (!dvalue.isNaN()) {
                 h0 = dvalue.floatValue();
                 fNaturalH = false;
             } else {
@@ -216,7 +225,7 @@ public class SwipeElement extends SwipeView {
             }
         }
         */
-        Path path = parsePath(info, w0, h0, scale, dm);
+        Path path = parsePath(info.opt("path"), w0, h0, scale, dm);
 
         // The natural size is determined by the contents (either image or mask)
         CGSize sizeContents = null;
@@ -692,27 +701,32 @@ public class SwipeElement extends SwipeView {
             final int kDuration = (int)(duration * delegate.durationSec() * 1000);
 
             boolean fSkipTranslate = false;
-            Path posPath = parsePath(to.optJSONObject("pos"), w0, h0, scale, dm);
+            Path posPath = parsePath(to.opt("pos"), w0, h0, scale, dm);
             if (posPath != null){
                 ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "x", "y", posPath);
-
-                String mode = to.optString("mode", null);
-                if (mode != null){
-                    switch(mode) {
-                        case "auto":
-                            // TODO ani.rotationMode = kCAAnimationRotateAuto
-                            break;
-                        case "reverse":
-                            // TODO ani.rotationMode = kCAAnimationRotateAutoReverse
-                            break;
-                        default: // or "none"
-                            // TODO ani.rotationMode = nil
-                            break;
-                    }
-                }
                 ani.setStartDelay(kStartDelay);
                 ani.setDuration(kDuration);
                 animations.add(ani);
+
+                String mode = to.optString("mode");
+                switch(mode) {
+                    case "auto": {
+                        ObjectAnimator aniR = ObjectAnimator.ofObject(viewGroup, "rotation", new PathRotationEvaluator(posPath), 0);
+                        aniR.setStartDelay(kStartDelay);
+                        aniR.setDuration(kDuration);
+                        animations.add(aniR);
+                        break;
+                    }
+                    case "reverse": {
+                        ObjectAnimator aniR = ObjectAnimator.ofObject(viewGroup, "rotation", new PathReverseRotationEvaluator(posPath), 0);
+                        aniR.setStartDelay(kStartDelay);
+                        aniR.setDuration(kDuration);
+                        animations.add(aniR);
+                        break;
+                    }
+                    default: // or "none"
+                        break;
+                }
 
                 fSkipTranslate = true;
             }
@@ -1167,19 +1181,23 @@ public class SwipeElement extends SwipeView {
         return false;
     }
 
-    private Path parsePath(JSONObject shape, float w, float h, CGSize scale, DisplayMetrics dm) {
+    private Path parsePath(Object shape, float w, float h, CGSize scale, DisplayMetrics dm) {
         if (shape == null) {
             return null;
         }
-        JSONObject shape0 = shape;
-        JSONObject refs = shape.optJSONObject("path");
-        if (refs != null) {
-            String key = refs.optString("ref");
+        Object shape0 = shape;
+        if (shape0 instanceof JSONObject) {
+            String key = ((JSONObject) shape0).optString("ref");
             if (!key.isEmpty()) {
                 // TODO shape0 = delegate.pathWith(key)
             }
         }
-        return SwipePath.parse(shape0, w, h, scale, dm);
+
+        if (shape0 instanceof String) {
+            return SwipePath.parse((String) shape0, w, h, scale, dm);
+        } else {
+            return null;
+        }
     }
 
     @Override

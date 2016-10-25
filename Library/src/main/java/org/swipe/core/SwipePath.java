@@ -22,13 +22,8 @@ public class SwipePath {
     private static final Pattern patternSVG = Pattern.compile("[a-z][0-9\\-\\.,\\s]*", Pattern.CASE_INSENSITIVE);
     private static final Pattern patternNUM = Pattern.compile("[\\-]*[0-9\\.]+");
 
-    static Path parse(JSONObject shape, float w, float h, CGSize scale, DisplayMetrics dm) {
-
-        if (shape == null) {
-            return null;
-        }
-        String string = shape.optString("path");
-        if (string.isEmpty()) {
+    static Path parse(String string, float w, float h, CGSize scale, DisplayMetrics dm) {
+        if (string == null || string.isEmpty()) {
             return null;
         }
 
