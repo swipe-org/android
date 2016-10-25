@@ -215,6 +215,93 @@ public class SwipeParser {
     }
 
 
+    static Matrix parseTransform(JSONObject value, float scaleX, float scaleY, JSONObject base, boolean fSkipTranslate, boolean fSkipScale) {
+        if (value == null) {
+            return null;
+        }
+
+        try {
+            Matrix xf = new Matrix();
+            boolean hasValue = false;
+
+            if (base != null) {
+                final String[] keys = {"translate", "rotate", "scale"};
+                for (String key : keys) {
+                    if (base.has(key) && !value.has(key)) {
+                        value.put(key, base.get(key));
+                    }
+                }
+            }
+            if (fSkipTranslate) {
+                if (base != null) {
+                    JSONArray translate = base.optJSONArray("translate");
+                    if (translate != null && translate.length() == 2) {
+                        Double translate0 = translate.optDouble(0);
+                        Double translate1 = translate.optDouble(1);
+                        if (!translate0.isNaN() && !translate1.isNaN()) {
+                            xf.postTranslate(translate0.floatValue() * scaleX, translate1.floatValue() * scaleY);
+                        }
+                    }
+                }
+            } else {
+                JSONArray translate = value.optJSONArray("translate");
+                if (translate != null && translate.length() == 2) {
+                    Double translate0 = translate.optDouble(0);
+                    Double translate1 = translate.optDouble(1);
+                    if (!translate0.isNaN() && !translate1.isNaN()) {
+                        xf.postTranslate(translate0.floatValue() * scaleX, translate1.floatValue() * scaleY);
+                    }
+                    hasValue = true;
+                }
+            }
+            Double depth = value.optDouble("depth");
+            if (!depth.isNaN()){
+                // TODO xf = CATransform3DTranslate(xf, 0, 0, depth)
+                hasValue = true;
+            }
+            Double rot = value.optDouble("rotate");
+            if (!rot.isNaN()){
+                xf.postRotate(rot.floatValue());
+                hasValue = true;
+            }
+            JSONArray rots = value.optJSONArray("rotate");
+            if (rots != null && rots.length() == 3) {
+                Double rot0 = rots.optDouble(0);
+                Double rot1 = rots.optDouble(1);
+                Double rot2 = rots.optDouble(2);
+                if (!rot0.isNaN() && !rot1.isNaN() && !rot2.isNaN()) {
+                    // TODO xf = CATransform3DRotate(xf, rots[0] * m, 1, 0, 0)
+                    // TODO xf = CATransform3DRotate(xf, rots[1] * m, 0, 1, 0)
+                    // TODO xf = CATransform3DRotate(xf, rots[2] * m, 0, 0, 1)
+                    hasValue = true;
+                }
+            }
+            if (!fSkipScale) {
+                Double scale = value.optDouble("scale");
+                if (!scale.isNaN()){
+                    xf.postScale(scale.floatValue(), scale.floatValue());
+                    hasValue = true;
+                }
+                JSONArray scales = value.optJSONArray("scale");
+                if (scales != null) {
+                    if (scales.length() == 2) {
+                        Double scale0 = scales.optDouble(0);
+                        Double scale1 = scales.optDouble(1);
+                        if (!scale0.isNaN() && !scale1.isNaN()) {
+                            xf.postScale(scale0.floatValue(), scale1.floatValue());
+                        }
+                    }
+                    hasValue = true;
+                }
+            }
+            return hasValue ? xf : null;
+        } catch (JSONException e) {
+            Log.e(TAG, "parseTransform exception " + e);
+            return null;
+        }
+    }
+
+
     //
     // This function performs the "deep inheritance"
     //   Object property: Instance properties overrides Base properties

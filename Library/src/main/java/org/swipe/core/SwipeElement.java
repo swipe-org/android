@@ -2,6 +2,8 @@ package org.swipe.core;
 
 import android.animation.ArgbEvaluator;
 import android.animation.ObjectAnimator;
+import android.animation.TypeEvaluator;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -91,6 +93,26 @@ public class SwipeElement extends SwipeView {
         delegate = _delegate;
     }
 
+    public class MatrixEvaluator implements TypeEvaluator<Matrix> {
+        public Matrix evaluate(float fraction,
+                               Matrix startValue,
+                               Matrix endValue) {
+            float[] startEntries = new float[9];
+            float[] endEntries = new float[9];
+            float[] currentEntries = new float[9];
+
+            startValue.getValues(startEntries);
+            endValue.getValues(endEntries);
+
+            for (int i=0; i<9; i++)
+                currentEntries[i] = (1-fraction)*startEntries[i]
+                        + fraction*endEntries[i];
+
+            Matrix matrix = new Matrix();
+            matrix.setValues(currentEntries);
+            return matrix;
+        }
+    }
     @Override
     void createViewGroup() {
         viewGroup = new ViewGroup(getContext()) {
@@ -666,80 +688,108 @@ public class SwipeElement extends SwipeView {
                 }
             }
 
-            /*
-            var fSkipTranslate = false
+            final int kStartDelay = (int)(start * delegate.durationSec() * 1000);
+            final int kDuration = (int)(duration * delegate.durationSec() * 1000);
 
-            if let path = parsePath(to["pos"], w: w0, h: h0, scale:scale) {
-                let pos = layer.position
-                var xform = CGAffineTransformMakeTranslation(pos.x, pos.y)
-                let ani = CAKeyframeAnimation(keyPath: "position")
-                ani.path = CGPathCreateCopyByTransformingPath(path, &xform)
-                ani.beginTime = start
-                ani.duration = duration
-                ani.fillMode = kCAFillModeBoth
-                ani.calculationMode = kCAAnimationPaced
-                if let mode = to["mode"] as? String {
+            boolean fSkipTranslate = false;
+            Path posPath = parsePath(to.optJSONObject("pos"), w0, h0, scale, dm);
+            if (posPath != null){
+                ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "x", "y", posPath);
+
+                String mode = to.optString("mode", null);
+                if (mode != null){
                     switch(mode) {
                         case "auto":
-                            ani.rotationMode = kCAAnimationRotateAuto
+                            // TODO ani.rotationMode = kCAAnimationRotateAuto
+                            break;
                         case "reverse":
-                            ani.rotationMode = kCAAnimationRotateAutoReverse
+                            // TODO ani.rotationMode = kCAAnimationRotateAutoReverse
+                            break;
                         default: // or "none"
-                            ani.rotationMode = nil
+                            // TODO ani.rotationMode = nil
+                            break;
                     }
                 }
-                layer.addAnimation(ani, forKey: "position")
-                fSkipTranslate = true
+                ani.setStartDelay(kStartDelay);
+                ani.setDuration(kDuration);
+                animations.add(ani);
+
+                fSkipTranslate = true;
             }
 
-            if let transform = SwipeParser.parseTransform(to, scaleX:scale.width, scaleY:scale.height, base:info, fSkipTranslate: fSkipTranslate, fSkipScale: self.shapeLayer != nil) {
-                let ani = CABasicAnimation(keyPath: "transform")
-                ani.fromValue = NSValue(CATransform3D : layer.transform)
-                ani.toValue = NSValue(CATransform3D : transform)
-                ani.fillMode = kCAFillModeBoth
-                ani.beginTime = start
-                ani.duration = duration
-                layer.addAnimation(ani, forKey: "transform")
+            Double dopt = to.optDouble("rotate");
+            if (!dopt.isNaN()){
+                ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "rotation",  dopt.floatValue());
+                ani.setStartDelay(kStartDelay);
+                ani.setDuration(kDuration);
+                animations.add(ani);
             }
 
-            if let opacity = to["opacity"] as? Float {
-                let ani = CABasicAnimation(keyPath: "opacity")
-                ani.fromValue = layer.opacity
-                ani.toValue = opacity
-                ani.fillMode = kCAFillModeBoth
-                ani.beginTime = start
-                ani.duration = duration
-                layer.addAnimation(ani, forKey: "opacity")
+            dopt = to.optDouble("scale");
+            if (!dopt.isNaN()){
+                ObjectAnimator aniX = ObjectAnimator.ofFloat(viewGroup, "scaleX",  dopt.floatValue());
+                aniX.setStartDelay(kStartDelay);
+                aniX.setDuration(kDuration);
+                animations.add(aniX);
+                ObjectAnimator aniY = ObjectAnimator.ofFloat(viewGroup, "scaleY",  dopt.floatValue());
+                aniY.setStartDelay(kStartDelay);
+                aniY.setDuration(kDuration);
+                animations.add(aniY);
             }
-            */
+
+            JSONArray translate = to.optJSONArray("translate");
+            if (translate != null && translate.length() == 2 && !fSkipTranslate) {
+                Double translate0 = translate.optDouble(0);
+                Double translate1 = translate.optDouble(1);
+                if (!translate0.isNaN()) {
+                    ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "translationX", px2Dip(translate0.floatValue() * scale.width) + dipX);
+                    ani.setStartDelay((int) (start * delegate.durationSec() * 1000));
+                    ani.setDuration((int) (duration * delegate.durationSec() * 1000));
+                    animations.add(ani);
+                }
+                if (!translate1.isNaN()) {
+                    ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "translationY", px2Dip(translate1.floatValue() * scale.height) + dipY);
+                    ani.setStartDelay((int) (start * delegate.durationSec() * 1000));
+                    ani.setDuration((int) (duration * delegate.durationSec() * 1000));
+                    animations.add(ani);
+                }
+            }
+
+            dopt = to.optDouble("opacity");
+            if (!dopt.isNaN()){
+                ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "alpha",  dopt.floatValue());
+                ani.setStartDelay(kStartDelay);
+                ani.setDuration(kDuration);
+                animations.add(ani);
+            }
 
             if (to.has("bc")) {
                 ObjectAnimator ani = ObjectAnimator.ofObject(bgDrawable, "backgroundColor", new ArgbEvaluator(), bgDrawable.getBackgroundColor(), SwipeParser.parseColor(to, "bc", Color.TRANSPARENT));
-                ani.setStartDelay((int)(start * delegate.durationSec() * 1000));
-                ani.setDuration((int)(duration * delegate.durationSec() * 1000));
+                ani.setStartDelay(kStartDelay);
+                ani.setDuration(kDuration);
                 animations.add(ani);
             }
 
             Object opt = to.opt("borderColor");
             if (opt != null){
                 ObjectAnimator ani = ObjectAnimator.ofObject(bgDrawable, "borderColor", new ArgbEvaluator(), bgDrawable.getBorderColor(), SwipeParser.parseColor(opt));
-                ani.setStartDelay((int)(start * delegate.durationSec() * 1000));
-                ani.setDuration((int)(duration * delegate.durationSec() * 1000));
+                ani.setStartDelay(kStartDelay);
+                ani.setDuration(kDuration);
                 animations.add(ani);
             }
 
-            Double dopt = to.optDouble("borderWidth");
+            dopt = to.optDouble("borderWidth");
             if (!dopt.isNaN()){
                 ObjectAnimator ani = ObjectAnimator.ofFloat(bgDrawable, "borderWidth",  px2Dip(dopt.floatValue() * scale.width));
-                ani.setStartDelay((int)(start * delegate.durationSec() * 1000));
-                ani.setDuration((int)(duration * delegate.durationSec() * 1000));
+                ani.setStartDelay(kStartDelay);
+                ani.setDuration(kDuration);
                 animations.add(ani);
             }
             dopt = to.optDouble("cornerRadius");
             if (!dopt.isNaN()){
                 ObjectAnimator ani = ObjectAnimator.ofFloat(bgDrawable, "cornerRadius",  px2Dip(dopt.floatValue() * scale.width));
-                ani.setStartDelay((int)(start * delegate.durationSec() * 1000));
-                ani.setDuration((int)(duration * delegate.durationSec() * 1000));
+                ani.setStartDelay(kStartDelay);
+                ani.setDuration(kDuration);
                 animations.add(ani);
             }
 
@@ -816,37 +866,37 @@ public class SwipeElement extends SwipeView {
                 opt = to.opt("fillColor");
                 if (opt != null){
                     ObjectAnimator ani = ObjectAnimator.ofObject(shapeLayer, "fillColor", new ArgbEvaluator(), SwipeParser.parseColor(opt));
-                    ani.setStartDelay((int)(start * delegate.durationSec() * 1000));
-                    ani.setDuration((int)(duration * delegate.durationSec() * 1000));
+                    ani.setStartDelay(kStartDelay);
+                    ani.setDuration(kDuration);
                     animations.add(ani);
                 }
                 opt = to.opt("strokeColor");
                 if (opt != null){
                     ObjectAnimator ani = ObjectAnimator.ofObject(shapeLayer, "strokeColor", new ArgbEvaluator(), SwipeParser.parseColor(opt));
-                    ani.setStartDelay((int)(start * delegate.durationSec() * 1000));
-                    ani.setDuration((int)(duration * delegate.durationSec() * 1000));
+                    ani.setStartDelay(kStartDelay);
+                    ani.setDuration(kDuration);
                     animations.add(ani);
                 }
 
                 dopt = to.optDouble("lineWidth");
                 if (!dopt.isNaN()){
                     ObjectAnimator ani = ObjectAnimator.ofFloat(shapeLayer, "lineWidth",  px2Dip(dopt.floatValue() * scale.width));
-                    ani.setStartDelay((int)(start * delegate.durationSec() * 1000));
-                    ani.setDuration((int)(duration * delegate.durationSec() * 1000));
+                    ani.setStartDelay(kStartDelay);
+                    ani.setDuration(kDuration);
                     animations.add(ani);
                 }
                 dopt = to.optDouble("strokeStart");
                 if (!dopt.isNaN()){
                     ObjectAnimator ani = ObjectAnimator.ofFloat(shapeLayer, "strokeStart", dopt.floatValue());
-                    ani.setStartDelay((int)(start * delegate.durationSec() * 1000));
-                    ani.setDuration((int)(duration * delegate.durationSec() * 1000));
+                    ani.setStartDelay(kStartDelay);
+                    ani.setDuration(kDuration);
                     animations.add(ani);
                 }
                 dopt = to.optDouble("fillColor");
                 if (!dopt.isNaN()){
                     ObjectAnimator ani = ObjectAnimator.ofFloat(shapeLayer, "strokeEnd", dopt.floatValue());
-                    ani.setStartDelay((int)(start * delegate.durationSec() * 1000));
-                    ani.setDuration((int)(duration * delegate.durationSec() * 1000));
+                    ani.setStartDelay(kStartDelay);
+                    ani.setDuration(kDuration);
                     animations.add(ani);
                 }
             }
@@ -1118,6 +1168,9 @@ public class SwipeElement extends SwipeView {
     }
 
     private Path parsePath(JSONObject shape, float w, float h, CGSize scale, DisplayMetrics dm) {
+        if (shape == null) {
+            return null;
+        }
         JSONObject shape0 = shape;
         JSONObject refs = shape.optJSONObject("path");
         if (refs != null) {
