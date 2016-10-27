@@ -1,4 +1,8 @@
 
 *.bin
+
 *.lock
+
 build/
+
+.gradle/
