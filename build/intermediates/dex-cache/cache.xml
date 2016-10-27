@@ -34,7 +34,7 @@
         jumboMode="false"
         optimize="true"
         revision="24.0.2"
-        sha1="4149a33d81d2338fbd31009d7a363c98e2cb51b3">
+        sha1="42f5925958b46f85fa8db4cb0816e7afdf518102">
         <dex dex="/Users/pete/Development/swipe-android/Sample/build/intermediates/pre-dexed/debug/swipe-android-Library-unspecified_70bbb9fc5cb8f75f79e271f5aeee527b672a2efc.jar" />
     </item>
     <item

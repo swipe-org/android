@@ -1329,17 +1329,6 @@ public class SwipeElement extends SwipeView {
         }
     }
 
-    /* TODO
-    private static void processShadow(JSONObject info, CGSize scale, layer:CALayer) {
-        if let shadowInfo = info["shadow"] as? [String:AnyObject] {
-            layer.shadowColor = SwipeParser.parseColor(shadowInfo["color"], defaultColor: UIColor.blackColor().CGColor)
-            layer.shadowOffset = SwipeParser.parseSize(shadowInfo["offset"], defaultValue: CGSizeMake(1, 1), scale:scale)
-            layer.shadowOpacity = SwipeParser.parseFloat(shadowInfo["opacity"], defaultValue:0.5)
-            layer.shadowRadius = SwipeParser.parseCGFloat(shadowInfo["radius"], defaultValue: 1.0) * scale.width
-        }
-    }
-    */
-
     private String parseText(SwipeNode originator, JSONObject info, String key) {
         if (info == null ) {
             return null;

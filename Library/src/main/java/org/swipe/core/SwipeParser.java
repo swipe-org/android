@@ -12,6 +12,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -59,6 +60,19 @@ public class SwipeParser {
         } else {
             return defaultValue;
         }
+    }
+
+    static CGSize parseSize(Object param, CGSize defaultValue, CGSize scale) {
+        if (param != null && param instanceof JSONArray && ((JSONArray) param).length() == 2) {
+            JSONArray values = (JSONArray)param;
+            Double val0 = values.optDouble(0);
+            Double val1 = values.optDouble(1);
+            if (!val0.isNaN() && !val1.isNaN()) {
+                return new CGSize(val0.floatValue() * scale.width, val1.floatValue() * scale.height);
+            }
+        }
+
+        return new CGSize(defaultValue.width * scale.width, defaultValue.height * scale.height);
     }
 
     static float parseFloat(JSONObject info, String key, float defaultValue) {
@@ -386,6 +400,16 @@ public class SwipeParser {
         }
 
         return fontNames;
+    }
+
+    static  {
+        String path = "/system/fonts";
+        File file = new File(path);
+        File ff[] = file.listFiles();
+        for (File f : ff) {
+            Log.d(TAG, "font " + f.toString());
+        }
+
     }
 
 }

@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.text.Layout;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -18,6 +19,7 @@ import org.json.JSONObject;
 import java.util.List;
 
 import static android.R.attr.defaultValue;
+import static android.R.attr.shadowRadius;
 
 /**
  * Created by pete on 10/27/16.
@@ -27,9 +29,15 @@ public class SwipeTextLayer extends TextView {
     private static final String TAG = "SwTextLayer";
     private boolean fTextBottom = false;
     private boolean fTextTop = false;
+    private DisplayMetrics dm = null;
 
     public SwipeTextLayer(Context context) {
         super(context);
+        dm = getContext().getResources().getDisplayMetrics();
+    }
+
+    private float px2Dip(float px) {
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, px, dm);
     }
 
     private void parseAlignment(String alignment) {
@@ -97,9 +105,19 @@ public class SwipeTextLayer extends TextView {
     }
 
     public void updateTextLayer(String text, JSONObject info, CGSize scale, CGSize dimension) {
+        setText(text);
         parseTextInfo(info, scale, dimension);
         setTextColor(SwipeParser.parseColor(info.optString("textColor"), Color.BLACK));
-        setText(text);
+
+        JSONObject shadowInfo = info.optJSONObject("shadow");
+        if (shadowInfo != null){
+            CGSize shadowOffset = SwipeParser.parseSize(shadowInfo.opt("offset"), new CGSize(1, 1), scale);
+            float shadowRadius = SwipeParser.parseFloat(shadowInfo.optDouble("radius"), 1) * scale.width;
+            float shadowOpacity = SwipeParser.parseFloat(shadowInfo.optDouble("opacity"), 0.5f);
+            int shadowColor = SwipeParser.parseColor(shadowInfo.opt("color"), Color.BLACK);
+            shadowColor = Color.argb((int)(Color.alpha(shadowColor) * shadowOpacity), Color.red(shadowColor), Color.green(shadowColor), Color.blue(shadowColor));
+            setShadowLayer(px2Dip(shadowRadius), px2Dip(shadowOffset.width), px2Dip(shadowOffset.height), shadowColor);
+        }
     }
 
     public static SwipeTextLayer parse(Context context, String text, JSONObject info, CGSize scale, CGSize dimension) {
