@@ -6,13 +6,16 @@ import android.graphics.Path;
 import android.graphics.RectF;
 import android.graphics.drawable.shapes.PathShape;
 import android.util.Log;
+import android.util.TypedValue;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -36,11 +39,11 @@ public class SwipeParser {
         try {
             if (SwipeParser.parseColor((new JSONObject("{ }")).optString("bc"), 0x01020304) != 0x01020304)
                 throw new AssertionError();
-            if (SwipeParser.parseColor((new JSONObject("{ \"bc\":\"#1234\" }")).optString("bc"), 0) != 0x04010203)
+            if (SwipeParser.parseColor((new JSONObject("{ \"bc\":\"#1234\" }")).optString("bc"), 0) != 0x44112233)
                 throw new AssertionError();
             if (SwipeParser.parseColor((new JSONObject("{ \"bc\":\"#01020304\" }")).optString("bc"), 0) != 0x04010203)
                 throw new AssertionError();
-            if (SwipeParser.parseColor((new JSONObject("{ \"bc\":\"#123\" }")).optString("bc"), 0) != 0xff010203)
+            if (SwipeParser.parseColor((new JSONObject("{ \"bc\":\"#123\" }")).optString("bc"), 0) != 0xff112233)
                 throw new AssertionError();
             if (SwipeParser.parseColor((new JSONObject("{ \"bc\":\"#010203\" }")).optString("bc"), 0) != 0xff010203)
                 throw new AssertionError();
@@ -145,26 +148,26 @@ public class SwipeParser {
                         long a = 255;
                         switch (value.length() - 1) {
                             case 3:
-                                r = v >> 8 & 0x00f;
-                                g = v >> 4 & 0x00f;
-                                b = v & 0x00f;
+                                r = v / 0x100 * 0x11;
+                                g = v / 0x10 % 0x10 * 0x11;
+                                b = v % 0x10 * 0x11;
                                 break;
                             case 4:
-                                r = v >> 12 & 0x000f;
-                                g = v >> 8 & 0x000f;
-                                b = v >> 4 & 0x000f;;
-                                a = v & 0x000f;
+                                r = v / 0x1000 * 0x11;
+                                g = v / 0x100 % 0x10 * 0x11;
+                                b = v / 0x10 % 0x10 * 0x11;
+                                a = v % 0x10 * 0x11;
                                 break;
                             case 6:
-                                r = v >> 16 & 0x0000ff;
-                                g = v >> 8 & 0x0000ff;
-                                b = v & 0x0000ff;
+                                r = v / 0x10000;
+                                g = v / 0x100;
+                                b = v;
                                 break;
                             case 8:
-                                r = v >> 24 & 0x0000ff;
-                                g = v >> 16 & 0x0000ff;
-                                b = v >> 8 & 0x0000ff;
-                                a = v & 0x0000ff;
+                                r = v / 0x1000000;
+                                g = v / 0x10000;
+                                b = v / 0x100;
+                                a = v;
                                 break;
                             default:
                                 break;
@@ -215,86 +218,47 @@ public class SwipeParser {
     }
 
 
-    static Matrix parseTransform(JSONObject value, float scaleX, float scaleY, JSONObject base, boolean fSkipTranslate, boolean fSkipScale) {
+    static JSONObject parseTransform(JSONObject value, JSONObject base, boolean fSkipTranslate, boolean fSkipScale) {
         if (value == null) {
             return null;
         }
 
         try {
-            Matrix xf = new Matrix();
+            JSONObject transform = new JSONObject("{}");
             boolean hasValue = false;
 
-            if (base != null) {
-                final String[] keys = {"translate", "rotate", "scale"};
-                for (String key : keys) {
-                    if (base.has(key) && !value.has(key)) {
-                        value.put(key, base.get(key));
-                    }
-                }
-            }
             if (fSkipTranslate) {
-                if (base != null) {
-                    JSONArray translate = base.optJSONArray("translate");
-                    if (translate != null && translate.length() == 2) {
-                        Double translate0 = translate.optDouble(0);
-                        Double translate1 = translate.optDouble(1);
-                        if (!translate0.isNaN() && !translate1.isNaN()) {
-                            xf.postTranslate(translate0.floatValue() * scaleX, translate1.floatValue() * scaleY);
-                        }
-                    }
+                if (base != null && base.has("translate")) {
+                    transform.put("translate", base.get("translate"));
                 }
-            } else {
-                JSONArray translate = value.optJSONArray("translate");
-                if (translate != null && translate.length() == 2) {
-                    Double translate0 = translate.optDouble(0);
-                    Double translate1 = translate.optDouble(1);
-                    if (!translate0.isNaN() && !translate1.isNaN()) {
-                        xf.postTranslate(translate0.floatValue() * scaleX, translate1.floatValue() * scaleY);
-                    }
-                    hasValue = true;
-                }
-            }
-            Double depth = value.optDouble("depth");
-            if (!depth.isNaN()){
-                // TODO xf = CATransform3DTranslate(xf, 0, 0, depth)
+            } else if (value.has("translate")) {
+                transform.put("translate", value.get("translate"));
                 hasValue = true;
             }
-            Double rot = value.optDouble("rotate");
-            if (!rot.isNaN()){
-                xf.postRotate(rot.floatValue());
+
+            if (value.has("depth")) {
+                transform.put("depth", value.get("depth"));
                 hasValue = true;
             }
-            JSONArray rots = value.optJSONArray("rotate");
-            if (rots != null && rots.length() == 3) {
-                Double rot0 = rots.optDouble(0);
-                Double rot1 = rots.optDouble(1);
-                Double rot2 = rots.optDouble(2);
-                if (!rot0.isNaN() && !rot1.isNaN() && !rot2.isNaN()) {
-                    // TODO xf = CATransform3DRotate(xf, rots[0] * m, 1, 0, 0)
-                    // TODO xf = CATransform3DRotate(xf, rots[1] * m, 0, 1, 0)
-                    // TODO xf = CATransform3DRotate(xf, rots[2] * m, 0, 0, 1)
-                    hasValue = true;
-                }
+            if (value.has("rotate")) {
+                transform.put("rotate", value.get("rotate"));
+                hasValue = true;
+            } else if (base != null && base.has("rotate")) {
+                transform.put("rotate", base.get("rotate"));
+                hasValue = true;
             }
+
             if (!fSkipScale) {
-                Double scale = value.optDouble("scale");
-                if (!scale.isNaN()){
-                    xf.postScale(scale.floatValue(), scale.floatValue());
+                if (value.has("scale")) {
+                    transform.put("scale", value.get("scale"));
                     hasValue = true;
-                }
-                JSONArray scales = value.optJSONArray("scale");
-                if (scales != null) {
-                    if (scales.length() == 2) {
-                        Double scale0 = scales.optDouble(0);
-                        Double scale1 = scales.optDouble(1);
-                        if (!scale0.isNaN() && !scale1.isNaN()) {
-                            xf.postScale(scale0.floatValue(), scale1.floatValue());
-                        }
-                    }
+                } else if (base != null && base.has("scale")) {
+                    transform.put("scale", base.get("scale"));
                     hasValue = true;
                 }
             }
-            return hasValue ? xf : null;
+
+            return hasValue ? transform : null;
         } catch (JSONException e) {
             Log.e(TAG, "parseTransform exception " + e);
             return null;
@@ -372,6 +336,56 @@ public class SwipeParser {
         } catch (JSONException e) {
             return object;
         }
+    }
+
+    static String localizedString(JSONObject params, String langId) {
+        if (langId != null) {
+            String text = params.optString(langId, null);
+            if (text != null) {
+                return text;
+            }
+        }
+
+        return params.optString("*", null);
+    }
+
+    static float parseFontSize(JSONObject info, float full, float defaultValue, boolean markdown) {
+        if (info == null) {
+            return defaultValue;
+        }
+
+        final String key = markdown ? "size" : "fontSize";
+
+        Double sizeValue = info.optDouble(key);
+        if (!sizeValue.isNaN()){
+            return sizeValue.floatValue();
+        }
+
+        return SwipeParser.parsePercent(info.optString(key, null), full, defaultValue);
+    }
+
+    static List<String> parseFontName(JSONObject info, boolean markdown) {
+        List<String> fontNames = new ArrayList<>();
+
+        if (info != null) {
+            final String key = markdown ? "name" : "fontName";
+            String name = info.optString(key, null);
+            if (name != null) {
+                fontNames.add(name);
+            } else {
+                JSONArray names = info.optJSONArray(key);
+                if (names != null){
+                    for (int i = 0; i < names.length(); i++) {
+                        name = names.optString(i, null);
+                        if (name != null) {
+                            fontNames.add(name);
+                        }
+                    }
+                }
+            }
+        }
+
+        return fontNames;
     }
 
 }

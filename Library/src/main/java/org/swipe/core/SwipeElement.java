@@ -25,12 +25,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static android.R.attr.defaultValue;
+import static android.R.attr.text;
 
 /**
  * Created by pete on 10/5/16.
  */
 
 public class SwipeElement extends SwipeView {
+
     interface Delegate {
         double durationSec();
         JSONObject prototypeWith(String name);
@@ -47,9 +49,9 @@ public class SwipeElement extends SwipeView {
         func map(url:NSURL) -> NSURL?
         func addedResourceURLs(urls:[NSURL:String], callback:() -> Void)
         func pageIndex() -> Int // for debugging
-        func localizedStringForKey(key:String) -> String?
-        func languageIdentifier() -> String?
-         */
+        */
+        String localizedStringForKey(String key);
+        String languageIdentifier();
     }
 
     private static final String TAG = "SwElem";
@@ -57,6 +59,7 @@ public class SwipeElement extends SwipeView {
     private List<ObjectAnimator> animations = new ArrayList<>();
     private boolean fRepeat = false;
     private SwipeShapeDrawable shapeLayer = null;
+    private SwipeTextLayer textLayer = null;
 
     private SwipeBackgroundDrawable bgDrawable = new SwipeBackgroundDrawable();
 
@@ -132,6 +135,10 @@ public class SwipeElement extends SwipeView {
 
                 if (shapeLayer != null) {
                     shapeLayer.draw(canvas);
+                }
+
+                if (textLayer != null) {
+                    textLayer.draw(canvas);
                 }
             }
 
@@ -583,13 +590,18 @@ public class SwipeElement extends SwipeView {
             view.addSubview(list.tableView)
             list.tableView.reloadData()
         }
-
-        if let text = parseText(self, info: info, key:"text") {
-            if self.helper == nil || !self.helper!.setText(text, scale:self.scale, info: info, dimension:screenDimension, layer: layer) {
-                self.textLayer = SwipeElement.addTextLayer(text, scale:scale, info: info, dimension: screenDimension, layer: layer)
-            }
+        */
+        String text = parseText(this, info, "text");
+        if (text != null){
+            // TODO if self.helper == nil || !self.helper!.setText(text, scale:self.scale, info: info, dimension:screenDimension, layer: layer) {
+                textLayer = SwipeTextLayer.parse(getContext(), text, info, scale, dimension);
+                if (textLayer != null) {
+                    viewGroup.addView(textLayer, new ViewGroup.LayoutParams((int)dipW, (int)dipH));
+                }
+            //    SwipeElement.processShadow(info, scale:scale, layer: layer)
+            //}
         }
-
+        /*
         // http://stackoverflow.com/questions/9290972/is-it-possible-to-make-avurlasset-work-without-a-file-extension
         var fStream:Bool = {
         if let fStream = info["stream"] as? Bool {
@@ -672,16 +684,74 @@ public class SwipeElement extends SwipeView {
             }
         }
 
-        if let transform = SwipeParser.parseTransform(info, scaleX:scale.width, scaleY:scale.height, base: nil, fSkipTranslate: false, fSkipScale: self.shapeLayer != nil) {
-            layer.transform = transform
-        }
-
-        layer.opacity = SwipeParser.parseFloat(info["opacity"])
-
-        if let visible = info["visible"] as? Bool where !visible {
-            layer.opacity = 0.0
-        }
         */
+        Double dopt;
+
+        JSONObject transform = SwipeParser.parseTransform(info, null, false, shapeLayer != null);
+        if (transform != null) {
+            dopt = transform.optDouble("rotate");
+            if (!dopt.isNaN()) {
+                viewGroup.setRotation(dopt.floatValue());
+            }
+
+            JSONArray rots = transform.optJSONArray("rotate");
+            if (rots != null && rots.length() == 3) {
+                Double rot0 = rots.optDouble(0);
+                Double rot1 = rots.optDouble(1);
+                Double rot2 = rots.optDouble(2);
+                if (!rot0.isNaN()) {
+                    viewGroup.setRotationX(rot0.floatValue());
+                }
+
+                if (!rot1.isNaN()) {
+                    viewGroup.setRotationX(rot1.floatValue());
+                }
+
+                if (!rot2.isNaN()) {
+                    viewGroup.setRotation(rot2.floatValue());
+                }
+            }
+
+            dopt = transform.optDouble("scale");
+            if (!dopt.isNaN()) {
+                viewGroup.setScaleX(dopt.floatValue());
+                viewGroup.setScaleY(dopt.floatValue());
+            }
+
+            JSONArray scales = transform.optJSONArray("scale");
+            if (scales != null && scales.length() == 2) {
+                Double d0 = scales.optDouble(0);
+                Double d1 = scales.optDouble(1);
+                if (!d0.isNaN()) {
+                    viewGroup.setScaleX(d0.floatValue());
+                }
+
+                if (!d1.isNaN()) {
+                    viewGroup.setScaleY(d1.floatValue());
+                }
+            }
+
+            JSONArray translate = transform.optJSONArray("translate");
+            if (translate != null && translate.length() == 3) {
+                Double translate0 = translate.optDouble(0);
+                Double translate1 = translate.optDouble(1);
+                Double translate2 = translate.optDouble(2);
+                if (!translate0.isNaN()) {
+                    viewGroup.setTranslationX(px2Dip(translate0.floatValue() * scale.width) + dipX);
+                }
+                if (!translate1.isNaN()) {
+                    viewGroup.setTranslationY(px2Dip(translate1.floatValue() * scale.height) + dipY);
+                }
+                if (!translate2.isNaN()) {
+                    viewGroup.setTranslationZ(px2Dip(translate2.floatValue() * scale.height) + dipY);
+                }
+            }
+        }
+
+        viewGroup.setAlpha(SwipeParser.parseFloat(info.optDouble("opacity"), viewGroup.getAlpha()));
+        if (!info.optBoolean("visible", true)) {
+            viewGroup.setAlpha(0);
+        }
 
         JSONObject to = info.optJSONObject("to");
         if (to != null) {
@@ -703,6 +773,9 @@ public class SwipeElement extends SwipeView {
             boolean fSkipTranslate = false;
             Path posPath = parsePath(to.opt("pos"), w0, h0, scale, dm);
             if (posPath != null){
+                Matrix xform = new Matrix();
+                xform.setTranslate(dipX, dipY);
+                posPath.transform(xform);
                 ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "x", "y", posPath);
                 ani.setStartDelay(kStartDelay);
                 ani.setDuration(kDuration);
@@ -731,41 +804,97 @@ public class SwipeElement extends SwipeView {
                 fSkipTranslate = true;
             }
 
-            Double dopt = to.optDouble("rotate");
-            if (!dopt.isNaN()){
-                ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "rotation",  dopt.floatValue());
-                ani.setStartDelay(kStartDelay);
-                ani.setDuration(kDuration);
-                animations.add(ani);
-            }
-
-            dopt = to.optDouble("scale");
-            if (!dopt.isNaN()){
-                ObjectAnimator aniX = ObjectAnimator.ofFloat(viewGroup, "scaleX",  dopt.floatValue());
-                aniX.setStartDelay(kStartDelay);
-                aniX.setDuration(kDuration);
-                animations.add(aniX);
-                ObjectAnimator aniY = ObjectAnimator.ofFloat(viewGroup, "scaleY",  dopt.floatValue());
-                aniY.setStartDelay(kStartDelay);
-                aniY.setDuration(kDuration);
-                animations.add(aniY);
-            }
-
-            JSONArray translate = to.optJSONArray("translate");
-            if (translate != null && translate.length() == 2 && !fSkipTranslate) {
-                Double translate0 = translate.optDouble(0);
-                Double translate1 = translate.optDouble(1);
-                if (!translate0.isNaN()) {
-                    ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "translationX", px2Dip(translate0.floatValue() * scale.width) + dipX);
-                    ani.setStartDelay((int) (start * delegate.durationSec() * 1000));
-                    ani.setDuration((int) (duration * delegate.durationSec() * 1000));
+            transform = SwipeParser.parseTransform(to, info, fSkipTranslate, shapeLayer != null);
+            if (transform != null) {
+                dopt = transform.optDouble("rotate");
+                if (!dopt.isNaN()) {
+                    ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "rotation", dopt.floatValue());
+                    ani.setStartDelay(kStartDelay);
+                    ani.setDuration(kDuration);
                     animations.add(ani);
                 }
-                if (!translate1.isNaN()) {
-                    ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "translationY", px2Dip(translate1.floatValue() * scale.height) + dipY);
-                    ani.setStartDelay((int) (start * delegate.durationSec() * 1000));
-                    ani.setDuration((int) (duration * delegate.durationSec() * 1000));
-                    animations.add(ani);
+
+                JSONArray rots = transform.optJSONArray("rotate");
+                if (rots != null && rots.length() == 3) {
+                    Double rot0 = rots.optDouble(0);
+                    Double rot1 = rots.optDouble(1);
+                    Double rot2 = rots.optDouble(2);
+                    if (!rot0.isNaN()) {
+                        ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "rotationX", rot0.floatValue());
+                        ani.setStartDelay(kStartDelay);
+                        ani.setDuration(kDuration);
+                        animations.add(ani);
+                    }
+
+                    if (!rot1.isNaN()) {
+                        ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "rotationY", rot1.floatValue());
+                        ani.setStartDelay(kStartDelay);
+                        ani.setDuration(kDuration);
+                        animations.add(ani);
+                    }
+
+                    if (!rot2.isNaN()) {
+                        ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "rotation", rot2.floatValue());
+                        ani.setStartDelay(kStartDelay);
+                        ani.setDuration(kDuration);
+                        animations.add(ani);
+                    }
+                }
+
+                dopt = transform.optDouble("scale");
+                if (!dopt.isNaN()) {
+                    ObjectAnimator aniX = ObjectAnimator.ofFloat(viewGroup, "scaleX", dopt.floatValue());
+                    aniX.setStartDelay(kStartDelay);
+                    aniX.setDuration(kDuration);
+                    animations.add(aniX);
+                    ObjectAnimator aniY = ObjectAnimator.ofFloat(viewGroup, "scaleY", dopt.floatValue());
+                    aniY.setStartDelay(kStartDelay);
+                    aniY.setDuration(kDuration);
+                    animations.add(aniY);
+                }
+
+                JSONArray scales = transform.optJSONArray("scale");
+                if (scales != null && scales.length() == 2) {
+                    Double d0 = scales.optDouble(0);
+                    Double d1 = scales.optDouble(1);
+                    if (!d0.isNaN()) {
+                        ObjectAnimator aniX = ObjectAnimator.ofFloat(viewGroup, "scaleX", d0.floatValue());
+                        aniX.setStartDelay(kStartDelay);
+                        aniX.setDuration(kDuration);
+                        animations.add(aniX);
+                    }
+
+                    if (!d1.isNaN()) {
+                        ObjectAnimator aniY = ObjectAnimator.ofFloat(viewGroup, "scaleY", d1.floatValue());
+                        aniY.setStartDelay(kStartDelay);
+                        aniY.setDuration(kDuration);
+                        animations.add(aniY);
+                    }
+                }
+
+                JSONArray translate = transform.optJSONArray("translate");
+                if (translate != null && translate.length() == 3 && !fSkipTranslate) {
+                    Double translate0 = translate.optDouble(0);
+                    Double translate1 = translate.optDouble(1);
+                    Double translate2 = translate.optDouble(2);
+                    if (!translate0.isNaN()) {
+                        ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "translationX", px2Dip(translate0.floatValue() * scale.width) + dipX);
+                        ani.setStartDelay((int) (start * delegate.durationSec() * 1000));
+                        ani.setDuration((int) (duration * delegate.durationSec() * 1000));
+                        animations.add(ani);
+                    }
+                    if (!translate1.isNaN()) {
+                        ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "translationY", px2Dip(translate1.floatValue() * scale.height) + dipY);
+                        ani.setStartDelay((int) (start * delegate.durationSec() * 1000));
+                        ani.setDuration((int) (duration * delegate.durationSec() * 1000));
+                        animations.add(ani);
+                    }
+                    if (!translate2.isNaN()) {
+                        ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "translationZ", px2Dip(translate2.floatValue() * scale.height) + dipY);
+                        ani.setStartDelay((int) (start * delegate.durationSec() * 1000));
+                        ani.setDuration((int) (duration * delegate.durationSec() * 1000));
+                        animations.add(ani);
+                    }
                 }
             }
 
@@ -1198,6 +1327,54 @@ public class SwipeElement extends SwipeView {
         } else {
             return null;
         }
+    }
+
+    /* TODO
+    private static void processShadow(JSONObject info, CGSize scale, layer:CALayer) {
+        if let shadowInfo = info["shadow"] as? [String:AnyObject] {
+            layer.shadowColor = SwipeParser.parseColor(shadowInfo["color"], defaultColor: UIColor.blackColor().CGColor)
+            layer.shadowOffset = SwipeParser.parseSize(shadowInfo["offset"], defaultValue: CGSizeMake(1, 1), scale:scale)
+            layer.shadowOpacity = SwipeParser.parseFloat(shadowInfo["opacity"], defaultValue:0.5)
+            layer.shadowRadius = SwipeParser.parseCGFloat(shadowInfo["radius"], defaultValue: 1.0) * scale.width
+        }
+    }
+    */
+
+    private String parseText(SwipeNode originator, JSONObject info, String key) {
+        if (info == null ) {
+            return null;
+        }
+
+        Object value = info.opt(key);
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof String) {
+            return (String) value;
+        }
+
+        JSONObject params = info.optJSONObject(key);
+        if (params == null) {
+            return null;
+        }
+
+        JSONObject valInfo = params.optJSONObject("valueOf");
+        if (valInfo != null){
+            /* TODO
+            if let text = originator.getValue(originator, info: valInfo) as? String {
+                return text
+            }
+            */
+            return null;
+        } else {
+            String ref = params.optString("ref", null);
+            if (ref != null) {
+                return delegate.localizedStringForKey(ref);
+            }
+        }
+
+        return SwipeParser.localizedString(params, delegate.languageIdentifier());
     }
 
     @Override

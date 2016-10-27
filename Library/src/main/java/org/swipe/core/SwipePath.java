@@ -37,9 +37,8 @@ public class SwipePath {
         Matcher matcher = patternSVG.matcher(string);
         PointF pt = new PointF(0, 0);
         PointF cp = new PointF(0, 0); // last control point for S command
-        boolean end = false;
 
-        while (matcher.find() && !end) {
+        while (matcher.find()) {
             String group = matcher.group();
             String cmd = group.substring(0, 1);
             String params = group.substring(1);
@@ -76,7 +75,6 @@ public class SwipePath {
                 case "z":
                 case "Z":
                     path.close();
-                    end = true;
                     break;
                 case "c": {
                     int i = 0;

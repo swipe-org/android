@@ -22,7 +22,7 @@ import java.util.List;
  * Created by pete on 10/5/16.
  */
 
-public class SwipeView extends SwipeNode {
+public abstract class SwipeView extends SwipeNode {
     private final static String TAG = "SwView";
     protected List<URL> resourceURLs = null;
     protected Context context = null;
@@ -46,22 +46,7 @@ public class SwipeView extends SwipeNode {
         return resourceURLs;
     }
 
-    void createViewGroup() {
-        viewGroup = new ViewGroup(getContext()) {
-            @Override
-            protected void onLayout(boolean changed, int l, int t, int r, int b) {
-                //Log.d(TAG, "onLayout");
-                setClipChildren(false);
-
-                for (int c = 0; c < this.getChildCount(); c++) {
-                    View v = this.getChildAt(c);
-                    ViewGroup.LayoutParams lp = v.getLayoutParams();
-                    //Log.d(TAG, "layout " + c + " w:" + lp.width + " h:" + lp.height);
-                    v.layout(0, 0, lp.width, lp.height);
-                }
-            }
-        };
-    }
+    abstract void createViewGroup();
 
     ViewGroup loadView() {
         createViewGroup();

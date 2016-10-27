@@ -1,0 +1,196 @@
+{
+  "title": "",
+  "pages": [
+    {
+      "elements": [
+        {
+          "id": "id0"
+        },
+        {
+          "id": "id3"
+        },
+        {
+          "id": "id4"
+        }
+      ],
+      "template": "s0",
+      "play": "auto"
+    },
+    {
+      "elements": [
+        {
+          "to": {
+            "pos": "M0,0 l92.5,-328.5",
+            "translate": [
+              92.5,
+              -328.5
+            ]
+          },
+          "id": "id0"
+        },
+        {
+          "to": {
+            "opacity": 1
+          },
+          "id": "id3",
+          "_hidden": false
+        },
+        {
+          "id": "id4"
+        }
+      ],
+      "template": "s0",
+      "play": "scroll"
+    },
+    {
+      "elements": [
+        {
+          "id": "id0",
+          "translate": [
+            92.5,
+            -328.5
+          ]
+        },
+        {
+          "opacity": 1,
+          "to": {
+            "pos": "M0,0 l266.5,420.0",
+            "rotate": [
+              0,
+              0,
+              92
+            ],
+            "translate": [
+              266.5,
+              420
+            ]
+          },
+          "id": "id3",
+          "_hidden": false
+        },
+        {
+          "to": {
+            "opacity": 1
+          },
+          "id": "id4",
+          "_hidden": false
+        }
+      ],
+      "template": "s0",
+      "play": "scroll"
+    }
+  ],
+  "dimension": [
+    576,
+    1024
+  ],
+  "languages": [
+    {
+      "id": "*",
+      "title": "Default"
+    }
+  ],
+  "templates": {
+    "pages": {
+      "s0": {
+        "elements": [
+          {
+            "elements": [
+              {
+                "fillColor": "#ffffffff",
+                "w": 250,
+                "id": "id1",
+                "path": "M125,0C194.03,0,250,44.77,250,100C250,155.23,194.03,200,125,200C55.98,200,-0,155.23,0,100C0,44.77,55.98,-0,125,0ZM48.12,187.50C63.65,187.50,76.25,197.57,76.25,210C76.25,222.43,63.65,232.50,48.12,232.50C32.60,232.50,20,222.43,20,210C20,197.57,32.60,187.50,48.12,187.50ZM15.62,225C24.25,225,31.25,230.60,31.25,237.50C31.25,244.40,24.25,250,15.62,250C7,250,0,244.40,0,237.50C0,230.60,7,225,15.62,225Z",
+                "lineWidth": 1,
+                "x": 0,
+                "y": 0,
+                "strokeColor": "#000000ff",
+                "h": 250
+              },
+              {
+"bc":"#ff000044",
+                "w": 200,
+                "id": "id2",
+                "text": {
+                  "*": "Text"
+                },
+                "fontSize": 40,
+                "x": 25,
+                "textAlign": "center",
+                "textColor": "#000000ff",
+                "y": 50,
+                "h": 100,
+                "fontName": "Helvetica"
+              }
+            ],
+            "x": 163,
+            "w": 250,
+            "id": "id0",
+            "y": 387,
+            "h": 250
+          },
+          {
+"bc":"#ff000044",
+            "textColor": "#000000ff",
+            "w": 200,
+            "id": "id3",
+            "text": {
+              "*": "Text line one then two plus"
+            },
+            "fontSize": 40,
+            "opacity": 0,
+            "x": 55.5,
+            "textAlign": "left",
+            "_hidden": true,
+            "y": 361,
+            "h": 200,
+            "fontName": "Helvetica"
+          },
+          {
+"bc":"#ff000044",
+            "w": 200,
+            "fontSize": 46,
+            "x": 188,
+            "textAlign": "right",
+            "_hidden": true,
+            "id": "id4",
+            "text": {
+              "*": "Text on two three four "
+            },
+            "opacity": 0,
+            "textColor": "#9200b6ff",
+            "scale": [
+              2.336,
+              2.013
+            ],
+            "y": 412,
+            "fontName": "Courier-Bold",
+            "h": 200
+          },
+          {
+            "shadow": {
+              "opacity": 1,
+              "radius": 4
+            },
+            "w": "90%",
+            "id": "caption",
+            "text": {
+              "ref": "caption"
+            },
+            "opacity": 0,
+            "x": "5%",
+            "textColor": "#fff",
+            "to": {
+              "opacity": 1
+            },
+            "textAlign": "bottom",
+            "y": "2.5%",
+            "h": "95%"
+          }
+        ],
+        "eyePosition": 1.5
+      }
+    }
+  },
+  "type": "net.swipe.swipe"
+}

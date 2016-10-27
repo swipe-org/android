@@ -140,6 +140,25 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     }
 
     int getIndex() { return index; }
+
+    @Override
+    void createViewGroup() {
+        viewGroup = new ViewGroup(getContext()) {
+            @Override
+            protected void onLayout(boolean changed, int l, int t, int r, int b) {
+                //Log.d(TAG, "onLayout");
+                setClipChildren(false);
+
+                for (int c = 0; c < this.getChildCount(); c++) {
+                    View v = this.getChildAt(c);
+                    ViewGroup.LayoutParams lp = v.getLayoutParams();
+                    //Log.d(TAG, "layout " + c + " w:" + lp.width + " h:" + lp.height);
+                    v.layout(0, 0, lp.width, lp.height);
+                }
+            }
+        };
+    }
+
     @Override
     ViewGroup loadView() {
         super.loadView();
@@ -443,5 +462,17 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     @Override
     public URL baseURL() {
         return delegate.baseURL();
+    }
+
+    @Override
+    public String localizedStringForKey(String key) {
+        // TODO
+        return null;
+    }
+
+    @Override
+    public String languageIdentifier() {
+        // TODO
+        return null;
     }
 }
