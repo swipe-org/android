@@ -12,7 +12,8 @@
                 { "x":50,  "y":100, "w":100, "h":100, "bc":"red", "cornerRadius":20, "borderWidth":10, "borderColor":"yellow",
                     "to":{ "bc":"purple", "cornerRadius":10, "borderWidth":2, "borderColor":"magenta", "opacity":0.5 } },
                 { "x":50,  "y":50, "lineWidth":3, "strokeColor":"#e40000ff", "path":"M54.5,324.5Q106,199,0.0,214.0 226.5,0.0,202.0,316.0 155,211,54.5,324.5Z",
-                    "to":{ "lineWidth":10, "strokeColor":"#ffff00ff", "fillColor": "#00ffffe0" }
+                     "shadow":{ "color":"#00f", "offset":[0,3], "opacity":0.8, "radius":5.0 },
+                     "to":{ "lineWidth":10, "strokeColor":"#ffff00ff", "fillColor": "#00ffffe0" }
                 },
                 {
                     "bc":"#00ff0066",

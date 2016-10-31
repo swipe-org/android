@@ -516,7 +516,17 @@ public class SwipeElement extends SwipeView {
             shapeLayer.setStrokeColor(SwipeParser.parseColor(info, "strokeColor", Color.BLACK));
             shapeLayer.setLineWidth(px2Dip(SwipeParser.parseFloat(info, "lineWidth", 1) * scale.width));
 
-            // TODO SwipeElement.processShadow(info, scale:scale, layer: shapeLayer);
+            JSONObject shadowInfo = info.optJSONObject("shadow");
+            if (shadowInfo != null) {
+                CGSize shadowOffset = SwipeParser.parseSize(shadowInfo.opt("offset"), new CGSize(1, 1), scale);
+                float shadowRadius = SwipeParser.parseFloat(shadowInfo.optDouble("radius"), 1) * scale.width;
+                float shadowOpacity = SwipeParser.parseFloat(shadowInfo.optDouble("opacity"), 0.5f);
+                int shadowColor = SwipeParser.parseColor(shadowInfo.opt("color"), Color.BLACK);
+                shadowColor = Color.argb((int) (Color.alpha(shadowColor) * shadowOpacity), Color.red(shadowColor), Color.green(shadowColor), Color.blue(shadowColor));
+                shapeLayer.setShadowRadius(px2Dip(shadowRadius));
+                shapeLayer.setShadowOffset(new CGSize(px2Dip(shadowOffset.width), px2Dip(shadowOffset.height)));
+                shapeLayer.setShadowColor(shadowColor);
+            }
 
             shapeLayer.setLineCap(Paint.Cap.ROUND);
             shapeLayer.setStrokeStart(SwipeParser.parseFloat(info, "strokeStart", 0));

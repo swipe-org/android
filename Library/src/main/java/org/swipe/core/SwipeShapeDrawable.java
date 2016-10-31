@@ -1,11 +1,15 @@
 package org.swipe.core;
 
+import android.graphics.BlurMaskFilter;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.PathShape;
+
+import org.json.JSONObject;
 
 /**
  * Created by pete on 10/21/16.
@@ -21,6 +25,9 @@ class SwipeShapeDrawable extends ShapeDrawable {
     private Paint.Cap lineCap = Paint.Cap.ROUND;
     private float strokeStart = 0;
     private float strokeEnd = 1;
+    private CGSize shadowOffset = null;
+    private float shadowRadius = 1;
+    private int shadowColor = Color.BLACK;
 
     SwipeShapeDrawable(Path path, float dipW, float dipH) {
         this.path = path;
@@ -50,10 +57,24 @@ class SwipeShapeDrawable extends ShapeDrawable {
     public float getStrokeEnd () { return this.strokeEnd; }
     public void setStrokeEnd(float strokeEnd) { this.strokeEnd = strokeEnd; }
 
+    public int getShadowColor() { return shadowColor; }
+    public void setShadowColor(int shadowColor) { this.shadowColor = shadowColor; }
+
+    public CGSize getShadowOffset() { return shadowOffset; }
+    public void setShadowOffset(CGSize shadowOffset) { this.shadowOffset = shadowOffset; }
+
+    public float getShadowRadius() { return shadowRadius; }
+    public void setShadowRadius(float shadowRadius) { this.shadowRadius = shadowRadius; }
+
     @Override
     public void draw(Canvas canvas) {
         Paint p = getPaint();
         p.reset();
+        p.setAntiAlias(true);
+
+        if (shadowOffset != null) {
+            p.setShadowLayer(shadowRadius, shadowOffset.width, shadowOffset.height, shadowColor);
+        }
 
         if (fillColor != Color.TRANSPARENT) {
             p.setStyle(Paint.Style.FILL);
