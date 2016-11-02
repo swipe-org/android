@@ -30,7 +30,7 @@ public class SwipePath {
         Path path = new Path();
 
         if (string.equals("ellipse")) {
-            path.addOval(0, 0, w * scale.width, h * scale.height, Path.Direction.CW);
+            path.addOval(0, 0, TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, w * scale.width, dm), TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, h * scale.height, dm), Path.Direction.CW);
             return path;
         }
 

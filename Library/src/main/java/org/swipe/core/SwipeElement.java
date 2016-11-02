@@ -4,6 +4,7 @@ import android.animation.ArgbEvaluator;
 import android.animation.ObjectAnimator;
 import android.animation.TypeEvaluator;
 import android.content.Context;
+import android.graphics.BlurMaskFilter;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
@@ -16,6 +17,7 @@ import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewDebug;
 import android.view.ViewGroup;
 import android.webkit.WebView;
 import android.widget.LinearLayout;
@@ -140,14 +142,13 @@ public class SwipeElement extends SwipeView {
             return ((int)degrees + 180) % 360;
         }
     }
-
+    
     @Override
     void createViewGroup() {
         viewGroup = new ViewGroup(getContext()) {
 
             @Override
             protected void onDraw(Canvas canvas) {
-
                 if (shapeLayer != null) {
                     shapeLayer.draw(canvas);
                 }
@@ -160,7 +161,6 @@ public class SwipeElement extends SwipeView {
             @Override
             protected void onLayout(boolean changed, int l, int t, int r, int b) {
                 //Log.d(TAG, "onLayout");
-                setClipChildren(false);
                 for (int c = 0; c < this.getChildCount(); c++) {
                     View v = this.getChildAt(c);
                     ViewGroup.LayoutParams lp = v.getLayoutParams();
@@ -169,6 +169,8 @@ public class SwipeElement extends SwipeView {
                 }
             }
         };
+
+        viewGroup.setClipChildren(false);
     }
 
     @Override
@@ -350,27 +352,31 @@ public class SwipeElement extends SwipeView {
         final float dipH = px2Dip(h);
         viewGroup.setX(dipX);
         viewGroup.setY(dipY);
+        viewGroup.setPivotX(dipW / 2);
+        viewGroup.setPivotY(dipH / 2);
         viewGroup.setLayoutParams(new ViewGroup.LayoutParams((int)dipW,(int)dipH));
+
+        JSONArray anchorValues = info.optJSONArray("anchor");
+        if (anchorValues != null && anchorValues.length() == 2 && w0 > 0 && h0 > 0) {
+            float posx = SwipeParser.parsePercentAny(anchorValues.opt(0), w0, Float.NaN);
+            float posy = SwipeParser.parsePercentAny(anchorValues.opt(1), h0, Float.NaN);
+            if (!Float.isNaN(posx) && !Float.isNaN(posy)) {
+                viewGroup.setPivotX(px2Dip(posx * scale.width));
+                viewGroup.setPivotY(px2Dip(posy * scale.height));
+            }
+        }
+
+        JSONArray posValues = info.optJSONArray("pos");
+        if (posValues != null && posValues.length() == 2) {
+            float posx = SwipeParser.parsePercentAny(posValues.opt(0), dimension.width, Float.NaN);
+            float posy = SwipeParser.parsePercentAny(posValues.opt(1), dimension.height, Float.NaN);
+            if (!Float.isNaN(posx) && !Float.isNaN(posy)) {
+                viewGroup.setX(px2Dip(posx * scale.width) - viewGroup.getPivotX());
+                viewGroup.setY(px2Dip(posy * scale.height) - viewGroup.getPivotY());
+            }
+        }
+
         /*
-        #if os(OSX)
-        let layer = view.makeBackingLayer()
-        #else
-        let layer = view.layer
-        #endif
-        self.layer = layer
-        
-        if let values = info["anchor"] as? [AnyObject] where values.count == 2 && w0 > 0 && h0 > 0,
-                let posx = SwipeParser.parsePercentAny(values[0], full: w0, defaultValue: 0),
-        let posy = SwipeParser.parsePercentAny(values[1], full: h0, defaultValue: 0) {
-            layer.anchorPoint = CGPointMake(posx / w0, posy / h0)
-        }
-
-        if let values = info["pos"] as? [AnyObject] where values.count == 2,
-                let posx = SwipeParser.parsePercentAny(values[0], full: dimension.width, defaultValue: 0),
-        let posy = SwipeParser.parsePercentAny(values[1], full: dimension.height, defaultValue: 0) {
-            layer.position = CGPointMake(posx * scale.width, posy * scale.height)
-        }
-
         if let value = info["action"] as? String {
             action = value
             #if os(iOS) // tvOS has some focus issue with UIButton, figure out OSX later
@@ -409,12 +415,9 @@ public class SwipeElement extends SwipeView {
         if let focusable = info["focusable"] as? Bool {
             self.fFocusable = focusable
         }
-
-        if let value = info["clip"] as? Bool {
-            //view.clipsToBounds = value
-            layer.masksToBounds = value
-        }
-
+        */
+        viewGroup.setClipToOutline(info.optBoolean("clip", false));
+        /*
         if let image = imageRef {
             let rc = view.bounds
             let imageLayer = CALayer()
@@ -583,6 +586,8 @@ public class SwipeElement extends SwipeView {
                 }
             }
             */
+        } else {
+
         }
         List<SwipeMarkdown.Element> markdown = delegate.parseMarkdown(info.opt("markdown"));
         if (markdown != null) {

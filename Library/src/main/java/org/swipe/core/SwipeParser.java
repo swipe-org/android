@@ -4,15 +4,19 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Path;
 import android.graphics.RectF;
+import android.graphics.drawable.InsetDrawable;
 import android.graphics.drawable.shapes.PathShape;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
+import android.view.View;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.InterruptedIOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -73,6 +77,19 @@ public class SwipeParser {
         }
 
         return new CGSize(defaultValue.width * scale.width, defaultValue.height * scale.height);
+    }
+
+    static float parsePercentAny(Object value, float full, float defaultValue) {
+        if (value != null) {
+            if (value instanceof Double) {
+                return ((Double) value).floatValue();
+            } else if (value instanceof Integer) {
+                return ((Integer) value).floatValue();
+            } else if (value instanceof String) {
+                return SwipeParser.parsePercent((String) value, full, defaultValue);
+            }
+        }
+        return defaultValue;
     }
 
     static float parseFloat(JSONObject info, String key, float defaultValue) {
