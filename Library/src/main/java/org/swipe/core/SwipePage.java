@@ -43,9 +43,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         func stopSpeaking()
         */
         int currentPageIndex();
-        /*
-        func parseMarkdown(markdowns:[String]) -> NSAttributedString
-        */
+        List<SwipeMarkdown.Element> parseMarkdown(Object markdowns);
         URL baseURL();
         /*
         func voice(k:String?) -> [String:AnyObject]
@@ -458,6 +456,11 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
 
     @Override
     public JSONObject prototypeWith(String name) { return delegate.prototypeWith(name); }
+
+    @Override
+    public List<SwipeMarkdown.Element> parseMarkdown(Object markdowns) {
+        return delegate.parseMarkdown(markdowns);
+    }
 
     @Override
     public URL baseURL() {

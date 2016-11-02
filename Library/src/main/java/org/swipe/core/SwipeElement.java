@@ -13,8 +13,13 @@ import android.graphics.PathMeasure;
 import android.graphics.RectF;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.WebView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -42,8 +47,8 @@ public class SwipeElement extends SwipeView {
         func onAction(element:SwipeElement)
         func didStartPlaying(element:SwipeElement)
         func didFinishPlaying(element:SwipeElement, completed:Bool)
-        func parseMarkdown(element:SwipeElement, markdowns:[String]) -> NSAttributedString
         */
+        List<SwipeMarkdown.Element> parseMarkdown(Object markdowns);
         URL baseURL();
         /*
         func map(url:NSURL) -> NSURL?
@@ -87,6 +92,16 @@ public class SwipeElement extends SwipeView {
     SwipeElement(Context _context, CGSize _dimension, CGSize _scale, JSONObject _info, SwipeNode parent, SwipeElement.Delegate _delegate) {
         super(_context, _dimension, _scale, _info);
         delegate = _delegate;
+
+        String template = info.optString("template", null);
+        if (template == null) {
+            template = info.optString("element", null);
+            if (template != null) {
+                MyLog(TAG, "DEPRECATED element; use 'template'");
+            }
+        }
+
+        super.info =  SwipeParser.inheritProperties(info, delegate.prototypeWith(template));
     }
 
     private class PathRotationEvaluator implements TypeEvaluator<Number> {
@@ -159,6 +174,8 @@ public class SwipeElement extends SwipeView {
     @Override
     ViewGroup loadView() {
         super.loadView();
+
+        setTimeOffsetTo(0);
 
         int bc = SwipeParser.parseColor(info, "bc", Color.TRANSPARENT);
         bgDrawable.setBackgroundColor(bc);
@@ -564,28 +581,43 @@ public class SwipeElement extends SwipeView {
                     subLayer.strokeEnd = shapeLayer.strokeEnd
                     hostLayer.addSublayer(subLayer)
                 }
-            */
             }
+            */
+        }
+        List<SwipeMarkdown.Element> markdown = delegate.parseMarkdown(info.opt("markdown"));
+        if (markdown != null) {
+            ViewGroup wrapper = new ViewGroup(getContext()) {
+                @Override
+                protected void onLayout(boolean changed, int l, int t, int r, int b) {
+                    setClipChildren(false);
+                    for (int c = 0; c < this.getChildCount(); c++) {
+                        View v = this.getChildAt(c);
+                        ViewGroup.LayoutParams lp = v.getLayoutParams();
+                        //Log.d(TAG, "layout " + c + " w:" + lp.width + " h:" + lp.height);
+                        v.layout(0, 0, lp.width, lp.height);
+                    }
+                }
+            };
+
+            float nextY = dipY;
+            for (SwipeMarkdown.Element e : markdown) {
+                TextView tv = new TextView(getContext());
+                tv.setText(e.text);
+                tv.setTextSize(e.fontSize);
+                tv.setTextColor(e.textColor);
+                tv.setGravity(e.textAlignment);
+                tv.setX(0);
+                tv.setY(nextY);
+                tv.measure((int)dipW, (int)dipH);
+                int mh = tv.getMeasuredHeight();
+                nextY = nextY + mh + e.lineSpacing;
+                wrapper.addView(tv, new ViewGroup.LayoutParams((int)dipW, (int) mh));
+            }
+
+            wrapper.setY((dipH - nextY)/2); // center vertically in self
+            viewGroup.addView(wrapper, new ViewGroup.LayoutParams((int) dipW, ViewGroup.LayoutParams.WRAP_CONTENT));
+        }
         /*
-        } else {
-            SwipeElement.processShadow(info, scale:scale, layer: layer)
-        }
-
-        var mds = info["markdown"]
-        if let md = mds as? String {
-            mds = [md]
-        }
-        if let markdowns = mds as? [String] {
-            #if !os(OSX) // REVIEW
-            let attrString = self.delegate.parseMarkdown(self, markdowns: markdowns)
-            let rcLabel = view.bounds
-            let label = UILabel(frame: rcLabel)
-            label.attributedText = attrString
-            label.numberOfLines = 999
-            view.addSubview(label)
-            #endif
-        }
-
         if let value = info["textArea"] as? [String:AnyObject] {
             let textView = SwipeTextArea(parent: self, info: value, frame: view.bounds, screenDimension: self.screenDimension)
             helper = textView

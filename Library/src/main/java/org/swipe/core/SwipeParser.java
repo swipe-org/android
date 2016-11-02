@@ -401,15 +401,4 @@ public class SwipeParser {
 
         return fontNames;
     }
-
-    static  {
-        String path = "/system/fonts";
-        File file = new File(path);
-        File ff[] = file.listFiles();
-        for (File f : ff) {
-            Log.d(TAG, "font " + f.toString());
-        }
-
-    }
-
 }

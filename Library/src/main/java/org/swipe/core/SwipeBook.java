@@ -60,6 +60,7 @@ public class SwipeBook implements SwipePage.Delegate {
     private Map<String, SwipePageTemplate> templatePages = new HashMap<>();
     private JSONObject templateElements = null;
     private JSONObject templates = null;
+    private SwipeMarkdown markdown = null;
 
     public View getView() { return scrollView; }
     public boolean viewstate() { return viewstate; }
@@ -146,6 +147,8 @@ public class SwipeBook implements SwipePage.Delegate {
         DisplayMetrics dm = getContext().getResources().getDisplayMetrics();
         viewWidthDIP = (int)(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, scrWidth, dm));
         viewHeightDIP = (int)(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, scrHeight, dm));
+
+        markdown = new SwipeMarkdown(bookInfo.optJSONObject("markdown"), scale, scrWidth, scrHeight, dm);
     }
 
     public List<URL> getResourceURLs() {
@@ -533,6 +536,11 @@ public class SwipeBook implements SwipePage.Delegate {
         }
 
         return templateElements.optJSONObject(name);
+    }
+
+    @Override
+    public List<SwipeMarkdown.Element> parseMarkdown(Object markdowns) {
+        return markdown.parse(markdowns);
     }
 
     @Override
