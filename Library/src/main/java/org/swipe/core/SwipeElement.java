@@ -142,7 +142,7 @@ public class SwipeElement extends SwipeView {
             return ((int)degrees + 180) % 360;
         }
     }
-    
+
     @Override
     void createViewGroup() {
         viewGroup = new ViewGroup(getContext()) {
@@ -534,7 +534,7 @@ public class SwipeElement extends SwipeView {
             }
             shapeLayer.setFillColor(SwipeParser.parseColor(info, "fillColor", Color.TRANSPARENT));
             shapeLayer.setStrokeColor(SwipeParser.parseColor(info, "strokeColor", Color.BLACK));
-            shapeLayer.setLineWidth(px2Dip(SwipeParser.parseFloat(info, "lineWidth", 1) * scale.width));
+            shapeLayer.setLineWidth(px2Dip(SwipeParser.parseFloat(info, "lineWidth", 0) * scale.width));
 
             JSONObject shadowInfo = info.optJSONObject("shadow");
             if (shadowInfo != null) {

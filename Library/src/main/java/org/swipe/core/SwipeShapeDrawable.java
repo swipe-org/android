@@ -21,7 +21,7 @@ class SwipeShapeDrawable extends ShapeDrawable {
     private float dipH = 0;
     private int fillColor = Color.TRANSPARENT;
     private int strokeColor = Color.BLACK;
-    private float lineWidth = 1;
+    private float lineWidth = 0;
     private Paint.Cap lineCap = Paint.Cap.ROUND;
     private float strokeStart = 0;
     private float strokeEnd = 1;
@@ -82,11 +82,17 @@ class SwipeShapeDrawable extends ShapeDrawable {
             canvas.drawPath(path, p);
         }
 
-        p.setStyle(Paint.Style.STROKE);
-        p.setStrokeWidth(lineWidth);
-        p.setStrokeCap(lineCap);
-        p.setColor(strokeColor);
-
-        canvas.drawPath(path, p);
+        if (lineWidth > 0) {
+            p.setStyle(Paint.Style.STROKE);
+            p.setStrokeWidth(lineWidth);
+            p.setStrokeCap(lineCap);
+            p.setColor(strokeColor);
+            canvas.drawPath(path, p);
+        } else {
+            p.setStyle(Paint.Style.STROKE);
+            p.setStrokeWidth(1);
+            p.setColor(shadowColor);
+            canvas.drawPath(path, p);
+        }
     }
 }

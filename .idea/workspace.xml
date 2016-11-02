@@ -12,8 +12,8 @@
     <list default="true" id="f272061f-6ca5-4905-8d0b-948dcc1fea1a" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeElement.java" afterPath="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeElement.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeParser.java" afterPath="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeParser.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipePath.java" afterPath="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipePath.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeShapeDrawable.java" afterPath="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeShapeDrawable.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Sample/src/main/assets/tutorial/swipe.swipe" afterPath="$PROJECT_DIR$/Sample/src/main/assets/tutorial/swipe.swipe" />
     </list>
     <ignored path="swipe-android.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -49,22 +49,22 @@
       <file leaf-file-name="swipe.swipe" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Sample/src/main/assets/tutorial/swipe.swipe">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="15">
-              <caret line="16" column="25" selection-start-line="16" selection-start-column="25" selection-end-line="16" selection-end-column="25" />
+            <state relative-caret-position="360">
+              <caret line="24" column="100" selection-start-line="24" selection-start-column="100" selection-end-line="24" selection-end-column="100" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="SwipeElement.java" pinned="false" current-in-tab="true">
+      <file leaf-file-name="SwipeElement.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeElement.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="139">
-              <caret line="144" column="4" selection-start-line="144" selection-start-column="4" selection-end-line="144" selection-end-column="4" />
+            <state relative-caret-position="184">
+              <caret line="536" column="86" selection-start-line="536" selection-start-column="86" selection-end-line="536" selection-end-column="86" />
               <folding>
                 <element signature="imports" expanded="true" />
-                <element signature="e#56766#56767#0" expanded="true" />
-                <element signature="e#56819#56820#0" expanded="true" />
+                <element signature="e#56762#56763#0" expanded="true" />
+                <element signature="e#56815#56816#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -75,6 +75,16 @@
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="354">
               <caret line="125" column="39" selection-start-line="125" selection-start-column="39" selection-end-line="125" selection-end-column="39" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="SwipeShapeDrawable.java" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeShapeDrawable.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="1215">
+              <caret line="92" column="30" selection-start-line="92" selection-start-column="30" selection-end-line="92" selection-end-column="30" />
               <folding />
             </state>
           </provider>
@@ -2598,14 +2608,14 @@
         <option value="$PROJECT_DIR$/Sample/src/main/assets/port.swipe" />
         <option value="$PROJECT_DIR$/Library/src/main/java/org/swipe/browser/SwipeBookBrowserView.java" />
         <option value="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeView.java" />
-        <option value="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeShapeDrawable.java" />
         <option value="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipePage.java" />
         <option value="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeBook.java" />
         <option value="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeMarkdown.java" />
         <option value="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipePath.java" />
-        <option value="$PROJECT_DIR$/Sample/src/main/assets/tutorial/swipe.swipe" />
         <option value="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeParser.java" />
+        <option value="$PROJECT_DIR$/Sample/src/main/assets/tutorial/swipe.swipe" />
         <option value="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeElement.java" />
+        <option value="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeShapeDrawable.java" />
       </list>
     </option>
   </component>
@@ -3182,8 +3192,14 @@
           <properties />
           <option name="timeStamp" value="109" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeElement.java</url>
+          <line>540</line>
+          <properties />
+          <option name="timeStamp" value="220" />
+        </line-breakpoint>
       </breakpoints>
-      <option name="time" value="220" />
+      <option name="time" value="221" />
     </breakpoint-manager>
     <watches-manager />
   </component>
@@ -3538,14 +3554,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Sample/src/main/assets/tutorial/swipe.swipe">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="15">
-          <caret line="16" column="25" selection-start-line="16" selection-start-column="25" selection-end-line="16" selection-end-column="25" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeParser.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="118">
@@ -3566,14 +3574,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeShapeDrawable.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="135">
-          <caret line="18" column="29" selection-start-line="18" selection-start-column="29" selection-end-line="18" selection-end-column="29" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeView.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="435">
@@ -3590,15 +3590,31 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/Sample/src/main/assets/tutorial/swipe.swipe">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="360">
+          <caret line="24" column="100" selection-start-line="24" selection-start-column="100" selection-end-line="24" selection-end-column="100" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeElement.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="139">
-          <caret line="144" column="4" selection-start-line="144" selection-start-column="4" selection-end-line="144" selection-end-column="4" />
+        <state relative-caret-position="184">
+          <caret line="536" column="86" selection-start-line="536" selection-start-column="86" selection-end-line="536" selection-end-column="86" />
           <folding>
             <element signature="imports" expanded="true" />
-            <element signature="e#56766#56767#0" expanded="true" />
-            <element signature="e#56819#56820#0" expanded="true" />
+            <element signature="e#56762#56763#0" expanded="true" />
+            <element signature="e#56815#56816#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeShapeDrawable.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1215">
+          <caret line="92" column="30" selection-start-line="92" selection-start-column="30" selection-end-line="92" selection-end-column="30" />
+          <folding />
         </state>
       </provider>
     </entry>
