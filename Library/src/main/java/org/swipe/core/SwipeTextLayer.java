@@ -43,29 +43,21 @@ public class SwipeTextLayer extends TextView {
     private void parseAlignment(String alignment) {
         switch(alignment) {
             case "center":
-                setBreakStrategy(Layout.BREAK_STRATEGY_SIMPLE);
-                setGravity(getGravity() | Gravity.CENTER);
+                setGravity(Gravity.CENTER);
                 break;
             case "left":
-                setBreakStrategy(Layout.BREAK_STRATEGY_SIMPLE);
-                setGravity(getGravity() | Gravity.START);
+                setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
                 break;
             case "right":
-                setBreakStrategy(Layout.BREAK_STRATEGY_SIMPLE);
-                setGravity(getGravity() | Gravity.END);
+                setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
                 break;
             case "justified":
-                setBreakStrategy(Layout.BREAK_STRATEGY_BALANCED);
-                setGravity(getGravity() | Gravity.CENTER);
+                setGravity(Gravity.FILL);
                 break;
             case "top":
-                setBreakStrategy(Layout.BREAK_STRATEGY_SIMPLE);
-                setGravity(getGravity() | Gravity.TOP);
                 fTextTop = true;
                 break;
             case "bottom":
-                setBreakStrategy(Layout.BREAK_STRATEGY_SIMPLE);
-                setGravity(getGravity() | Gravity.BOTTOM);
                 fTextBottom = true;
                 break;
         }
@@ -84,6 +76,21 @@ public class SwipeTextLayer extends TextView {
                         parseAlignment(alignment);
                     }
                 }
+            }
+        }
+
+        if (fTextTop) {
+            if (getGravity() == Gravity.CENTER) {
+                setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+            } else {
+                setGravity(getGravity() | Gravity.TOP);
+            }
+        } else if (fTextBottom) {
+            if (getGravity() == Gravity.CENTER) {
+                setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
+
+            } else {
+                setGravity(getGravity() | Gravity.BOTTOM);
             }
         }
 
@@ -122,7 +129,6 @@ public class SwipeTextLayer extends TextView {
 
     public static SwipeTextLayer parse(Context context, String text, JSONObject info, CGSize scale, CGSize dimension) {
         SwipeTextLayer textLayer = new SwipeTextLayer(context);
-        int gravity = textLayer.getGravity();
         textLayer.setGravity(Gravity.CENTER);
         textLayer.updateTextLayer(text, info, scale, dimension);
         return textLayer;

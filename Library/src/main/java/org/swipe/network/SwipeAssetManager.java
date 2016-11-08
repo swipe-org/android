@@ -50,6 +50,36 @@ public class SwipeAssetManager {
         return cacheDir.mkdir();
     }
 
+    private final static String ASSET_PATH = "file:///android_asset/";
+    public InputStream loadLocalAsset(final URL url) {
+        final String urlStr = url.toString();
+        final int assetIndex = urlStr.indexOf(ASSET_PATH);
+        if (assetIndex == 0){
+            try {
+                String fileName = url.toString().substring(ASSET_PATH.length()); // remove path
+                return context.getResources().getAssets().open(fileName);
+            } catch (IOException e) {
+                Log.e(TAG, e.toString());
+                return null;
+            }
+        }
+
+        final String path = url.getHost() + url.getPath();
+        final File localF = new File(path);
+
+        if (localF.exists()) {
+            try {
+                localF.setLastModified(new Date().getTime());
+                return new FileInputStream(localF);
+            } catch (IOException e) {
+                Log.e(TAG, e.toString());
+                return null;
+            }
+        } else {
+            return null;
+        }
+    }
+
     public void loadAsset(final URL url, final boolean bypassCache, final LoadAssetRunnable callback) {
         if (url.getProtocol().equalsIgnoreCase("file")) {
             try {

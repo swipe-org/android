@@ -4,61 +4,13 @@
     "_dimension":[360, 0],
     "pages": [
         {
-            "play": "auto",
-            "duration":1,
-            "bc":{"r":0.5, "g":1, "b":0.5, "a":0.9},
-            "elements": [
-                { "x":100, "y":150, "w":100, "h":100, "bc":"blue", "to":{ "translate":[-50, -100], "scale":2, "rotate":45 } },
-                { "x":50,  "y":100, "w":100, "h":100, "bc":"red", "cornerRadius":20, "borderWidth":10, "borderColor":"yellow",
-                    "to":{ "bc":"purple", "cornerRadius":10, "borderWidth":2, "borderColor":"magenta", "opacity":0.5 } },
-                { "x":50,  "y":50, "lineWidth":3, "strokeColor":"#e40000ff", "path":"M54.5,324.5Q106,199,0.0,214.0 226.5,0.0,202.0,316.0 155,211,54.5,324.5Z",
-                     "shadow":{ "color":"#00f", "offset":[0,3], "opacity":0.8, "radius":5.0 },
-                     "to":{ "lineWidth":10, "strokeColor":"#ffff00ff", "fillColor": "#00ffffe0" }
-                },
-                {
-                    "bc":"#00ff0066",
-                    "fillColor": "#ffffffe0",
-                    "y": 160,
-                    "h": 305,
-                    "w": 218,
-                    "path": "M100.0,176.5Q16,250,89.5,82.0 0.0,119.0,30.0,59.5 60.0,0.0,109.75,17.0 159.5,34.0,188.75,71.0 218.0,108.0,207.5,139.25 197.0,170.5,159.0,112.5 165,305,100.0,176.5Z",
-                    "lineWidth": 4,
-                    "scale": [1.829, 1.829],
-                    "strokeColor": "#0b8700ff",
-                    "x": 241.5
-                },
-                {
-                    "bc":"#0000ff66",
-                    "fillColor": "#ffffffe0",
-                    "y": 318,
-                    "h": 261.5,
-                    "w": 241.5,
-                    "path": "M140.5,229.5Q105,144,47.5,261.5 0.0,30.0,87.0,126.5 70.0,0.0,155.75,41.5 241.5,83.0,234.0,137.25 226.5,191.5,177.0,117.5 142,86,140.5,229.5Z",
-                    "lineWidth": 4,
-                    "scale": [1.59, 1.59],
-                    "strokeColor": "#004087ff",
-                    "x": 70
-                },
-                { "x":0, "y":0, "w":100, "h":100, "bc":"purple", "to": { "mode":"reverse", "pos":"M 0,0 C 200,0 0,300 200,300" },
-                    "elements": [{"w":10, "h":10, "bc":"yellow" }] }
-            ]
-        },
-        {
             "_play": "scroll",
-            "_transition":"fadeIn",
-            "bc":"#aaffaa",
-            "elements": [
-                { "x":50,  "y":100, "w":100, "h":100, "bc":"#ffdddd",  "to":{ "bc":"#ffff00" } },
-                { "x":100, "y":150, "w":100, "h":100, "bc":"#ddddff", "to":{ "bc":"#00ffff" } }
-            ]
-        },
-        {
-            "play": "scroll",
             "_transition":"replace",
             "bc":"#55ff55",
             "elements": [
-                { "x":50,  "y":100, "w":100, "h":100, "bc":"red",  "to":{ "bc":"#ffdddd" } },
-                { "x":100, "y":150, "w":100, "h":100, "bc":"blue", "to":{ "_timing":[0, 0.5], "bc":"#ddddff" } }
+                { "x":50, "y":100, "w":90, "h":90, "bc":"red",  "to":{ "bc":"#ffdddd" } },
+                { "x":50, "y":150, "w":90, "h":90, "bc":"blue", "to":{ "timing":[0, 0.5], "bc":"#ddddff" } },
+                { "x":50, "y":250, "w":90, "h":90, "bc":"green", "to":{ "timing":[0.5, 0.5], "bc":"#ddffdd" } }
             ]
         }
     ]

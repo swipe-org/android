@@ -21,7 +21,7 @@ public class SwipeNode {
     }
 
     protected void MyLog(String tag, String text, int level) {
-        if (level <= 10) {
+        if (level <= 4) {
             Log.d(tag, text);
         }
     }

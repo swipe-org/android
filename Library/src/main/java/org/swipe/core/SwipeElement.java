@@ -1,9 +1,13 @@
 package org.swipe.core;
 
+import android.animation.Animator;
 import android.animation.ArgbEvaluator;
 import android.animation.ObjectAnimator;
 import android.animation.TypeEvaluator;
+import android.animation.ValueAnimator;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.BlurMaskFilter;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -11,7 +15,12 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PathMeasure;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.drawable.Animatable;
+import android.graphics.drawable.Animatable2;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
@@ -19,19 +28,26 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewDebug;
 import android.view.ViewGroup;
+import android.view.animation.LinearInterpolator;
 import android.webkit.WebView;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.swipe.browser.R;
 import org.swipe.browser.SwipeBrowserActivity;
+import org.swipe.network.SwipeAssetManager;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
 import static android.R.attr.defaultValue;
+import static android.R.attr.key;
 import static android.R.attr.text;
 
 /**
@@ -52,8 +68,9 @@ public class SwipeElement extends SwipeView {
         */
         List<SwipeMarkdown.Element> parseMarkdown(Object markdowns);
         URL baseURL();
+        URL map(URL url);
+        URL makeFullURL(String url);
         /*
-        func map(url:NSURL) -> NSURL?
         func addedResourceURLs(urls:[NSURL:String], callback:() -> Void)
         func pageIndex() -> Int // for debugging
         */
@@ -63,10 +80,12 @@ public class SwipeElement extends SwipeView {
 
     private static final String TAG = "SwElem";
     private SwipeElement.Delegate delegate = null;
-    private List<ObjectAnimator> animations = new ArrayList<>();
+    private List<SwipeObjectAnimator> animations = new ArrayList<>();
     private boolean fRepeat = false;
-    private SwipeShapeDrawable shapeLayer = null;
+    private SwipeShapeLayer shapeLayer = null;
     private SwipeTextLayer textLayer = null;
+    private SwipeImageLayer imageLayer = null;
+    private ViewGroup innerLayer = null;
 
     private SwipeBackgroundDrawable bgDrawable = new SwipeBackgroundDrawable();
 
@@ -79,8 +98,8 @@ public class SwipeElement extends SwipeView {
     private Float videoStart = 0.0f;
     private Float videoDuration = 1.0f;
 
-    List<ObjectAnimator> getAllAnimations() {
-        List<ObjectAnimator> allAni = new ArrayList<>();
+    List<SwipeObjectAnimator> getAllAnimations() {
+        List<SwipeObjectAnimator> allAni = new ArrayList<>();
         allAni.addAll(animations);
         for (SwipeNode c : children) {
             if (c instanceof SwipeElement) {
@@ -143,19 +162,28 @@ public class SwipeElement extends SwipeView {
         }
     }
 
+
     @Override
     void createViewGroup() {
         viewGroup = new ViewGroup(getContext()) {
+            private Paint debugPaint;
+
+            {
+                debugPaint = new Paint();
+                debugPaint.setStyle(Paint.Style.STROKE);
+                debugPaint.setColor(Color.MAGENTA);
+                debugPaint.setStrokeWidth(3);
+            }
 
             @Override
             protected void onDraw(Canvas canvas) {
-                if (shapeLayer != null) {
-                    shapeLayer.draw(canvas);
-                }
-
-                if (textLayer != null) {
-                    textLayer.draw(canvas);
-                }
+                super.onDraw(canvas);
+                /*
+                Rect bounds = new Rect(getLeft(), getTop(), getRight(), getBottom());
+                canvas.save();
+                canvas.drawRect(bounds, debugPaint);
+                canvas.restore();
+                */
             }
 
             @Override
@@ -189,13 +217,7 @@ public class SwipeElement extends SwipeView {
         float h0 = dimension.height;
         boolean fNaturalW = true;
         boolean fNaturalH = true;
-        /* TODO
-        var imageRef:CGImage?
-        var imageSrc:CGImageSourceRef?
-        var maskSrc:CGImage?
-        var pathSrc:CGPath?
-        var innerLayer:CALayer? // for loop shift
-        */
+
         boolean fScaleToFill = info.optString("w").equals("fill") || info.optString("h").equals("fill");
         if (fScaleToFill) {
             w0 = dimension.width; // we'll adjust it later
@@ -225,50 +247,58 @@ public class SwipeElement extends SwipeView {
             }
         }
 
-        /*
-        if let src = info["img"] as? String {
-            //imageSrc = SwipeParser.imageSourceWith(src)
-            if let url = NSURL.url(src, baseURL: baseURL) {
-                if let urlLocal = self.delegate.map(url) {
-                    imageSrc = CGImageSourceCreateWithURL(urlLocal, nil)
-                } else {
-                    imageSrc = CGImageSourceCreateWithURL(url, nil)
+        Bitmap imageBitmap = null;
+        String imgUrlStr = info.optString("img", null);
+        if (imgUrlStr != null) {
+            URL url = delegate.makeFullURL(imgUrlStr);
+            URL localUrl = delegate.map(url);
+            if (localUrl != null) {
+                InputStream stream = SwipeAssetManager.sharedInstance().loadLocalAsset(localUrl);
+                if (stream != null){
+                    imageBitmap = BitmapFactory.decodeStream(stream);
+                    try {
+                        stream.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
-                if imageSrc != nil && CGImageSourceGetCount(imageSrc!) > 0 {
-                    imageRef = CGImageSourceCreateImageAtIndex(imageSrc!, 0, nil)
-                }
+            } else {
+                // TODO: imageSrc = CGImageSourceCreateWithURL(url, nil)
             }
         }
 
-        if let src = info["mask"] as? String {
-            //maskSrc = SwipeParser.imageWith(src)
-            if let url = NSURL.url(src, baseURL: baseURL),
-            urlLocal = self.delegate.map(url),
-                    image = CGImageSourceCreateWithURL(urlLocal, nil) {
-                if CGImageSourceGetCount(image) > 0 {
-                    maskSrc = CGImageSourceCreateImageAtIndex(image, 0, nil)
+        Bitmap maskBitmap = null;
+        String maskUrlStr = info.optString("mask", null);
+        if (maskUrlStr != null) {
+            URL url = delegate.makeFullURL(maskUrlStr);
+            URL localUrl = delegate.map(url);
+            if (localUrl != null) {
+                InputStream stream = SwipeAssetManager.sharedInstance().loadLocalAsset(localUrl);
+                if (stream != null){
+                    maskBitmap = BitmapFactory.decodeStream(stream);
+                    try {
+                        stream.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
+            } else {
+                // TODO: imageSrc = CGImageSourceCreateWithURL(url, nil)
             }
         }
-        */
+
         Path path = parsePath(info.opt("path"), w0, h0, scale, dm);
 
         // The natural size is determined by the contents (either image or mask)
         CGSize sizeContents = null;
-
-        /*
-        if imageRef != nil {
-            sizeContents = CGSizeMake(CGFloat(CGImageGetWidth(imageRef!)),
-            CGFloat(CGImageGetHeight(imageRef!)))
-        } else if maskSrc != nil {
-            sizeContents = CGSizeMake(CGFloat(CGImageGetWidth(maskSrc!)),
-            CGFloat(CGImageGetHeight(maskSrc!)))
-        } else  */ if (path != null) {
+        if (imageBitmap != null) {
+            sizeContents = new CGSize(imageBitmap.getWidth() / dm.density, imageBitmap.getHeight() / dm.density);
+        } else if (maskBitmap != null) {
+            sizeContents = new CGSize(maskBitmap.getWidth() / dm.density, imageBitmap.getHeight() / dm.density);
+        } else  if (path != null) {
             RectF rc = new RectF();
             path.computeBounds(rc, false /* unused */);
-            sizeContents = new CGSize(rc.left + rc.width(), rc.top + rc.height());
-            sizeContents.width /= dm.density;
-            sizeContents.height /= dm.density;
+            sizeContents = new CGSize((rc.left + rc.width()) / dm.density, (rc.top + rc.height()) / dm.density);
         }
 
         if (sizeContents != null) {
@@ -346,15 +376,15 @@ public class SwipeElement extends SwipeView {
 
         // TODO let view = InternalView(wrapper: self, frame: frame)
         // Convert DIP to PX
-        final float dipX = px2Dip(x);
-        final float dipY = px2Dip(y);
-        final float dipW = px2Dip(w);
-        final float dipH = px2Dip(h);
+        final int dipX = px2Dip(x);
+        final int dipY = px2Dip(y);
+        final int dipW = px2Dip(w);
+        final int dipH = px2Dip(h);
         viewGroup.setX(dipX);
         viewGroup.setY(dipY);
         viewGroup.setPivotX(dipW / 2);
         viewGroup.setPivotY(dipH / 2);
-        viewGroup.setLayoutParams(new ViewGroup.LayoutParams((int)dipW,(int)dipH));
+        viewGroup.setLayoutParams(new ViewGroup.LayoutParams(dipW,dipH));
 
         JSONArray anchorValues = info.optJSONArray("anchor");
         if (anchorValues != null && anchorValues.length() == 2 && w0 > 0 && h0 > 0) {
@@ -376,7 +406,7 @@ public class SwipeElement extends SwipeView {
             }
         }
 
-        /*
+        /* TODO
         if let value = info["action"] as? String {
             action = value
             #if os(iOS) // tvOS has some focus issue with UIButton, figure out OSX later
@@ -416,42 +446,47 @@ public class SwipeElement extends SwipeView {
             self.fFocusable = focusable
         }
         */
-        viewGroup.setClipToOutline(info.optBoolean("clip", false));
-        /*
-        if let image = imageRef {
-            let rc = view.bounds
-            let imageLayer = CALayer()
-            imageLayer.contentsScale = contentScale
-            imageLayer.frame = rc
-            imageLayer.contents = image
-            imageLayer.contentsGravity = kCAGravityResizeAspectFill
-            imageLayer.masksToBounds = true
-            layer.addSublayer(imageLayer)
-            if let tiling = info["tiling"] as? Bool where tiling {
-                let hostLayer = CALayer()
-                innerLayer = hostLayer
-                //rc.origin = CGPointZero
-                //imageLayer.frame = rc
-                hostLayer.addSublayer(imageLayer)
-                layer.addSublayer(hostLayer)
-                layer.masksToBounds = true
 
-                var rcs = [rc, rc, rc, rc]
-                rcs[0].origin.x -= rc.size.width
-                rcs[1].origin.x += rc.size.width
-                rcs[2].origin.y -= rc.size.height
-                rcs[3].origin.y += rc.size.height
-                for rc in rcs {
-                    let subLayer = CALayer()
-                    subLayer.contentsScale = contentScale
-                    subLayer.frame = rc
-                    subLayer.contents = image
-                    subLayer.contentsGravity = kCAGravityResizeAspectFill
-                    subLayer.masksToBounds = true
-                    hostLayer.addSublayer(subLayer)
+        viewGroup.setClipToOutline(info.optBoolean("clip", false)); // TODO does not work for some "images" test cases
+
+        if (imageBitmap != null) {
+            imageLayer = new SwipeImageLayer(getContext());
+            imageLayer.setImageBitmap(imageBitmap);
+            imageLayer.setMaskBitmap(maskBitmap);
+
+            if (info.optBoolean("tiling", false)) {
+                ViewGroup hostLayer = new ViewGroup(getContext()) {
+                    @Override
+                    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+                        //Log.d(TAG, "onLayout");
+                        for (int c = 0; c < this.getChildCount(); c++) {
+                            View v = this.getChildAt(c);
+                            ViewGroup.LayoutParams lp = v.getLayoutParams();
+                            //Log.d(TAG, "layout " + c + " w:" + lp.width + " h:" + lp.height);
+                            v.layout(0, 0, lp.width, lp.height);
+                        }
+                    }
+                };
+
+                innerLayer = hostLayer;
+                hostLayer.addView(imageLayer, new ViewGroup.LayoutParams(dipW, dipH));
+                hostLayer.setClipBounds(new Rect(0, 0, dipW, dipH));
+                viewGroup.addView(hostLayer, new ViewGroup.LayoutParams(dipW, dipH));
+
+                float[] xs = new float[]{ -dipW, dipW, 0, 0 };
+                float[] ys = new float[]{ 0, 0, -dipH, dipH };
+
+                for (int i = 0; i < xs.length; i++){
+                    ImageView subLayer = new ImageView(getContext());
+                    subLayer.setImageBitmap(imageBitmap);
+                    subLayer.setX(xs[i]);
+                    subLayer.setY(ys[i]);
+                    hostLayer.addView(subLayer, new ViewGroup.LayoutParams(dipW, dipH));
                 }
+            } else {
+                viewGroup.addView(imageLayer, new ViewGroup.LayoutParams(dipW, dipH));
             }
-
+            /*
             // Handling GIF animation
             if let isrc = imageSrc {
                 self.step = 0
@@ -474,8 +509,9 @@ public class SwipeElement extends SwipeView {
                 //}
             }
             self.imageLayer = imageLayer
+            */
         }
-
+        /*
         if let src = info["sprite"] as? String,
                 let slice = info["slice"] as? [Int] {
             //view.clipsToBounds = true
@@ -503,20 +539,12 @@ public class SwipeElement extends SwipeView {
                 spriteLayer = imageLayer
             }
         }
-        layer.backgroundColor = SwipeParser.parseColor(info["bc"])
 
         if let value = self.info["videoDuration"] as? CGFloat {
             videoDuration = value
         }
         if let value = self.info["videoStart"] as? CGFloat {
             videoStart = value
-        }
-        if let image = maskSrc {
-            let imageLayer = CALayer()
-            imageLayer.contentsScale = contentScale
-            imageLayer.frame = CGRectMake(0,0,w,h)
-            imageLayer.contents = image
-            layer.mask = imageLayer
         }
         */
 
@@ -528,9 +556,9 @@ public class SwipeElement extends SwipeView {
             //shapeLayer.contentsScale = contentScale
             Path xpath = SwipeParser.transformedPath(path, info, "scale", dipW, dipH);
             if (xpath != null){
-                shapeLayer = new SwipeShapeDrawable(xpath, dipW, dipH);
+                shapeLayer = new SwipeShapeLayer(getContext(), xpath, dipW, dipH);
             } else {
-                shapeLayer = new SwipeShapeDrawable(path, dipW, dipH);
+                shapeLayer = new SwipeShapeLayer(getContext(), path, dipW, dipH);
             }
             shapeLayer.setFillColor(SwipeParser.parseColor(info, "fillColor", Color.TRANSPARENT));
             shapeLayer.setStrokeColor(SwipeParser.parseColor(info, "strokeColor", Color.BLACK));
@@ -552,43 +580,50 @@ public class SwipeElement extends SwipeView {
             shapeLayer.setStrokeStart(SwipeParser.parseFloat(info, "strokeStart", 0));
             shapeLayer.setStrokeEnd(SwipeParser.parseFloat(info, "strokeEnd", 1));
 
-            //layer.addSublayer(shapeLayer)
-            /*
-            if let tiling = info["tiling"] as? Bool where tiling {
-                let hostLayer = CALayer()
-                innerLayer = hostLayer
-                let rc = view.bounds
-                hostLayer.addSublayer(shapeLayer)
-                layer.addSublayer(hostLayer)
-                layer.masksToBounds = true
+            if (info.optBoolean("tiling", false)) {
+                ViewGroup hostLayer = new ViewGroup(getContext()) {
+                    @Override
+                    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+                        //Log.d(TAG, "onLayout");
+                        for (int c = 0; c < this.getChildCount(); c++) {
+                            View v = this.getChildAt(c);
+                            ViewGroup.LayoutParams lp = v.getLayoutParams();
+                            //Log.d(TAG, "layout " + c + " w:" + lp.width + " h:" + lp.height);
+                            v.layout(0, 0, lp.width, lp.height);
+                        }
+                    }
+                };
 
-                var rcs = [rc, rc, rc, rc]
-                rcs[0].origin.x -= rc.size.width
-                rcs[1].origin.x += rc.size.width
-                rcs[2].origin.y -= rc.size.height
-                rcs[3].origin.y += rc.size.height
-                for rc in rcs {
-                    let subLayer = CAShapeLayer()
-                    subLayer.frame = rc
-                    subLayer.contentsScale = shapeLayer.contentsScale
-                    subLayer.path = shapeLayer.path
-                    subLayer.fillColor = shapeLayer.fillColor
-                    subLayer.strokeColor = shapeLayer.strokeColor
-                    subLayer.lineWidth = shapeLayer.lineWidth
-                    subLayer.shadowColor = shapeLayer.shadowColor
-                    subLayer.shadowOffset = shapeLayer.shadowOffset
-                    subLayer.shadowOpacity = shapeLayer.shadowOpacity
-                    subLayer.shadowRadius = shapeLayer.shadowRadius
-                    subLayer.lineCap = shapeLayer.lineCap
-                    subLayer.strokeStart = shapeLayer.strokeStart
-                    subLayer.strokeEnd = shapeLayer.strokeEnd
-                    hostLayer.addSublayer(subLayer)
+                innerLayer = hostLayer;
+                hostLayer.addView(shapeLayer, new ViewGroup.LayoutParams(dipW, dipH));
+                hostLayer.setClipBounds(new Rect(0, 0, dipW, dipH));
+                viewGroup.addView(hostLayer, new ViewGroup.LayoutParams(dipW, dipH));
+
+                float[] xs = new float[]{ -dipW, dipW, 0, 0 };
+                float[] ys = new float[]{ 0, 0, -dipH, dipH };
+
+                for (int i = 0; i < xs.length; i++){
+                    SwipeShapeLayer subLayer = new SwipeShapeLayer(getContext(), shapeLayer.getPath(), dipW, dipH);
+                    subLayer.setFillColor(shapeLayer.getFillColor());
+                    subLayer.setStrokeColor(shapeLayer.getStrokeColor());
+                    subLayer.setLineWidth(shapeLayer.getLineWidth());
+                    subLayer.setShadowColor(shapeLayer.getShadowColor());
+                    subLayer.setShadowOffset(shapeLayer.getShadowOffset());
+                    subLayer.setShadowRadius(shapeLayer.getShadowRadius());
+                    subLayer.setLineCap( shapeLayer.getLineCap());
+                    subLayer.setStrokeStart(shapeLayer.getStrokeStart());
+                    subLayer.setStrokeEnd(shapeLayer.getStrokeEnd());
+                    subLayer.setX(xs[i]);
+                    subLayer.setY(ys[i]);
+                    hostLayer.addView(subLayer, new ViewGroup.LayoutParams(dipW, dipH));
                 }
+            } else {
+                viewGroup.addView(shapeLayer, new ViewGroup.LayoutParams(dipW, dipH));
             }
-            */
         } else {
-
+            //    SwipeElement.processShadow(info, scale:scale, layer: layer)
         }
+
         List<SwipeMarkdown.Element> markdown = delegate.parseMarkdown(info.opt("markdown"));
         if (markdown != null) {
             ViewGroup wrapper = new ViewGroup(getContext()) {
@@ -613,16 +648,18 @@ public class SwipeElement extends SwipeView {
                 tv.setGravity(e.textAlignment);
                 tv.setX(0);
                 tv.setY(nextY);
-                tv.measure((int)dipW, (int)dipH);
+                tv.measure(View.MeasureSpec.makeMeasureSpec(dipW, View.MeasureSpec.EXACTLY),
+                        View.MeasureSpec.makeMeasureSpec(dipH, View.MeasureSpec.AT_MOST));
                 int mh = tv.getMeasuredHeight();
                 nextY = nextY + mh + e.lineSpacing;
-                wrapper.addView(tv, new ViewGroup.LayoutParams((int)dipW, (int) mh));
+                wrapper.addView(tv, new ViewGroup.LayoutParams(dipW, mh));
             }
 
             wrapper.setY((dipH - nextY)/2); // center vertically in self
-            viewGroup.addView(wrapper, new ViewGroup.LayoutParams((int) dipW, ViewGroup.LayoutParams.WRAP_CONTENT));
+            viewGroup.addView(wrapper, new ViewGroup.LayoutParams(dipW, ViewGroup.LayoutParams.WRAP_CONTENT));
         }
-        /*
+
+        /* TODO
         if let value = info["textArea"] as? [String:AnyObject] {
             let textView = SwipeTextArea(parent: self, info: value, frame: view.bounds, screenDimension: self.screenDimension)
             helper = textView
@@ -643,7 +680,9 @@ public class SwipeElement extends SwipeView {
             // TODO if self.helper == nil || !self.helper!.setText(text, scale:self.scale, info: info, dimension:screenDimension, layer: layer) {
                 textLayer = SwipeTextLayer.parse(getContext(), text, info, scale, dimension);
                 if (textLayer != null) {
-                    viewGroup.addView(textLayer, new ViewGroup.LayoutParams((int)dipW, (int)dipH));
+                    textLayer.measure(View.MeasureSpec.makeMeasureSpec(dipW, View.MeasureSpec.EXACTLY),
+                            View.MeasureSpec.makeMeasureSpec(dipH, View.MeasureSpec.EXACTLY));
+                    viewGroup.addView(textLayer, new ViewGroup.LayoutParams(dipW, dipH));
                 }
             //    SwipeElement.processShadow(info, scale:scale, layer: layer)
             //}
@@ -779,7 +818,7 @@ public class SwipeElement extends SwipeView {
             }
 
             JSONArray translate = transform.optJSONArray("translate");
-            if (translate != null && translate.length() == 3) {
+            if (translate != null && translate.length() >= 2) {
                 Double translate0 = translate.optDouble(0);
                 Double translate1 = translate.optDouble(1);
                 Double translate2 = translate.optDouble(2);
@@ -802,21 +841,18 @@ public class SwipeElement extends SwipeView {
 
         JSONObject to = info.optJSONObject("to");
         if (to != null) {
-            double start = 1e-10;
+            double start = 0;
             double duration = 1.0;
 
             JSONArray timingJA = to.optJSONArray("timing");
             if (timingJA != null && (timingJA.length() == 2)) {
                 double timing[] = { timingJA.optDouble(0), timingJA.optDouble(1) };
                 if (!Double.isNaN(timing[0]) && !Double.isNaN(timing[1]) && timing[0] >= 0 && timing[0] <= timing[1] && timing[1] <= 1) {
-                    start = timing[0] == 0 ? 1e-10 : timing[0];
+                    start = timing[0] == 0 ? 0 : timing[0];
                     duration = timing[1] - start;
                 }
             }
-
-            final int kStartDelay = (int)(start * delegate.durationSec() * 1000);
-            final int kDuration = (int)(duration * delegate.durationSec() * 1000);
-
+            
             boolean fSkipTranslate = false;
             Path posPath = parsePath(to.opt("pos"), w0, h0, scale, dm);
             if (posPath != null){
@@ -824,24 +860,18 @@ public class SwipeElement extends SwipeView {
                 xform.setTranslate(dipX, dipY);
                 posPath.transform(xform);
                 ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "x", "y", posPath);
-                ani.setStartDelay(kStartDelay);
-                ani.setDuration(kDuration);
-                animations.add(ani);
+                animations.add(new SwipeObjectAnimator(ani, start, duration));
 
                 String mode = to.optString("mode");
                 switch(mode) {
                     case "auto": {
                         ObjectAnimator aniR = ObjectAnimator.ofObject(viewGroup, "rotation", new PathRotationEvaluator(posPath), 0);
-                        aniR.setStartDelay(kStartDelay);
-                        aniR.setDuration(kDuration);
-                        animations.add(aniR);
+                        animations.add(new SwipeObjectAnimator(aniR, start, duration));
                         break;
                     }
                     case "reverse": {
                         ObjectAnimator aniR = ObjectAnimator.ofObject(viewGroup, "rotation", new PathReverseRotationEvaluator(posPath), 0);
-                        aniR.setStartDelay(kStartDelay);
-                        aniR.setDuration(kDuration);
-                        animations.add(aniR);
+                        animations.add(new SwipeObjectAnimator(aniR, start, duration));
                         break;
                     }
                     default: // or "none"
@@ -856,9 +886,7 @@ public class SwipeElement extends SwipeView {
                 dopt = transform.optDouble("rotate");
                 if (!dopt.isNaN()) {
                     ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "rotation", dopt.floatValue());
-                    ani.setStartDelay(kStartDelay);
-                    ani.setDuration(kDuration);
-                    animations.add(ani);
+                    animations.add(new SwipeObjectAnimator(ani, start, duration));
                 }
 
                 JSONArray rots = transform.optJSONArray("rotate");
@@ -868,36 +896,26 @@ public class SwipeElement extends SwipeView {
                     Double rot2 = rots.optDouble(2);
                     if (!rot0.isNaN()) {
                         ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "rotationX", rot0.floatValue());
-                        ani.setStartDelay(kStartDelay);
-                        ani.setDuration(kDuration);
-                        animations.add(ani);
+                        animations.add(new SwipeObjectAnimator(ani, start, duration));
                     }
 
                     if (!rot1.isNaN()) {
                         ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "rotationY", rot1.floatValue());
-                        ani.setStartDelay(kStartDelay);
-                        ani.setDuration(kDuration);
-                        animations.add(ani);
+                        animations.add(new SwipeObjectAnimator(ani, start, duration));
                     }
 
                     if (!rot2.isNaN()) {
                         ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "rotation", rot2.floatValue());
-                        ani.setStartDelay(kStartDelay);
-                        ani.setDuration(kDuration);
-                        animations.add(ani);
+                        animations.add(new SwipeObjectAnimator(ani, start, duration));
                     }
                 }
 
                 dopt = transform.optDouble("scale");
                 if (!dopt.isNaN()) {
                     ObjectAnimator aniX = ObjectAnimator.ofFloat(viewGroup, "scaleX", dopt.floatValue());
-                    aniX.setStartDelay(kStartDelay);
-                    aniX.setDuration(kDuration);
-                    animations.add(aniX);
+                    animations.add(new SwipeObjectAnimator(aniX, start, duration));
                     ObjectAnimator aniY = ObjectAnimator.ofFloat(viewGroup, "scaleY", dopt.floatValue());
-                    aniY.setStartDelay(kStartDelay);
-                    aniY.setDuration(kDuration);
-                    animations.add(aniY);
+                    animations.add(new SwipeObjectAnimator(aniY, start, duration));
                 }
 
                 JSONArray scales = transform.optJSONArray("scale");
@@ -906,41 +924,40 @@ public class SwipeElement extends SwipeView {
                     Double d1 = scales.optDouble(1);
                     if (!d0.isNaN()) {
                         ObjectAnimator aniX = ObjectAnimator.ofFloat(viewGroup, "scaleX", d0.floatValue());
-                        aniX.setStartDelay(kStartDelay);
-                        aniX.setDuration(kDuration);
-                        animations.add(aniX);
+                        animations.add(new SwipeObjectAnimator(aniX, start, duration));
                     }
 
                     if (!d1.isNaN()) {
                         ObjectAnimator aniY = ObjectAnimator.ofFloat(viewGroup, "scaleY", d1.floatValue());
-                        aniY.setStartDelay(kStartDelay);
-                        aniY.setDuration(kDuration);
-                        animations.add(aniY);
+                        animations.add(new SwipeObjectAnimator(aniY, start, duration));
                     }
                 }
 
                 JSONArray translate = transform.optJSONArray("translate");
-                if (translate != null && translate.length() == 3 && !fSkipTranslate) {
+                if (translate != null && translate.length() >= 2 && !fSkipTranslate) {
                     Double translate0 = translate.optDouble(0);
                     Double translate1 = translate.optDouble(1);
                     Double translate2 = translate.optDouble(2);
                     if (!translate0.isNaN()) {
                         ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "translationX", px2Dip(translate0.floatValue() * scale.width) + dipX);
+                        ani.setInterpolator(new LinearInterpolator());
                         ani.setStartDelay((int) (start * delegate.durationSec() * 1000));
                         ani.setDuration((int) (duration * delegate.durationSec() * 1000));
-                        animations.add(ani);
+                        animations.add(new SwipeObjectAnimator(ani, start, duration));
                     }
                     if (!translate1.isNaN()) {
                         ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "translationY", px2Dip(translate1.floatValue() * scale.height) + dipY);
+                        ani.setInterpolator(new LinearInterpolator());
                         ani.setStartDelay((int) (start * delegate.durationSec() * 1000));
                         ani.setDuration((int) (duration * delegate.durationSec() * 1000));
-                        animations.add(ani);
+                        animations.add(new SwipeObjectAnimator(ani, start, duration));
                     }
                     if (!translate2.isNaN()) {
                         ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "translationZ", px2Dip(translate2.floatValue() * scale.height) + dipY);
+                        ani.setInterpolator(new LinearInterpolator());
                         ani.setStartDelay((int) (start * delegate.durationSec() * 1000));
                         ani.setDuration((int) (duration * delegate.durationSec() * 1000));
-                        animations.add(ani);
+                        animations.add(new SwipeObjectAnimator(ani, start, duration));
                     }
                 }
             }
@@ -948,39 +965,29 @@ public class SwipeElement extends SwipeView {
             dopt = to.optDouble("opacity");
             if (!dopt.isNaN()){
                 ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "alpha",  dopt.floatValue());
-                ani.setStartDelay(kStartDelay);
-                ani.setDuration(kDuration);
-                animations.add(ani);
+                animations.add(new SwipeObjectAnimator(ani, start, duration));
             }
 
             if (to.has("bc")) {
                 ObjectAnimator ani = ObjectAnimator.ofObject(bgDrawable, "backgroundColor", new ArgbEvaluator(), bgDrawable.getBackgroundColor(), SwipeParser.parseColor(to, "bc", Color.TRANSPARENT));
-                ani.setStartDelay(kStartDelay);
-                ani.setDuration(kDuration);
-                animations.add(ani);
+                animations.add(new SwipeObjectAnimator(ani, start, duration));
             }
 
             Object opt = to.opt("borderColor");
             if (opt != null){
                 ObjectAnimator ani = ObjectAnimator.ofObject(bgDrawable, "borderColor", new ArgbEvaluator(), bgDrawable.getBorderColor(), SwipeParser.parseColor(opt));
-                ani.setStartDelay(kStartDelay);
-                ani.setDuration(kDuration);
-                animations.add(ani);
+                animations.add(new SwipeObjectAnimator(ani, start, duration));
             }
 
             dopt = to.optDouble("borderWidth");
             if (!dopt.isNaN()){
                 ObjectAnimator ani = ObjectAnimator.ofFloat(bgDrawable, "borderWidth",  px2Dip(dopt.floatValue() * scale.width));
-                ani.setStartDelay(kStartDelay);
-                ani.setDuration(kDuration);
-                animations.add(ani);
+                animations.add(new SwipeObjectAnimator(ani, start, duration));
             }
             dopt = to.optDouble("cornerRadius");
             if (!dopt.isNaN()){
                 ObjectAnimator ani = ObjectAnimator.ofFloat(bgDrawable, "cornerRadius",  px2Dip(dopt.floatValue() * scale.width));
-                ani.setStartDelay(kStartDelay);
-                ani.setDuration(kDuration);
-                animations.add(ani);
+                animations.add(new SwipeObjectAnimator(ani, start, duration));
             }
 
             /*
@@ -1056,195 +1063,208 @@ public class SwipeElement extends SwipeView {
                 opt = to.opt("fillColor");
                 if (opt != null){
                     ObjectAnimator ani = ObjectAnimator.ofObject(shapeLayer, "fillColor", new ArgbEvaluator(), SwipeParser.parseColor(opt));
-                    ani.setStartDelay(kStartDelay);
-                    ani.setDuration(kDuration);
-                    animations.add(ani);
+                    animations.add(new SwipeObjectAnimator(ani, start, duration));
                 }
                 opt = to.opt("strokeColor");
                 if (opt != null){
                     ObjectAnimator ani = ObjectAnimator.ofObject(shapeLayer, "strokeColor", new ArgbEvaluator(), SwipeParser.parseColor(opt));
-                    ani.setStartDelay(kStartDelay);
-                    ani.setDuration(kDuration);
-                    animations.add(ani);
+                    animations.add(new SwipeObjectAnimator(ani, start, duration));
                 }
 
                 dopt = to.optDouble("lineWidth");
                 if (!dopt.isNaN()){
                     ObjectAnimator ani = ObjectAnimator.ofFloat(shapeLayer, "lineWidth",  px2Dip(dopt.floatValue() * scale.width));
-                    ani.setStartDelay(kStartDelay);
-                    ani.setDuration(kDuration);
-                    animations.add(ani);
+                    animations.add(new SwipeObjectAnimator(ani, start, duration));
                 }
                 dopt = to.optDouble("strokeStart");
                 if (!dopt.isNaN()){
                     ObjectAnimator ani = ObjectAnimator.ofFloat(shapeLayer, "strokeStart", dopt.floatValue());
-                    ani.setStartDelay(kStartDelay);
-                    ani.setDuration(kDuration);
-                    animations.add(ani);
+                    animations.add(new SwipeObjectAnimator(ani, start, duration));
                 }
                 dopt = to.optDouble("fillColor");
                 if (!dopt.isNaN()){
                     ObjectAnimator ani = ObjectAnimator.ofFloat(shapeLayer, "strokeEnd", dopt.floatValue());
-                    ani.setStartDelay(kStartDelay);
-                    ani.setDuration(kDuration);
-                    animations.add(ani);
+                    animations.add(new SwipeObjectAnimator(ani, start, duration));
                 }
             }
         }
-        /*
-        if let fRepeat = info["repeat"] as? Bool where fRepeat {
-            //NSLog("SE detected an element with repeat")
-            self.fRepeat = fRepeat
-            layer.speed = 0 // Independently animate it
-        }
 
-        if let animation = info["loop"] as? [String:AnyObject],
-        let style = animation["style"] as? String {
-            //
-            // Note: Use the inner layer (either image or shape) for the loop animation
-            // to avoid any conflict with other transformation if it is available.
-            // In this case, the loop animation does not effect chold elements (because
-            // we use UIView hierarchy instead of CALayer hierarchy.
-            //
-            // It means the loop animation on non-image/non-shape element does not work well
-            // with other transformation.
-            //
-            var loopLayer = layer
-            if let l = imageLayer {
-                loopLayer = l
-            } else if let l = shapeLayer {
-                loopLayer = l
-            }
+        fRepeat = info.optBoolean("repeat", false);
 
-            let start, duration:Double
-            if let timing = animation["timing"] as? [Double]
-            where timing.count == 2 && timing[0] >= 0 && timing[0] <= timing[1] && timing[1] <= 1 {
-                start = timing[0] == 0 ? 1e-10 : timing[0]
-                duration = timing[1] - start
-            } else {
-                start = 1e-10
-                duration = 1.0
-            }
-            let repeatCount = Float(valueFrom(animation, key: "count", defaultValue: 1))
+        JSONObject animation = info.optJSONObject("loop");
+        if (animation != null) {
+            String style = animation.optString("style", null);
+            if (style != null) {
+                //
+                // (iOS) Note:  Use the inner layer (either image or shape) for the loop animation
+                // to avoid any conflict with other transformation if it is available.
+                // In this case, the loop animation does not effect child elements (because
+                // we use UIView hierarchy instead of CALayer hierarchy.
+                //
+                // (iOS) It means the loop animation on non-image/non-shape element does not work well
+                // with other transformation.
+                //
 
-            switch(style) {
-                case "vibrate":
-                    let delta = valueFrom(animation, key: "delta", defaultValue: 10.0)
-                    let ani = CAKeyframeAnimation(keyPath: "transform")
-                    ani.values = [NSValue(CATransform3D:loopLayer.transform),
-                    NSValue(CATransform3D:CATransform3DConcat(CATransform3DMakeTranslation(delta, 0.0, 0.0), loopLayer.transform)),
-                    NSValue(CATransform3D:loopLayer.transform),
-                    NSValue(CATransform3D:CATransform3DConcat(CATransform3DMakeTranslation(-delta, 0.0, 0.0), loopLayer.transform)),
-                    NSValue(CATransform3D:loopLayer.transform)]
-                    ani.repeatCount = repeatCount
-                    ani.beginTime = start
-                    ani.duration = CFTimeInterval(duration / Double(ani.repeatCount))
-                    ani.fillMode = kCAFillModeBoth
-                    loopLayer.addAnimation(ani, forKey: "transform")
-                case "shift":
-                    let shiftLayer = (innerLayer == nil) ? layer : innerLayer!
-                        let ani = CAKeyframeAnimation(keyPath: "transform")
-                    let shift:CGSize = {
-                    if let dir = animation["direction"] as? String {
-                    switch(dir) {
-                        case "n":
-                            return CGSizeMake(0, -h)
-                        case "e":
-                            return CGSizeMake(w, 0)
-                        case "w":
-                            return CGSizeMake(-w, 0)
-                        default:
-                            return CGSizeMake(0, h)
+                View loopLayer = viewGroup;
+                if (imageLayer != null) {
+                    loopLayer = imageLayer;
+                } else if (shapeLayer != null) {
+                    loopLayer = shapeLayer;
+                }
+
+                double start = 0;
+                double duration = 1.0;
+
+                JSONArray timing = animation.optJSONArray("timing");
+                if (timing != null && timing.length() == 2) {
+                    Double t0 = timing.optDouble(0);
+                    Double t1 = timing.optDouble(1);
+                    if (!t0.isNaN() && !t1.isNaN() && t0 >= 0 && t0 <= t1 && t1 <= 1) {
+                        start = t0 == 0 ? 0 : t0;
+                        duration = t1 - start;
                     }
-                } else {
-                    return CGSizeMake(0, h)
                 }
-                }()
-                ani.values = [NSValue(CATransform3D:shiftLayer.transform),
-                NSValue(CATransform3D:CATransform3DConcat(CATransform3DMakeTranslation(shift.width, shift.height, 0.0), shiftLayer.transform))]
-                ani.repeatCount = repeatCount
-                ani.beginTime = start
-                ani.duration = CFTimeInterval(duration / Double(ani.repeatCount))
-                ani.fillMode = kCAFillModeBoth
-                shiftLayer.addAnimation(ani, forKey: "transform")
-                case "blink":
-                    let ani = CAKeyframeAnimation(keyPath: "opacity")
-                    ani.values = [1.0, 0.0, 1.0]
-                    ani.repeatCount = repeatCount
-                    ani.beginTime = start
-                    ani.duration = CFTimeInterval(duration / Double(ani.repeatCount))
-                    ani.fillMode = kCAFillModeBoth
-                    loopLayer.addAnimation(ani, forKey: "opacity")
-                case "spin":
-                    let fClockwise = booleanValueFrom(animation, key: "clockwise", defaultValue: true)
-                    let degree = (fClockwise ? 120 : -120) * CGFloat(M_PI / 180.0)
-                    let ani = CAKeyframeAnimation(keyPath: "transform")
-                    ani.values = [NSValue(CATransform3D:loopLayer.transform),
-                    NSValue(CATransform3D:CATransform3DConcat(CATransform3DMakeRotation(degree, 0.0, 0.0, 1.0), loopLayer.transform)),
-                    NSValue(CATransform3D:CATransform3DConcat(CATransform3DMakeRotation(degree * 2, 0.0, 0.0, 1.0), loopLayer.transform)),
-                    NSValue(CATransform3D:CATransform3DConcat(CATransform3DMakeRotation(degree * 3, 0.0, 0.0, 1.0), loopLayer.transform))]
-                    ani.repeatCount = repeatCount
-                    ani.beginTime = start
-                    ani.duration = CFTimeInterval(duration / Double(ani.repeatCount))
-                    ani.fillMode = kCAFillModeBoth
-                    loopLayer.addAnimation(ani, forKey: "transform")
-                case "wiggle":
-                    let delta = valueFrom(animation, key: "delta", defaultValue: 15) * CGFloat(M_PI / 180.0)
-                    let ani = CAKeyframeAnimation(keyPath: "transform")
-                    ani.values = [NSValue(CATransform3D:loopLayer.transform),
-                    NSValue(CATransform3D:CATransform3DConcat(CATransform3DMakeRotation(delta, 0.0, 0.0, 1.0), loopLayer.transform)),
-                    NSValue(CATransform3D:loopLayer.transform),
-                    NSValue(CATransform3D:CATransform3DConcat(CATransform3DMakeRotation(-delta, 0.0, 0.0, 1.0), loopLayer.transform)),
-                    NSValue(CATransform3D:loopLayer.transform)]
-                    ani.repeatCount = repeatCount
-                    ani.beginTime = start
-                    ani.duration = CFTimeInterval(duration / Double(ani.repeatCount))
-                    ani.fillMode = kCAFillModeBoth
-                    loopLayer.addAnimation(ani, forKey: "transform")
-                case "path":
-                    if let shapeLayer = self.shapeLayer {
-                    var values = [shapeLayer.path!]
-                    if let params = animation["path"] as? [AnyObject] {
-                        for param in params {
-                            if let path = parsePath(param, w: w0, h: h0, scale:scale) {
-                                values.append(path)
+
+                final int repeatCount = SwipeParser.parseInt(animation.opt("count"), 1);
+                final double repeatInterval = duration / repeatCount;
+
+                switch (style) {
+                    case "shift":
+                        if (innerLayer == null) {
+                            for (int r = 0; r < repeatCount; r++) {
+                                ObjectAnimator ani;
+                                String dir = animation.optString("direction");
+                                switch (dir) {
+                                    case "n":
+                                        ani = ObjectAnimator.ofFloat(viewGroup, "translationY", viewGroup.getY(), viewGroup.getY() - dipH);
+                                        break;
+                                    case "e":
+                                        ani = ObjectAnimator.ofFloat(viewGroup, "translationX", viewGroup.getX(), viewGroup.getX() + dipW);
+                                        break;
+                                    case "w":
+                                        ani = ObjectAnimator.ofFloat(viewGroup, "translationX", viewGroup.getX(), viewGroup.getX() - dipH);
+                                        break;
+                                    default:
+                                        ani = ObjectAnimator.ofFloat(viewGroup, "translationY", viewGroup.getY(), viewGroup.getY() + dipH);
+                                        break;
+                                }
+
+                                animations.add(new SwipeObjectAnimator(ani, start + (r * repeatInterval), repeatInterval));
+                            }
+                        } else {
+                            for (int r = 0; r < repeatCount; r++) {
+                                for (int i = 0; i < innerLayer.getChildCount(); i++) {
+                                    View subLayer = innerLayer.getChildAt(i);
+                                    ObjectAnimator ani;
+                                    String dir = animation.optString("direction");
+                                    switch (dir) {
+                                        case "n":
+                                            ani = ObjectAnimator.ofFloat(subLayer, "translationY", subLayer.getY(), subLayer.getY() - dipH);
+                                            break;
+                                        case "e":
+                                            ani = ObjectAnimator.ofFloat(subLayer, "translationX", subLayer.getX(), subLayer.getX() + dipW);
+                                            break;
+                                        case "w":
+                                            ani = ObjectAnimator.ofFloat(subLayer, "translationX", subLayer.getX(), subLayer.getX() - dipH);
+                                            break;
+                                        default:
+                                            ani = ObjectAnimator.ofFloat(subLayer, "translationY", subLayer.getY(), subLayer.getY() + dipH);
+                                            break;
+                                    }
+
+                                    animations.add(new SwipeObjectAnimator(ani, start + (r * repeatInterval), repeatInterval));
+                                }
                             }
                         }
-                    } else if let path = parsePath(animation["path"], w: w0, h: h0, scale:scale) {
-                        values.append(path)
+                        break;
+                    case "vibrate": {
+                        final float delta = px2Dip(SwipeParser.parseFloat(animation.opt("delta"), 10));
+                        final float tx = loopLayer.getTranslationX();
+                        for (int r = 0; r < repeatCount; r++) {
+                            ObjectAnimator ani = ObjectAnimator.ofFloat(loopLayer, "translationX", tx, tx + delta, tx - delta, tx);
+                            animations.add(new SwipeObjectAnimator(ani, start + (r * repeatInterval), repeatInterval));
+                        }
+                        break;
                     }
-                    if values.count >= 2 {
-                        values.append(shapeLayer.path!)
-                        let ani = CAKeyframeAnimation(keyPath: "path")
-                        ani.values = values
+                    case "blink": {
+                        for (int r = 0; r < repeatCount; r++) {
+                            ObjectAnimator ani = ObjectAnimator.ofFloat(loopLayer, "alpha", 1, 0, 1);
+                            animations.add(new SwipeObjectAnimator(ani, start + (r * repeatInterval), repeatInterval));
+                        }
+                        break;
+                    }
+                    case "wiggle": {
+                        final float degree = SwipeParser.parseFloat(animation.opt("delta"), 15);
+                        final float rot = loopLayer.getRotation();
+                        for (int r = 0; r < repeatCount; r++) {
+                            ObjectAnimator ani = ObjectAnimator.ofFloat(loopLayer, "rotation", rot, rot + degree, loopLayer.getRotation(), rot - degree, rot);
+                            animations.add(new SwipeObjectAnimator(ani, start + (r * repeatInterval), repeatInterval));
+                        }
+                        break;
+                    }
+                    case "spin": {
+                        final boolean fClockwise = animation.optBoolean("clockwise", true);
+                        final int degree = (fClockwise ? 120 : -120);
+                        final float startRotation = loopLayer.getRotation();
+                        for (int r = 0; r < repeatCount; r++) {
+                            ObjectAnimator ani = ObjectAnimator.ofFloat(loopLayer, "rotation", loopLayer.getRotation(), degree, degree * 2, degree * 3);
+                            animations.add(new SwipeObjectAnimator(ani, start + (r * repeatInterval), repeatInterval));
+                        }
+                        break;
+                    }
+                    case "path": {
+                        /*
+                        if let shapeLayer = self.shapeLayer {
+                            var values =[shapeLayer.path !]
+                            if let params = animation["path"] as ?[AnyObject]{
+                                for param in params {
+                                    if let path = parsePath(param, w:w0, h:h0, scale:scale){
+                                        values.append(path)
+                                    }
+                                }
+                            }else if let path = parsePath(animation["path"], w:w0, h:h0, scale:
+                            scale){
+                                values.append(path)
+                            }
+                            if values.count >= 2 {
+                                values.append(shapeLayer.path !)
+                                let ani = CAKeyframeAnimation(keyPath:"path")
+                                ani.values = values
+                                ani.repeatCount = repeatCount
+                                ani.beginTime = start
+                                ani.duration = CFTimeInterval(duration / Double(ani.repeatCount))
+                                ani.fillMode = kCAFillModeBoth
+                                shapeLayer.addAnimation(ani, forKey:"path")
+                            }
+                        }
+                        break;
+                        */
+                    }
+                    case "sprite":
+                        /*
+                        if let targetLayer = spriteLayer {
+                        let ani = CAKeyframeAnimation(keyPath:"contentsRect")
+                        let rc0 = CGRectMake(0, slot.y / self.slice.height, 1.0 / self.slice.width, 1.0 / self.slice.height)
+                        ani.values = Array(0..<Int (slice.width)).map() {
+                            (index:Int) -> NSValue in
+                            NSValue(CGRect:CGRect(origin:
+                            CGPointMake(CGFloat(index) / self.slice.width, rc0.origin.y), size:
+                            rc0.size))
+                        }
                         ani.repeatCount = repeatCount
                         ani.beginTime = start
                         ani.duration = CFTimeInterval(duration / Double(ani.repeatCount))
                         ani.fillMode = kCAFillModeBoth
-                        shapeLayer.addAnimation(ani, forKey: "path")
+                        ani.calculationMode = kCAAnimationDiscrete
+                        targetLayer.addAnimation(ani, forKey:"contentsRect")
                     }
+                    //self.dir = (1,0)
+                    //self.repeatCount = CGFloat(repeatCount)
+                        */
+                        break;
                 }
-                case "sprite":
-                    if let targetLayer = spriteLayer {
-                    let ani = CAKeyframeAnimation(keyPath: "contentsRect")
-                    let rc0 = CGRectMake(0, slot.y/self.slice.height, 1.0/self.slice.width, 1.0/self.slice.height)
-                    ani.values = Array(0..<Int(slice.width)).map() { (index:Int) -> NSValue in
-                        NSValue(CGRect: CGRect(origin: CGPointMake(CGFloat(index) / self.slice.width, rc0.origin.y), size: rc0.size))
-                    }
-                    ani.repeatCount = repeatCount
-                    ani.beginTime = start
-                    ani.duration = CFTimeInterval(duration / Double(ani.repeatCount))
-                    ani.fillMode = kCAFillModeBoth
-                    ani.calculationMode = kCAAnimationDiscrete
-                    targetLayer.addAnimation(ani, forKey: "contentsRect")
-                }
-                //self.dir = (1,0)
-                //self.repeatCount = CGFloat(repeatCount)
-                default:
-                    break
             }
         }
-        */
 
         // Nested Elements
         JSONArray elementsInfo = info.optJSONArray("elements");
@@ -1267,38 +1287,71 @@ public class SwipeElement extends SwipeView {
         return viewGroup;
     }
 
-    void setTimeOffsetTo(final float offset) {
-        setTimeOffsetTo(offset, false, false);
-    }
-
-    void setTimeOffsetTo(final float offset, final boolean fAutoPlay) {
-        setTimeOffsetTo(offset, fAutoPlay, false);
-    }
-
-    void setTimeOffsetTo(final float offset, final boolean fAutoPlay, final boolean fElementRepeat) {
-        if (offset < 0.0 || offset > 1.0) {
-            return;
+    void resetAnimation(final boolean fForward) {
+        for (SwipeObjectAnimator ani : animations) {
+            ani.reset(fForward);
         }
-
-        // TODO if let layer = self.layer where layer.speed == 0 {
-            // independently animated
-            for (ObjectAnimator ani : animations) {
-                ani.setCurrentFraction(offset);
-            }
-        //}
 
         for (SwipeNode c : children) {
             if (c instanceof SwipeElement) {
                 SwipeElement element = (SwipeElement) c;
-                element.setTimeOffsetTo(offset, fAutoPlay, fElementRepeat);
+                element.resetAnimation(fForward);
             }
         }
 
         viewGroup.invalidate();
 
-        if (fElementRepeat && !fRepeat) {
+        if (videoPlayer != null) {
+            final float offset = fForward ? 0 : 1;
+            if (fSeeking) {
+                pendingOffset = offset;
+                return;
+            }
+            double timeSec = videoStart + offset * videoDuration;
+            /* TODO
+            double time = CMTimeMakeWithSeconds(Float64(timeSec), 600)
+            let tolerance = CMTimeMake(10, 600) // 1/60sec
+            if player.status == AVPlayerStatus.ReadyToPlay {
+                self.fSeeking = true
+                SwipeElement.objectCount -= 1 // to avoid false memory leak detection
+                player.seekToTime(time, toleranceBefore: tolerance, toleranceAfter: tolerance) { (_:Bool) -> Void in
+                    assert(NSThread.currentThread() == NSThread.mainThread(), "thread error")
+                    SwipeElement.objectCount += 1
+                    self.fSeeking = false
+                    if let pendingOffset = self.pendingOffset {
+                        self.pendingOffset = nil
+                        self.setTimeOffsetTo(pendingOffset, fAutoPlay: false, fElementRepeat: fElementRepeat)
+                    }
+                }
+            }
+            */
+        }    }
+    void setTimeOffsetTo(final float offset) {
+        setTimeOffsetTo(offset, false, false);
+    }
+
+    void setTimeOffsetTo(final float offset, final boolean fResetForRepeat, final boolean fAutoPlay) {
+        if (offset < 0.0 || offset > 1.0) {
             return;
         }
+
+        if ((!fRepeat && !fResetForRepeat) || (fRepeat)) {
+            for (SwipeObjectAnimator ani : animations) {
+                ani.setCurrentFraction(offset);
+                MyLog(TAG, "ani.setCurrentFraction("+offset+")", 10);
+            }
+        } else {
+            MyLog(TAG, "ani.setCurrentFraction("+offset+") SKIPPED", 1);
+        }
+
+        for (SwipeNode c : children) {
+            if (c instanceof SwipeElement) {
+                SwipeElement element = (SwipeElement) c;
+                element.setTimeOffsetTo(offset, fResetForRepeat, fAutoPlay);
+            }
+        }
+
+        viewGroup.invalidate();
 
         if (videoPlayer != null) {
             if (fAutoPlay) {

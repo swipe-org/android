@@ -4,13 +4,10 @@
     "sections":[
         {
             "items":[
-                    { "url":"https://raw.githubusercontent.com/swipe-org/swipe-sample/master/index.swipe", "title":"Test Cases", "icon":"Icon-180.png" },
-                    { "url":"https://raw.githubusercontent.com/swipe-org/swipe-sample/staging/index.swipe", "title":"Test Cases (Staging)", "icon":"Icon-180.png" },
-
+              { "url":"swipe-sample/index.swipe", "title":"Test Cases", "icon":"Icon-180.png" },
+              { "url":"https://raw.githubusercontent.com/swipe-org/swipe-sample/master/index.swipe", "title":"Test Cases (remote)", "icon":"Icon-180.png" },
               { "url":"multipath.swipe", "title":"multi-path", "icon":"Icon-180.png" },
               { "url":"text.swipe", "title":"text", "icon":"Icon-180.png" },
-                { "url":"port.swipe", "title":"port", "icon":"Icon-180.png" },
-                { "url":"portH.swipe", "title":"port horizontal", "icon":"Icon-180.png" },
                 { "url":"vectors.swipe", "title":"vectors", "icon":"Icon-180.png" },
                 { "url":"tutorial/swipe.swipe", "title":"Swipe Overview", "icon":"Icon-180.png" },
                 { "url":"tutorial/tutorial.swipe", "title":"Swipe Tutorial", "icon":"Icon-180.png" },

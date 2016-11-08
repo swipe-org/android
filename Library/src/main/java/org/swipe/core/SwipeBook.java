@@ -36,7 +36,8 @@ import java.util.ServiceConfigurationError;
 public class SwipeBook implements SwipePage.Delegate {
 
     public interface Delegate {
-
+        URL map(URL url);
+        URL makeFullURL(String url);
     }
 
     private static final String TAG = "SwBook";
@@ -149,6 +150,14 @@ public class SwipeBook implements SwipePage.Delegate {
         viewHeightDIP = (int)(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, scrHeight, dm));
 
         markdown = new SwipeMarkdown(bookInfo.optJSONObject("markdown"), scale, scrWidth, scrHeight, dm);
+
+        JSONArray pageInfos = bookInfo.optJSONArray("pages");
+        if (pageInfos != null) {
+            for (int i = 0; i < pageInfos.length(); i++) {
+                SwipePage page = new SwipePage(getContext(), dimension, new CGSize(scale, scale), i, pageInfos.optJSONObject(i), this);
+                pages.add(page);
+            }
+        }
     }
 
     public List<URL> getResourceURLs() {
@@ -301,14 +310,6 @@ public class SwipeBook implements SwipePage.Delegate {
         }, ANI_FRAME_MSEC);
     }
     public ViewGroup loadView() {
-        JSONArray pageInfos = bookInfo.optJSONArray("pages");
-        if (pageInfos != null) {
-            for (int i = 0; i < pageInfos.length(); i++) {
-                SwipePage page = new SwipePage(getContext(), dimension, new CGSize(scale, scale), i, pageInfos.optJSONObject(i), this);
-                pages.add(page);
-            }
-        }
-
          if (horizontal) {
             SwipeHorizontalScrollView sv = new SwipeHorizontalScrollView(getContext());
             scrollView = sv;
@@ -484,15 +485,17 @@ public class SwipeBook implements SwipePage.Delegate {
             return false;
         }
 
+        SwipePage pagePrev = currentPage();
+
         if (!fForced) {
-            SwipePage pagePrev = currentPage();
             pagePrev.didLeave(newPageIndex < pageIndex);
         }
 
         pageIndex = newPageIndex;
+        pagePrev.prepare();
         currentPage().prepare();
         setActivePage(currentPage());
-        MyLog(TAG, "adjustIndex " + pageIndex);
+        MyLog(TAG, "adjustIndex " + pageIndex, 2);
 
         if (fForced) {
             currentPage().willEnter(true);
@@ -547,6 +550,12 @@ public class SwipeBook implements SwipePage.Delegate {
     public URL baseURL() {
         return baseURL;
     }
+
+    @Override
+    public URL makeFullURL(String url) { return delegate.makeFullURL(url); }
+
+    @Override
+    public URL map(URL url) { return delegate.map(url); }
 
     @Override
     public int currentPageIndex() { return pageIndex; }

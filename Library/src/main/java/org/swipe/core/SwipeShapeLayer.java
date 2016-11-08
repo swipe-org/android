@@ -1,5 +1,6 @@
 package org.swipe.core;
 
+import android.content.Context;
 import android.graphics.BlurMaskFilter;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -8,6 +9,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.PathShape;
+import android.view.View;
 
 import org.json.JSONObject;
 
@@ -15,7 +17,7 @@ import org.json.JSONObject;
  * Created by pete on 10/21/16.
  */
 
-class SwipeShapeDrawable extends ShapeDrawable {
+class SwipeShapeLayer extends View {
     private Path path = null;
     private float dipW = 0;
     private float dipH = 0;
@@ -28,12 +30,19 @@ class SwipeShapeDrawable extends ShapeDrawable {
     private CGSize shadowOffset = null;
     private float shadowRadius = 1;
     private int shadowColor = Color.BLACK;
+    ShapeDrawable drawable;
 
-    SwipeShapeDrawable(Path path, float dipW, float dipH) {
+    SwipeShapeLayer(Context context) {
+        super(context);
+    }
+    SwipeShapeLayer(Context context, Path path, float dipW, float dipH) {
+        super(context);
+        this.drawable = new ShapeDrawable();
         this.path = path;
         this.dipW = dipW;
         this.dipH = dipH;
     }
+
     public Path getPath() { return path; }
     public void setPath(Path path) {
         this.path = path;
@@ -68,7 +77,7 @@ class SwipeShapeDrawable extends ShapeDrawable {
 
     @Override
     public void draw(Canvas canvas) {
-        Paint p = getPaint();
+        Paint p = drawable.getPaint();
         p.reset();
         p.setAntiAlias(true);
 

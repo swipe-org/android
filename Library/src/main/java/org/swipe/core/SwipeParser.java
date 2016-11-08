@@ -93,24 +93,31 @@ public class SwipeParser {
     }
 
     static float parseFloat(JSONObject info, String key, float defaultValue) {
-        return parseFloat(info.optDouble(key), defaultValue);
+        return parseFloat(info.opt(key), defaultValue);
     }
 
     static float parseFloat(Object info, float defaultValue) {
-        if (info == null) {
-            return defaultValue;
+        if (info != null) {
+            if (info instanceof Double) {
+                Double val = (Double) info;
+                return val.floatValue();
+            } else {
+                return parseInt(info, (int)defaultValue);
+            }
         }
 
-        if (info instanceof Double) {
-            Double val = (Double) info;
-            if (val.isNaN()) {
-                return defaultValue;
-            } else {
-                return val.floatValue();
+        return defaultValue;
+    }
+
+    static int parseInt(Object info, int defaultValue) {
+        if (info != null) {
+            if (info instanceof Number) {
+                Number val = (Number) info;
+                return val.intValue();
             }
-        } else {
-            return defaultValue;
         }
+
+        return defaultValue;
     }
 
     static int parseColor(Object info) {

@@ -1,15 +1,8 @@
 package org.swipe.core;
 
-import android.animation.Animator;
-import android.animation.AnimatorSet;
-import android.animation.ObjectAnimator;
-import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Color;
-import android.graphics.Point;
-import android.graphics.PointF;
 import android.util.Log;
-import android.util.Size;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -19,7 +12,6 @@ import org.swipe.browser.SwipeBrowserActivity;
 
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -45,56 +37,13 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         int currentPageIndex();
         List<SwipeMarkdown.Element> parseMarkdown(Object markdowns);
         URL baseURL();
+        URL map(URL url);
+        URL makeFullURL(String url);
         /*
         func voice(k:String?) -> [String:AnyObject]
         func languageIdentifier() -> String?
         func tapped()
         */
-    }
-
-    private class SwipeAnimatorUpdateListener implements ValueAnimator.AnimatorUpdateListener {
-
-        @Override
-        public void onAnimationUpdate(ValueAnimator animation) {
-        }
-    }
-
-    private class SwipeAnimatorListener implements ValueAnimator.AnimatorListener {
-
-        @Override
-        public void onAnimationStart(Animator animation) {
-
-        }
-
-        @Override
-        public void onAnimationEnd(Animator animation) {
-
-        }
-
-        @Override
-        public void onAnimationCancel(Animator animation) {
-
-        }
-
-        @Override
-        public void onAnimationRepeat(Animator animation) {
-
-        }
-    }
-
-    private class SwipeAnimatorPauseListener implements Animator.AnimatorPauseListener {
-        private static final String TAG = "SwBook animator";
-        @Override
-        public void onAnimationPause(Animator animation) {
-            Log.d(TAG, "pause");
-            //cnt = animator.getChildAnimations().size();
-            //animator.start();
-        }
-
-        @Override
-        public void onAnimationResume(Animator animation) {
-
-        }
     }
 
     private static final String TAG = "SwPage";
@@ -105,7 +54,6 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     private String transition = null;
     private int index = -1;
     private int fps = 60;
-    private int cDebug = 0;
     private int cPlaying = 0;
     private boolean vibrate = false;
     private boolean repeat = false;
@@ -119,7 +67,6 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     private boolean fEntered = false;
     private boolean fPausing = false;
     private Float offsetPaused = null;
-    private AnimatorSet animator = new AnimatorSet();
 
     SwipePage(Context _context, CGSize _dimension, CGSize _scale, int _index, JSONObject _info, SwipePage.Delegate _delegate) {
         super(_context, _dimension, _scale, _info);
@@ -163,11 +110,11 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         int bc = SwipeParser.parseColor(info, "bc", Color.WHITE);
         viewGroup.setBackgroundColor(bc);
 
-        duration = (float)info.optDouble("duration", duration);
-        fps = info.optInt("fps", fps);
-        vibrate = info.optBoolean("vibrate", vibrate);
-        repeat = info.optBoolean("repeat", repeat);
-        rewind = info.optBoolean("rewind", rewind);
+        duration = (float)info.optDouble("duration", 0.2f);
+        fps = info.optInt("fps", 60);
+        vibrate = info.optBoolean("vibrate", false);
+        repeat = info.optBoolean("repeat", false);
+        rewind = info.optBoolean("rewind", false);
 
         String oldAnimation = info.optString("animation", null);
         if (oldAnimation != null) {
@@ -188,25 +135,15 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         fixed = !transition.equals("scroll");
         replace = transition.equals("replace");
 
-        List<Animator> animations = new ArrayList<>();
-
         JSONArray elementsInfo = info.optJSONArray("elements");
         if (elementsInfo != null) {
             for (int i = 0; i < elementsInfo.length(); i++) {
                 SwipeElement element = new SwipeElement(getContext(), dimension, scale, elementsInfo.optJSONObject(i), this, this);
                 children.add(element);
                 viewGroup.addView(element.loadView());
-                List<ObjectAnimator> eAnimations = element.getAllAnimations();
-                for (ObjectAnimator ani : eAnimations) {
-                    ani.addUpdateListener(new SwipeAnimatorUpdateListener());
-                }
-                animations.addAll(eAnimations);
             }
         }
 
-        animator.playTogether(animations);
-        animator.addListener(new SwipeAnimatorListener());
-        animator.addPauseListener(new SwipeAnimatorPauseListener());
         return viewGroup;
     }
 
@@ -215,7 +152,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
             fEntered = false; // stops the element animation
             for (SwipeNode c : children) {
                 if (c instanceof SwipeElement) {
-                    ((SwipeElement) c).setTimeOffsetTo(offset);
+                    ((SwipeElement) c).setTimeOffsetTo(offset, /* autoPlay */ false, /* animate */ true);
                 }
             }
         }
@@ -305,12 +242,9 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         MyLog(TAG, "prepareToPlay " + (index) + " " + fForward, 2);
 
         for (SwipeNode c : children) {
-            final float offset = fForward ? 0.0f : 1.0f;
-
             if (c instanceof SwipeElement) {
                 SwipeElement e = (SwipeElement)c;
-
-                e.setTimeOffsetTo(offset);
+                e.resetAnimation(fForward);
             }
         }
 
@@ -339,13 +273,11 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         } else {
             timerTick(0.0f, fElementRepeat);
         }
-        cDebug += 1;
         cPlaying += 1;
         didStartPlayingInternal();
     }
 
     private void timerTick(final float offset, final boolean fElementRepeat) {
-        // NOTE: We don't want to add [unowned self] because the timer will fire anyway.
         // During the shutdown sequence, the loop will stop when didLeave was called.
         viewGroup.postDelayed(new Runnable() {
             @Override
@@ -353,7 +285,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
                 boolean fElementRepeatNext = fElementRepeat;
                 Float offsetForNextTick = null;
                 if (fEntered && !fPausing) {
-                    float nextOffset = offset + 1.0f / fps;
+                    float nextOffset = offset + 1.0f / duration / fps;
                     if (nextOffset < 1.0f) {
                         offsetForNextTick = nextOffset;
                     } else {
@@ -366,21 +298,18 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
                             fElementRepeatNext = true;
                         }
                     }
-                    if (!fElementRepeatNext) {
-                        // TODO I don't this we need this in Java: self.aniLayer?.timeOffset = CFTimeInterval(nextOffset)
-                    }
+
                     for (SwipeNode c : children) {
                         if (c instanceof SwipeElement) {
-                            ((SwipeElement) c).setTimeOffsetTo(nextOffset, true);
+                            ((SwipeElement) c).setTimeOffsetTo(nextOffset, fElementRepeat, /* autoPlay */ true);
                         }
                     }
                 }
                 if (offsetForNextTick != null) {
-                    timerTick(offsetForNextTick, fElementRepeat);
+                    timerTick(offsetForNextTick, fElementRepeatNext);
                 } else {
                     offsetPaused = fPausing ? offset : null;
                     cPlaying -= 1;
-                    cDebug -= 1;
                     didFinishPlayingInternal();
                 }
 
@@ -468,6 +397,12 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     }
 
     @Override
+    public URL makeFullURL(String url) { return delegate.makeFullURL(url); }
+
+    @Override
+    public URL map(URL url) { return delegate.map(url); }
+
+    @Override
     public String localizedStringForKey(String key) {
         // TODO
         return null;
@@ -478,4 +413,5 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         // TODO
         return null;
     }
+
 }

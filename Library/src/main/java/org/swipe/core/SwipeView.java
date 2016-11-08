@@ -53,7 +53,7 @@ public abstract class SwipeView extends SwipeNode {
         return viewGroup;
     }
 
-    public float px2Dip(float px) {
-        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, px, dm);
+    public int px2Dip(float px) {
+        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, px, dm);
     }
 }

@@ -93,4 +93,13 @@ public class SwipeBookBrowserView extends SwipeBrowserView implements SwipeBook.
     public void progress(SwipePrefetcher prefetcher) {
         // TODO
     }
+
+    // SwipeBookDelegate
+
+    @Override
+    public URL map(URL url) { return prefetcher.map(url); }
+
+    @Override
+    public URL makeFullURL(String url) { return delegate.makeFullURL(url); }
+
 }
