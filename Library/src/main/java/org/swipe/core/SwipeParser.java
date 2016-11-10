@@ -221,40 +221,6 @@ public class SwipeParser {
         }
     }
 
-    public static Path transformedPath(final Path path, final JSONObject info, final String key, final float w, final float h)  {
-        if (info == null) {
-            return null;
-        }
-
-        CGSize scale = null;
-        Double d = info.optDouble(key);
-        if (!d.isNaN()) {
-            float s = d.floatValue();
-            scale = new CGSize(s, s);
-        } else {
-            JSONArray scales = info.optJSONArray(key);
-            if (scales != null &&  scales.length() == 2) {
-                Double d0 = scales.optDouble(0);
-                Double d1 = scales.optDouble(1);
-                if (!d0.isNaN() && !d1.isNaN()) {
-                    scale = new CGSize(d0.floatValue(), d1.floatValue());
-                }
-            }
-        }
-
-        if (scale == null) {
-            return null;
-        }
-
-        Matrix xform = new Matrix();
-        xform.setTranslate(-w / 2, -h / 2);
-        xform.postScale(scale.width, scale.height);
-        xform.postTranslate(w / 2, h / 2);
-        Path xpath = new Path();
-        path.transform(xform, xpath);
-        return xpath;
-    }
-
 
     static JSONObject parseTransform(JSONObject value, JSONObject base, boolean fSkipTranslate, boolean fSkipScale) {
         if (value == null) {

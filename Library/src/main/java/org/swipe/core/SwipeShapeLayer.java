@@ -7,8 +7,9 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PathMeasure;
 import android.graphics.drawable.ShapeDrawable;
-import android.graphics.drawable.shapes.PathShape;
+import android.util.Log;
 import android.view.View;
 
 import org.json.JSONObject;
@@ -18,9 +19,9 @@ import org.json.JSONObject;
  */
 
 class SwipeShapeLayer extends View {
-    private Path path = null;
-    private float dipW = 0;
-    private float dipH = 0;
+    private static final String TAG = "SwShapeLayer";
+    private SwipePath path = null;
+    private Path drawPath = null;
     private int fillColor = Color.TRANSPARENT;
     private int strokeColor = Color.BLACK;
     private float lineWidth = 0;
@@ -30,54 +31,83 @@ class SwipeShapeLayer extends View {
     private CGSize shadowOffset = null;
     private float shadowRadius = 1;
     private int shadowColor = Color.BLACK;
-    ShapeDrawable drawable;
+    private Paint p = new Paint();
+    private PathMeasure measure = null;
+    private float pathLength = 0;
 
-    SwipeShapeLayer(Context context) {
+    SwipeShapeLayer(Context context, SwipePath path) {
         super(context);
-    }
-    SwipeShapeLayer(Context context, Path path, float dipW, float dipH) {
-        super(context);
-        this.drawable = new ShapeDrawable();
-        this.path = path;
-        this.dipW = dipW;
-        this.dipH = dipH;
+        setPath(path);
     }
 
-    public Path getPath() { return path; }
-    public void setPath(Path path) {
+
+    private void updateDrawPath() {
+        final float startD = pathLength * strokeStart;
+        final float endD = pathLength * strokeEnd;
+        Path dst = new Path();
+
+        if (path.getPathCount() == 1 && measure.getSegment(startD, endD, dst, /* startWithMoveTo */ true)) {
+            drawPath = dst;
+        } else {
+            drawPath = path.getPath();
+        }
+
+        invalidate();
+    }
+
+    private void measureAndUpdate() {
+        measure = new PathMeasure(this.path.getPath(), false);
+        pathLength = measure.getLength();
+        updateDrawPath();
+    }
+
+    public Matrix getPathTransform() { return path.getTransform(); }
+    public void setPathTransform(Matrix transform) {
+        path.setTransform(transform);
+        setPath(path);
+    }
+
+    public SwipePath getPath() { return path; }
+    public void setPath(SwipePath path) {
         this.path = path;
+        measureAndUpdate();
+    }
+
+    public float getStrokeStart() { return this.strokeStart; }
+    public void setStrokeStart(float strokeStart) {
+        this.strokeStart = strokeStart;
+        updateDrawPath();
+    }
+
+    public float getStrokeEnd () { return this.strokeEnd; }
+    public void setStrokeEnd(float strokeEnd) {
+        this.strokeEnd = strokeEnd;
+        updateDrawPath();
     }
 
     public int getFillColor() { return this.fillColor; }
-    public void setFillColor(int color) { this.fillColor = color; }
+    public void setFillColor(int color) { this.fillColor = color; invalidate(); }
 
     public int getStrokeColor() { return this.strokeColor; }
-    public void setStrokeColor(int color ) { this.strokeColor = color; }
+    public void setStrokeColor(int color ) { this.strokeColor = color; invalidate(); }
 
     public float getLineWidth() { return this.lineWidth; }
-    public void setLineWidth(float width) { this.lineWidth = width; }
+    public void setLineWidth(float width) { this.lineWidth = width; invalidate(); }
 
     public Paint.Cap getLineCap() { return this.lineCap; }
-    public void setLineCap(Paint.Cap lineCap) { this.lineCap = lineCap; }
-
-    public float getStrokeStart() { return this.strokeStart; }
-    public void setStrokeStart(float strokeStart) { this.strokeStart = strokeStart; }
-
-    public float getStrokeEnd () { return this.strokeEnd; }
-    public void setStrokeEnd(float strokeEnd) { this.strokeEnd = strokeEnd; }
+    public void setLineCap(Paint.Cap lineCap) { this.lineCap = lineCap; invalidate(); }
 
     public int getShadowColor() { return shadowColor; }
-    public void setShadowColor(int shadowColor) { this.shadowColor = shadowColor; }
+    public void setShadowColor(int shadowColor) { this.shadowColor = shadowColor; invalidate(); }
 
     public CGSize getShadowOffset() { return shadowOffset; }
-    public void setShadowOffset(CGSize shadowOffset) { this.shadowOffset = shadowOffset; }
+    public void setShadowOffset(CGSize shadowOffset) { this.shadowOffset = shadowOffset; invalidate(); }
 
     public float getShadowRadius() { return shadowRadius; }
-    public void setShadowRadius(float shadowRadius) { this.shadowRadius = shadowRadius; }
+    public void setShadowRadius(float shadowRadius) { this.shadowRadius = shadowRadius; invalidate(); }
 
     @Override
     public void draw(Canvas canvas) {
-        Paint p = drawable.getPaint();
         p.reset();
         p.setAntiAlias(true);
 
@@ -88,7 +118,7 @@ class SwipeShapeLayer extends View {
         if (fillColor != Color.TRANSPARENT) {
             p.setStyle(Paint.Style.FILL);
             p.setColor(fillColor);
-            canvas.drawPath(path, p);
+            canvas.drawPath(drawPath, p);
         }
 
         if (lineWidth > 0) {
@@ -96,12 +126,12 @@ class SwipeShapeLayer extends View {
             p.setStrokeWidth(lineWidth);
             p.setStrokeCap(lineCap);
             p.setColor(strokeColor);
-            canvas.drawPath(path, p);
+            canvas.drawPath(drawPath, p);
         } else {
             p.setStyle(Paint.Style.STROKE);
             p.setStrokeWidth(1);
             p.setColor(shadowColor);
-            canvas.drawPath(path, p);
+            canvas.drawPath(drawPath, p);
         }
     }
 }

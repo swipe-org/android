@@ -110,8 +110,8 @@ public class SwipeElement extends SwipeView {
         return allAni;
     }
 
-    SwipeElement(Context _context, CGSize _dimension, CGSize _scale, JSONObject _info, SwipeNode parent, SwipeElement.Delegate _delegate) {
-        super(_context, _dimension, _scale, _info);
+    SwipeElement(Context _context, CGSize _dimension, CGSize _scrDimension, CGSize _scale, JSONObject _info, SwipeNode parent, SwipeElement.Delegate _delegate) {
+        super(_context, _dimension, _scrDimension, _scale, _info);
         delegate = _delegate;
 
         String template = info.optString("template", null);
@@ -287,7 +287,7 @@ public class SwipeElement extends SwipeView {
             }
         }
 
-        Path path = parsePath(info.opt("path"), w0, h0, scale, dm);
+        SwipePath path = parsePath(info.opt("path"), w0, h0, scale, dm);
 
         // The natural size is determined by the contents (either image or mask)
         CGSize sizeContents = null;
@@ -297,7 +297,7 @@ public class SwipeElement extends SwipeView {
             sizeContents = new CGSize(maskBitmap.getWidth() / dm.density, imageBitmap.getHeight() / dm.density);
         } else  if (path != null) {
             RectF rc = new RectF();
-            path.computeBounds(rc, false /* unused */);
+            path.getPath().computeBounds(rc, false /* unused */);
             sizeContents = new CGSize((rc.left + rc.width()) / dm.density, (rc.top + rc.height()) / dm.density);
         }
 
@@ -554,11 +554,10 @@ public class SwipeElement extends SwipeView {
 
         if (path != null) {
             //shapeLayer.contentsScale = contentScale
-            Path xpath = SwipeParser.transformedPath(path, info, "scale", dipW, dipH);
-            if (xpath != null){
-                shapeLayer = new SwipeShapeLayer(getContext(), xpath, dipW, dipH);
-            } else {
-                shapeLayer = new SwipeShapeLayer(getContext(), path, dipW, dipH);
+            shapeLayer = new SwipeShapeLayer(getContext(), path);
+            Matrix xform = path.parsePathTransform(info, dipW, dipH);
+            if (xform != null) {
+                shapeLayer.setPathTransform(xform);
             }
             shapeLayer.setFillColor(SwipeParser.parseColor(info, "fillColor", Color.TRANSPARENT));
             shapeLayer.setStrokeColor(SwipeParser.parseColor(info, "strokeColor", Color.BLACK));
@@ -603,7 +602,7 @@ public class SwipeElement extends SwipeView {
                 float[] ys = new float[]{ 0, 0, -dipH, dipH };
 
                 for (int i = 0; i < xs.length; i++){
-                    SwipeShapeLayer subLayer = new SwipeShapeLayer(getContext(), shapeLayer.getPath(), dipW, dipH);
+                    SwipeShapeLayer subLayer = new SwipeShapeLayer(getContext(), shapeLayer.getPath());
                     subLayer.setFillColor(shapeLayer.getFillColor());
                     subLayer.setStrokeColor(shapeLayer.getStrokeColor());
                     subLayer.setLineWidth(shapeLayer.getLineWidth());
@@ -678,7 +677,7 @@ public class SwipeElement extends SwipeView {
         String text = parseText(this, info, "text");
         if (text != null){
             // TODO if self.helper == nil || !self.helper!.setText(text, scale:self.scale, info: info, dimension:screenDimension, layer: layer) {
-                textLayer = SwipeTextLayer.parse(getContext(), text, info, scale, dimension);
+                textLayer = SwipeTextLayer.parse(getContext(), text, info, scale, scrDimension);
                 if (textLayer != null) {
                     textLayer.measure(View.MeasureSpec.makeMeasureSpec(dipW, View.MeasureSpec.EXACTLY),
                             View.MeasureSpec.makeMeasureSpec(dipH, View.MeasureSpec.EXACTLY));
@@ -854,23 +853,23 @@ public class SwipeElement extends SwipeView {
             }
             
             boolean fSkipTranslate = false;
-            Path posPath = parsePath(to.opt("pos"), w0, h0, scale, dm);
+            SwipePath posPath = parsePath(to.opt("pos"), w0, h0, scale, dm);
             if (posPath != null){
                 Matrix xform = new Matrix();
                 xform.setTranslate(dipX, dipY);
-                posPath.transform(xform);
-                ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "x", "y", posPath);
+                posPath.getPath().transform(xform);
+                ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "x", "y", posPath.getPath());
                 animations.add(new SwipeObjectAnimator(ani, start, duration));
 
                 String mode = to.optString("mode");
                 switch(mode) {
                     case "auto": {
-                        ObjectAnimator aniR = ObjectAnimator.ofObject(viewGroup, "rotation", new PathRotationEvaluator(posPath), 0);
+                        ObjectAnimator aniR = ObjectAnimator.ofObject(viewGroup, "rotation", new PathRotationEvaluator(posPath.getPath()), 0);
                         animations.add(new SwipeObjectAnimator(aniR, start, duration));
                         break;
                     }
                     case "reverse": {
-                        ObjectAnimator aniR = ObjectAnimator.ofObject(viewGroup, "rotation", new PathReverseRotationEvaluator(posPath), 0);
+                        ObjectAnimator aniR = ObjectAnimator.ofObject(viewGroup, "rotation", new PathReverseRotationEvaluator(posPath.getPath()), 0);
                         animations.add(new SwipeObjectAnimator(aniR, start, duration));
                         break;
                     }
@@ -940,23 +939,14 @@ public class SwipeElement extends SwipeView {
                     Double translate2 = translate.optDouble(2);
                     if (!translate0.isNaN()) {
                         ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "translationX", px2Dip(translate0.floatValue() * scale.width) + dipX);
-                        ani.setInterpolator(new LinearInterpolator());
-                        ani.setStartDelay((int) (start * delegate.durationSec() * 1000));
-                        ani.setDuration((int) (duration * delegate.durationSec() * 1000));
                         animations.add(new SwipeObjectAnimator(ani, start, duration));
                     }
                     if (!translate1.isNaN()) {
                         ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "translationY", px2Dip(translate1.floatValue() * scale.height) + dipY);
-                        ani.setInterpolator(new LinearInterpolator());
-                        ani.setStartDelay((int) (start * delegate.durationSec() * 1000));
-                        ani.setDuration((int) (duration * delegate.durationSec() * 1000));
                         animations.add(new SwipeObjectAnimator(ani, start, duration));
                     }
                     if (!translate2.isNaN()) {
                         ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "translationZ", px2Dip(translate2.floatValue() * scale.height) + dipY);
-                        ani.setInterpolator(new LinearInterpolator());
-                        ani.setStartDelay((int) (start * delegate.durationSec() * 1000));
-                        ani.setDuration((int) (duration * delegate.durationSec() * 1000));
                         animations.add(new SwipeObjectAnimator(ani, start, duration));
                     }
                 }
@@ -1027,8 +1017,9 @@ public class SwipeElement extends SwipeView {
             }
             */
             if (shapeLayer != null) {
-                /*
-                if let params = to["path"] as? [AnyObject] {
+                JSONArray params = to.optJSONArray("path");
+                if (params != null) {
+                    /* ToDo
                     var values = [shapeLayer.path!]
                     for param in params {
                         if let path = parsePath(param, w: w0, h: h0, scale:scale) {
@@ -1041,24 +1032,51 @@ public class SwipeElement extends SwipeView {
                     ani.duration = duration
                     ani.fillMode = kCAFillModeBoth
                     shapeLayer.addAnimation(ani, forKey: "path")
-                } else if let path = parsePath(to["path"], w: w0, h: h0, scale:scale) {
-                    let ani = CABasicAnimation(keyPath: "path")
-                    ani.fromValue = shapeLayer.path
-                    ani.toValue = path
-                    ani.beginTime = start
-                    ani.duration = duration
-                    ani.fillMode = kCAFillModeBoth
-                    shapeLayer.addAnimation(ani, forKey: "path")
-                } else if let path = SwipeParser.transformedPath(pathSrc!, param: to, size:frame.size) {
-                    let ani = CABasicAnimation(keyPath: "path")
-                    ani.fromValue = shapeLayer.path
-                    ani.toValue = path
-                    ani.beginTime = start
-                    ani.duration = duration
-                    ani.fillMode = kCAFillModeBoth
-                    shapeLayer.addAnimation(ani, forKey: "path")
+                    */
+                } else {
+                    SwipePath toPath = parsePath(to.opt("path"), w0, h0, scale, dm);
+                    if (toPath != null) {
+                        class PathEvaluator implements TypeEvaluator<SwipePath> {
+                            public SwipePath evaluate(float fraction, SwipePath startValue, SwipePath endValue) {
+                                SwipePath morphed = SwipePath.morph(fraction, startValue, endValue);
+                                if (morphed != null) {
+                                    return morphed;
+                                } else if (fraction < 0.5) {
+                                    return startValue;
+                                } else {
+                                    return endValue;
+                                }
+                            }
+                        }
+
+                        ObjectAnimator ani = ObjectAnimator.ofObject(shapeLayer, "path", new PathEvaluator(), toPath);
+                        animations.add(new SwipeObjectAnimator(ani, start, duration));
+                    } else {
+                        class MatrixEvaluator implements TypeEvaluator<Matrix> {
+                            public Matrix evaluate(float fraction, Matrix startValue, Matrix endValue) {
+                                float[] startEntries = new float[9];
+                                float[] endEntries = new float[9];
+                                float[] currentEntries = new float[9];
+
+                                startValue.getValues(startEntries);
+                                endValue.getValues(endEntries);
+
+                                for (int i=0; i<9; i++) {
+                                    currentEntries[i] = (1 - fraction) * startEntries[i] + fraction * endEntries[i];
+                                }
+                                Matrix matrix = new Matrix();
+                                matrix.setValues(currentEntries);
+                                return matrix;
+                            }
+                        }
+
+                        Matrix toMatrix = SwipePath.parsePathTransform(to, dipW, dipH);
+                        if (toMatrix != null) {
+                            ObjectAnimator ani = ObjectAnimator.ofObject(shapeLayer, "pathTransform", new MatrixEvaluator(), toMatrix);
+                            animations.add(new SwipeObjectAnimator(ani, start, duration));
+                        }
+                    }
                 }
-                */
 
                 opt = to.opt("fillColor");
                 if (opt != null){
@@ -1081,7 +1099,7 @@ public class SwipeElement extends SwipeView {
                     ObjectAnimator ani = ObjectAnimator.ofFloat(shapeLayer, "strokeStart", dopt.floatValue());
                     animations.add(new SwipeObjectAnimator(ani, start, duration));
                 }
-                dopt = to.optDouble("fillColor");
+                dopt = to.optDouble("strokeEnd");
                 if (!dopt.isNaN()){
                     ObjectAnimator ani = ObjectAnimator.ofFloat(shapeLayer, "strokeEnd", dopt.floatValue());
                     animations.add(new SwipeObjectAnimator(ani, start, duration));
@@ -1270,7 +1288,7 @@ public class SwipeElement extends SwipeView {
         JSONArray elementsInfo = info.optJSONArray("elements");
         if (elementsInfo != null) {
             for (int e = 0; e < elementsInfo.length(); e++) {
-                SwipeElement element = new SwipeElement(getContext(), new CGSize(w0, h0), scale, elementsInfo.optJSONObject(e), this, delegate);
+                SwipeElement element = new SwipeElement(getContext(), new CGSize(w0, h0), scrDimension, scale, elementsInfo.optJSONObject(e), this, delegate);
                 viewGroup.addView(element.loadView());
                 children.add(element);
             }
@@ -1410,7 +1428,7 @@ public class SwipeElement extends SwipeView {
         return false;
     }
 
-    private Path parsePath(Object shape, float w, float h, CGSize scale, DisplayMetrics dm) {
+    private SwipePath parsePath(Object shape, float w, float h, CGSize scale, DisplayMetrics dm) {
         if (shape == null) {
             return null;
         }
@@ -1489,7 +1507,7 @@ public class SwipeElement extends SwipeView {
             if (elementsInfo != null) {
                 final CGSize scaleDummy = new CGSize(1, 1);
                 for (int e = 0; e < elementsInfo.length(); e++) {
-                    SwipeElement element = new SwipeElement(getContext(), dimension, scaleDummy, elementsInfo.optJSONObject(e), this, delegate);
+                    SwipeElement element = new SwipeElement(getContext(), dimension, scrDimension, scaleDummy, elementsInfo.optJSONObject(e), this, delegate);
                     resourceURLs.addAll(element.getResourceURLs());
                 }
             }
@@ -1505,7 +1523,7 @@ public class SwipeElement extends SwipeView {
                             if (elementsInfo != null) {
                                 final CGSize scaleDummy = new CGSize(1, 1);
                                 for (int e = 0; e < elementsInfo.length(); e++) {
-                                    SwipeElement element = new SwipeElement(getContext(), dimension, scaleDummy, elementsInfo.optJSONObject(e), this, delegate);
+                                    SwipeElement element = new SwipeElement(getContext(), dimension, scrDimension, scaleDummy, elementsInfo.optJSONObject(e), this, delegate);
                                     resourceURLs.addAll(element.getResourceURLs());
                                 }
                             }

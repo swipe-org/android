@@ -68,8 +68,8 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     private boolean fPausing = false;
     private Float offsetPaused = null;
 
-    SwipePage(Context _context, CGSize _dimension, CGSize _scale, int _index, JSONObject _info, SwipePage.Delegate _delegate) {
-        super(_context, _dimension, _scale, _info);
+    SwipePage(Context _context, CGSize _dimension, CGSize _scrDimension, CGSize _scale, int _index, JSONObject _info, SwipePage.Delegate _delegate) {
+        super(_context, _dimension, _scrDimension, _scale, _info);
         index = _index;
         delegate = _delegate;
 
@@ -138,7 +138,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         JSONArray elementsInfo = info.optJSONArray("elements");
         if (elementsInfo != null) {
             for (int i = 0; i < elementsInfo.length(); i++) {
-                SwipeElement element = new SwipeElement(getContext(), dimension, scale, elementsInfo.optJSONObject(i), this, this);
+                SwipeElement element = new SwipeElement(getContext(), dimension, scrDimension, scale, elementsInfo.optJSONObject(i), this, this);
                 children.add(element);
                 viewGroup.addView(element.loadView());
             }
@@ -365,7 +365,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
             if (elementsInfo != null) {
                 CGSize scaleDummy = new CGSize(0.1f, 0.1f);
                 for (int i = 0; i < elementsInfo.length(); i++) {
-                    SwipeElement element = new SwipeElement(getContext(), dimension, scaleDummy, elementsInfo.optJSONObject(i), this, this);
+                    SwipeElement element = new SwipeElement(getContext(), dimension, scrDimension, scaleDummy, elementsInfo.optJSONObject(i), this, this);
                     resourceURLs.addAll(element.getResourceURLs());
                 }
             }

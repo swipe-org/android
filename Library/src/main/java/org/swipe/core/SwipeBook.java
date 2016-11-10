@@ -154,7 +154,7 @@ public class SwipeBook implements SwipePage.Delegate {
         JSONArray pageInfos = bookInfo.optJSONArray("pages");
         if (pageInfos != null) {
             for (int i = 0; i < pageInfos.length(); i++) {
-                SwipePage page = new SwipePage(getContext(), dimension, new CGSize(scale, scale), i, pageInfos.optJSONObject(i), this);
+                SwipePage page = new SwipePage(getContext(), dimension, dimension, new CGSize(scale, scale), i, pageInfos.optJSONObject(i), this);
                 pages.add(page);
             }
         }

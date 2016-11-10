@@ -29,15 +29,17 @@ public abstract class SwipeView extends SwipeNode {
     protected ViewGroup viewGroup = null;
     protected Context getContext() { return context; }
     protected CGSize dimension = null;
+    protected CGSize scrDimension = null;
     protected CGSize scale = null;
     DisplayMetrics dm = null;
 
     View getView() { return viewGroup; }
 
-    public SwipeView(Context _context, CGSize _dimension, CGSize _scale, JSONObject _info) {
+    public SwipeView(Context _context, CGSize _dimension, CGSize _scrDimension, CGSize _scale, JSONObject _info) {
         super(_info);
         context = _context;
         dimension = _dimension;
+        scrDimension = _scrDimension;
         scale = _scale;
         dm = getContext().getResources().getDisplayMetrics();
     }

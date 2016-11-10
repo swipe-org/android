@@ -42,21 +42,31 @@ public class SwipeObjectAnimator {
     }
 
     public void setCurrentFraction(float overallOffset) {
-        if (overallOffset == 0) {
+        if (overallOffset >= start && overallOffset < start + duration) {
+            ani.setCurrentFraction((float) ((overallOffset - start) / duration));
+        } else if (overallOffset == 0) {
             if (!ended) {
                 ani.setCurrentFraction(0);
                 if (!forward) {
                     ended = true;
                 }
             }
-        } else if (overallOffset >= start && overallOffset < start + duration) {
-            ani.setCurrentFraction((float)((overallOffset - start) / duration));
+        } else if (!forward && overallOffset < start) {
+            if (!ended) {
+                ani.setCurrentFraction(0);
+                ended = true;
+            }
         } else if (overallOffset == 1) {
             if (!ended) {
                 ani.setCurrentFraction(1);
                 if (forward) {
                     ended = true;
                 }
+            }
+        } else if (forward && overallOffset >+ start + duration) {
+            if (!ended) {
+                ani.setCurrentFraction(1);
+                ended = true;
             }
         }
     }
