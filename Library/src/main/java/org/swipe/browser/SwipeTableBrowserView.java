@@ -142,7 +142,7 @@ public class SwipeTableBrowserView extends SwipeBrowserView implements SwipePref
             @Override
             public void run() {
                 Log.d(TAG, "items.count " + items.size());
-                DisplayMetrics dm = getResources().getDisplayMetrics();
+                final DisplayMetrics dm = getResources().getDisplayMetrics();
                 float fwidth = dm.density * dm.widthPixels;
                 float fheight = dm.density * dm.heightPixels;
                 Log.d(TAG, "display w=" + fwidth + " h=" + fheight);
@@ -174,14 +174,15 @@ public class SwipeTableBrowserView extends SwipeBrowserView implements SwipePref
                                 SwipeAssetManager.sharedInstance().loadAsset(localUrl, false, new SwipeAssetManager.LoadAssetRunnable() {
                                     @Override
                                     public void run() {
-                                        if (this.success) {
-                                            iv.setImageBitmap(BitmapFactory.decodeStream(this.in));
-                                            try {
-                                                this.in.close();
-                                            } catch (IOException e) {
-                                                e.printStackTrace();
-                                            }
+                                    if (this.success) {
+                                        iv.setImageBitmap(BitmapFactory.decodeStream(this.in));
+                                        iv.getLayoutParams().width = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 60, dm);
+                                        try {
+                                            this.in.close();
+                                        } catch (IOException e) {
+                                            e.printStackTrace();
                                         }
+                                    }
                                     }
                                 });
                             }

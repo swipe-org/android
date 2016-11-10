@@ -11,16 +11,16 @@
 
     <ImageView
         android:id="@+id/list_view_image"
-        android:layout_width="60dp"
+        android:layout_width="wrap_content"
         android:layout_height="60dp"
-        android:paddingRight="16dp"
-        android:src="@android:mipmap/sym_def_app_icon" />
+        android:layout_marginRight="16dp" />
 
     <TextView
         android:id="@+id/list_view_text"
         android:layout_width="0dp"
         android:layout_weight="1"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
         android:textAppearance="?android:textAppearanceMedium" />
 
 </LinearLayout>
