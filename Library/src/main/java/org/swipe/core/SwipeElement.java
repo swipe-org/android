@@ -1,45 +1,27 @@
 package org.swipe.core;
 
-import android.animation.Animator;
 import android.animation.ArgbEvaluator;
 import android.animation.ObjectAnimator;
 import android.animation.TypeEvaluator;
-import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.BlurMaskFilter;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.PathMeasure;
 import android.graphics.Point;
-import android.graphics.PointF;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.graphics.drawable.Animatable;
-import android.graphics.drawable.Animatable2;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.util.TypedValue;
-import android.view.Gravity;
 import android.view.View;
-import android.view.ViewDebug;
 import android.view.ViewGroup;
-import android.view.ViewParent;
-import android.view.animation.LinearInterpolator;
-import android.webkit.WebView;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.swipe.browser.R;
 import org.swipe.browser.SwipeBrowserActivity;
 import org.swipe.network.SwipeAssetManager;
 
@@ -48,13 +30,6 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-
-import jp.tomorrowkey.android.gifplayer.GifDecoder;
-
-import static android.R.attr.defaultValue;
-import static android.R.attr.duration;
-import static android.R.attr.key;
-import static android.R.attr.text;
 
 /**
  * Created by pete on 10/5/16.
@@ -219,30 +194,16 @@ public class SwipeElement extends SwipeView {
             }
         }
 
+        InputStream imageStream = null;
         Bitmap imageBitmap = null;
-        GifDecoder gifDecoder = new GifDecoder();
         String imgUrlStr = info.optString("img", null);
         if (imgUrlStr != null) {
             URL url = delegate.makeFullURL(imgUrlStr);
             URL localUrl = delegate.map(url);
             if (localUrl != null) {
-                InputStream stream = SwipeAssetManager.sharedInstance().loadLocalAsset(localUrl);
-                if (stream != null){
-                    imageBitmap = BitmapFactory.decodeStream(stream);
-                    try {
-                        stream.reset();
-                        int status = gifDecoder.read(stream);
-                        if (status == GifDecoder.STATUS_OK) {
-                            Log.d(TAG, "image " + imgUrlStr + " is a gif with " + gifDecoder.getFrameCount() + " frames " + gifDecoder.getLoopCount() + " loops");
-                        }
-                    } catch (Exception e) {
-
-                    }
-                    try {
-                        stream.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                imageStream = SwipeAssetManager.sharedInstance().loadLocalAsset(localUrl);
+                if (imageStream != null){
+                    imageBitmap = BitmapFactory.decodeStream(imageStream);
                 }
             } else {
                 // TODO: imageSrc = CGImageSourceCreateWithURL(url, nil)
@@ -439,6 +400,7 @@ public class SwipeElement extends SwipeView {
             imageLayer.setScaleType(ImageView.ScaleType.FIT_CENTER);
             imageLayer.setImageBitmap(imageBitmap);
             imageLayer.setMaskBitmap(maskBitmap);
+            imageLayer.setStream(imageStream, this);
 
             if (parent != null && parent instanceof SwipeElement) {
                 SwipeElement p = (SwipeElement)parent;
@@ -479,12 +441,6 @@ public class SwipeElement extends SwipeView {
                     subLayer.setY(ys[i]);
                     hostLayer.addView(subLayer, new ViewGroup.LayoutParams(dipW, dipH));
                 }
-            }
-
-            if (gifDecoder.getFrameCount() > 0) {
-                imageLayer.setGifDecoder(gifDecoder);
-                    ObjectAnimator ani = ObjectAnimator.ofFloat(imageLayer, "animationPercent", 0, 1);
-                    animations.add(new SwipeObjectAnimator(ani, 0, 1));
             }
         }
 
@@ -1257,6 +1213,11 @@ public class SwipeElement extends SwipeView {
         */
 
         return viewGroup;
+    }
+
+    public void onGifLoaded(SwipeImageLayer gifLayer) {
+        ObjectAnimator ani = ObjectAnimator.ofFloat(gifLayer, "animationPercent", 0, 1);
+        animations.add(new SwipeObjectAnimator(ani, 0, 1));
     }
 
     void resetAnimation(final boolean fForward) {
