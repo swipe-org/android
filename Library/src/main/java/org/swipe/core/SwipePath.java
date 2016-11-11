@@ -1,7 +1,9 @@
 package org.swipe.core;
 
+import android.animation.TypeEvaluator;
 import android.graphics.Matrix;
 import android.graphics.Path;
+import android.graphics.PathMeasure;
 import android.graphics.PointF;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -55,6 +57,57 @@ class SwipePath {
         xform.postConcat(this.transform);
         this.path.transform(this.transform, this.transformedPath);
     }
+
+    static class RotationEvaluator implements TypeEvaluator<Number> {
+        private PathMeasure pm = null;
+        private float[] tan = new float[2];
+        private float[] pos = new float[2];
+
+        private float len = 0;
+
+        RotationEvaluator(Path path) {
+            pm = new PathMeasure(path, false);
+            len = pm.getLength();
+        }
+
+        public Number evaluate(float fraction, Number startValue, Number endValue) {
+            pm.getPosTan(fraction * len, pos, tan);
+            return(float) (Math.atan2(tan[1], tan[0]) * 180.0 / Math.PI);
+        }
+    }
+
+    static class ReverseRotationEvaluator implements TypeEvaluator<Number> {
+        private PathMeasure pm = null;
+        private float[] tan = new float[2];
+        private float[] pos = new float[2];
+
+        private float len = 0;
+
+        ReverseRotationEvaluator(Path path) {
+            pm = new PathMeasure(path, false);
+            len = pm.getLength();
+        }
+
+        public Number evaluate(float fraction, Number startValue, Number endValue) {
+            pm.getPosTan(fraction * len, pos, tan);
+            float degrees = (float) (Math.atan2(tan[1], tan[0]) * 180.0 / Math.PI);
+            return ((int)degrees + 180) % 360;
+        }
+    }
+
+    static class Evaluator implements TypeEvaluator<SwipePath> {
+        public SwipePath evaluate(float fraction, SwipePath startValue, SwipePath endValue) {
+            SwipePath morphed = SwipePath.morph(fraction, startValue, endValue);
+            if (morphed != null) {
+                return morphed;
+            } else if (fraction < 0.5) {
+                return startValue;
+            } else {
+                return endValue;
+            }
+        }
+    }
+
 
     private Path make() {
         if (commands == null) {

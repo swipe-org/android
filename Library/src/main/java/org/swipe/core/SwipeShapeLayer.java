@@ -40,7 +40,6 @@ class SwipeShapeLayer extends View {
         setPath(path);
     }
 
-
     private void updateDrawPath() {
         final float startD = pathLength * strokeStart;
         final float endD = pathLength * strokeEnd;

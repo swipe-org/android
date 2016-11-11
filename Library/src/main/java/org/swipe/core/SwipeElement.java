@@ -15,6 +15,8 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PathMeasure;
+import android.graphics.Point;
+import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
@@ -100,6 +102,8 @@ public class SwipeElement extends SwipeView {
     private Float videoStart = 0.0f;
     private Float videoDuration = 1.0f;
 
+    private SwipeSpriteLayer spriteLayer = null;
+
     List<SwipeObjectAnimator> getAllAnimations() {
         List<SwipeObjectAnimator> allAni = new ArrayList<>();
         allAni.addAll(animations);
@@ -125,43 +129,6 @@ public class SwipeElement extends SwipeView {
         }
 
         super.info =  SwipeParser.inheritProperties(info, delegate.prototypeWith(template));
-    }
-
-    private class PathRotationEvaluator implements TypeEvaluator<Number> {
-        private PathMeasure pm = null;
-        private float[] tan = new float[2];
-        private float[] pos = new float[2];
-
-        private float len = 0;
-
-        PathRotationEvaluator(Path path) {
-            pm = new PathMeasure(path, false);
-            len = pm.getLength();
-        }
-
-        public Number evaluate(float fraction, Number startValue, Number endValue) {
-            pm.getPosTan(fraction * len, pos, tan);
-            return(float) (Math.atan2(tan[1], tan[0]) * 180.0 / Math.PI);
-        }
-    }
-
-    private class PathReverseRotationEvaluator implements TypeEvaluator<Number> {
-        private PathMeasure pm = null;
-        private float[] tan = new float[2];
-        private float[] pos = new float[2];
-
-        private float len = 0;
-
-        PathReverseRotationEvaluator(Path path) {
-            pm = new PathMeasure(path, false);
-            len = pm.getLength();
-        }
-
-        public Number evaluate(float fraction, Number startValue, Number endValue) {
-            pm.getPosTan(fraction * len, pos, tan);
-            float degrees = (float) (Math.atan2(tan[1], tan[0]) * 180.0 / Math.PI);
-            return ((int)degrees + 180) % 360;
-        }
     }
 
 
@@ -525,42 +492,46 @@ public class SwipeElement extends SwipeView {
             self.imageLayer = imageLayer
             */
         }
-        /*
-        if let src = info["sprite"] as? String,
-                let slice = info["slice"] as? [Int] {
-            //view.clipsToBounds = true
-            layer.masksToBounds = true
-            if let values = self.info["slot"] as? [Int] where values.count == 2 {
-                slot = CGPointMake(CGFloat(values[0]), CGFloat(values[1]))
+
+        String spriteSrc = info.optString("sprite", null);
+        JSONArray sliceInfo = info.optJSONArray("slice");
+        if (spriteSrc != null && sliceInfo != null) {
+            Point slot = new Point(0, 0);
+            JSONArray values = info.optJSONArray("slot");
+            if (values != null && values.length() == 2) {
+                slot = new Point(values.optInt(0, slot.x), values.optInt(1, slot.y));
             }
-            if let url = NSURL.url(src, baseURL: baseURL),
-            urlLocal = self.delegate.map(url),
-                    imageSource = CGImageSourceCreateWithURL(urlLocal, nil) where CGImageSourceGetCount(imageSource) > 0,
-                    let image = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) {
-                let imageLayer = CALayer()
-                imageLayer.contentsScale = contentScale
-                imageLayer.frame = view.bounds
-                imageLayer.contents = image
-                if slice.count > 0 {
-                    self.slice.width = CGFloat(slice[0])
-                    if slice.count > 1 {
-                        self.slice.height = CGFloat(slice[1])
+
+            CGSize slice = new CGSize(1, 1);
+            if (sliceInfo.length() > 0) {
+                slice.width = sliceInfo.optInt(0, (int)slice.width);
+                if (sliceInfo.length() > 1) {
+                    slice.height = sliceInfo.optInt(1, (int)slice.height);
+                }
+            }
+
+            URL url = delegate.makeFullURL(spriteSrc);
+            URL localUrl = delegate.map(url);
+            if (localUrl != null) {
+                InputStream stream = SwipeAssetManager.sharedInstance().loadLocalAsset(localUrl);
+                if (stream != null){
+                    Bitmap spriteBitmap = BitmapFactory.decodeStream(stream);
+                    if (spriteBitmap != null) {
+                        spriteLayer = new SwipeSpriteLayer(getContext(), spriteBitmap, slice, slot);
+                        spriteLayer.setClipBounds(new Rect(0, 0, dipW, dipH));
+                        viewGroup.addView(spriteLayer, new ViewGroup.LayoutParams(dipW, dipH));
+                    }
+                    try {
+                        stream.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
                 }
-                contentsRect = CGRectMake(slot.x/self.slice.width, slot.y/self.slice.height, 1.0/self.slice.width, 1.0/self.slice.height)
-                imageLayer.contentsRect = contentsRect
-                layer.addSublayer(imageLayer)
-                spriteLayer = imageLayer
             }
         }
 
-        if let value = self.info["videoDuration"] as? CGFloat {
-            videoDuration = value
-        }
-        if let value = self.info["videoStart"] as? CGFloat {
-            videoStart = value
-        }
-        */
+        videoDuration =  (float) info.optDouble("videoDuration", videoDuration);
+        videoStart = (float) info.optDouble("videoStart", videoStart);
 
         bgDrawable.setCornerRadius(px2Dip((float) info.optDouble("cornerRadius", 0) * scale.width));
         bgDrawable.setBorderWidth(px2Dip((float) info.optDouble("borderWidth", 0) * scale.width));
@@ -878,12 +849,12 @@ public class SwipeElement extends SwipeView {
                 String mode = to.optString("mode");
                 switch(mode) {
                     case "auto": {
-                        ObjectAnimator aniR = ObjectAnimator.ofObject(viewGroup, "rotation", new PathRotationEvaluator(posPath.getPath()), 0);
+                        ObjectAnimator aniR = ObjectAnimator.ofObject(viewGroup, "rotation", new SwipePath.RotationEvaluator(posPath.getPath()), 0);
                         animations.add(new SwipeObjectAnimator(aniR, start, duration));
                         break;
                     }
                     case "reverse": {
-                        ObjectAnimator aniR = ObjectAnimator.ofObject(viewGroup, "rotation", new PathReverseRotationEvaluator(posPath.getPath()), 0);
+                        ObjectAnimator aniR = ObjectAnimator.ofObject(viewGroup, "rotation", new SwipePath.ReverseRotationEvaluator(posPath.getPath()), 0);
                         animations.add(new SwipeObjectAnimator(aniR, start, duration));
                         break;
                     }
@@ -1050,20 +1021,7 @@ public class SwipeElement extends SwipeView {
                 } else {
                     SwipePath toPath = parsePath(to.opt("path"), w0, h0, scale, dm);
                     if (toPath != null) {
-                        class PathEvaluator implements TypeEvaluator<SwipePath> {
-                            public SwipePath evaluate(float fraction, SwipePath startValue, SwipePath endValue) {
-                                SwipePath morphed = SwipePath.morph(fraction, startValue, endValue);
-                                if (morphed != null) {
-                                    return morphed;
-                                } else if (fraction < 0.5) {
-                                    return startValue;
-                                } else {
-                                    return endValue;
-                                }
-                            }
-                        }
-
-                        ObjectAnimator ani = ObjectAnimator.ofObject(shapeLayer, "path", new PathEvaluator(), toPath);
+                         ObjectAnimator ani = ObjectAnimator.ofObject(shapeLayer, "path", new SwipePath.Evaluator(), toPath);
                         animations.add(new SwipeObjectAnimator(ani, start, duration));
                     } else {
                         class MatrixEvaluator implements TypeEvaluator<Matrix> {
@@ -1273,26 +1231,13 @@ public class SwipeElement extends SwipeView {
                         */
                     }
                     case "sprite":
-                        /*
-                        if let targetLayer = spriteLayer {
-                        let ani = CAKeyframeAnimation(keyPath:"contentsRect")
-                        let rc0 = CGRectMake(0, slot.y / self.slice.height, 1.0 / self.slice.width, 1.0 / self.slice.height)
-                        ani.values = Array(0..<Int (slice.width)).map() {
-                            (index:Int) -> NSValue in
-                            NSValue(CGRect:CGRect(origin:
-                            CGPointMake(CGFloat(index) / self.slice.width, rc0.origin.y), size:
-                            rc0.size))
+                        if (spriteLayer != null) {
+                            for (int r = 0; r < repeatCount; r++) {
+                                ObjectAnimator ani = ObjectAnimator.ofFloat(spriteLayer, "animationPercent", 0, 1);
+                                animations.add(new SwipeObjectAnimator(ani, start + (r * repeatInterval), repeatInterval));
+                            }
                         }
-                        ani.repeatCount = repeatCount
-                        ani.beginTime = start
-                        ani.duration = CFTimeInterval(duration / Double(ani.repeatCount))
-                        ani.fillMode = kCAFillModeBoth
-                        ani.calculationMode = kCAAnimationDiscrete
-                        targetLayer.addAnimation(ani, forKey:"contentsRect")
-                    }
-                    //self.dir = (1,0)
-                    //self.repeatCount = CGFloat(repeatCount)
-                        */
+
                         break;
                 }
             }
