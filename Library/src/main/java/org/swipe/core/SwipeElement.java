@@ -49,7 +49,10 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+import jp.tomorrowkey.android.gifplayer.GifDecoder;
+
 import static android.R.attr.defaultValue;
+import static android.R.attr.duration;
 import static android.R.attr.key;
 import static android.R.attr.text;
 
@@ -217,6 +220,7 @@ public class SwipeElement extends SwipeView {
         }
 
         Bitmap imageBitmap = null;
+        GifDecoder gifDecoder = new GifDecoder();
         String imgUrlStr = info.optString("img", null);
         if (imgUrlStr != null) {
             URL url = delegate.makeFullURL(imgUrlStr);
@@ -225,6 +229,15 @@ public class SwipeElement extends SwipeView {
                 InputStream stream = SwipeAssetManager.sharedInstance().loadLocalAsset(localUrl);
                 if (stream != null){
                     imageBitmap = BitmapFactory.decodeStream(stream);
+                    try {
+                        stream.reset();
+                        int status = gifDecoder.read(stream);
+                        if (status == GifDecoder.STATUS_OK) {
+                            Log.d(TAG, "image " + imgUrlStr + " is a gif with " + gifDecoder.getFrameCount() + " frames " + gifDecoder.getLoopCount() + " loops");
+                        }
+                    } catch (Exception e) {
+
+                    }
                     try {
                         stream.close();
                     } catch (IOException e) {
@@ -467,30 +480,12 @@ public class SwipeElement extends SwipeView {
                     hostLayer.addView(subLayer, new ViewGroup.LayoutParams(dipW, dipH));
                 }
             }
-            /*
-            // Handling GIF animation
-            if let isrc = imageSrc {
-                self.step = 0
-                var images = [CGImageRef]()
-                // NOTE: Using non-main thread has some side-effect
-                //let queue = dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_LOW, 0)
-                //dispatch_async(queue) { () -> Void in
-                let count = CGImageSourceGetCount(isrc)
-                for i in 1..<count {
-                    if let image = CGImageSourceCreateImageAtIndex(isrc, i, nil) {
-                        images.append(image)
-                    }
-                }
-                let ani = CAKeyframeAnimation(keyPath: "contents")
-                ani.values = images
-                ani.beginTime = 1e-10
-                ani.duration = 1.0
-                ani.fillMode = kCAFillModeBoth
-                imageLayer.addAnimation(ani, forKey: "contents")
-                //}
+
+            if (gifDecoder.getFrameCount() > 0) {
+                imageLayer.setGifDecoder(gifDecoder);
+                    ObjectAnimator ani = ObjectAnimator.ofFloat(imageLayer, "animationPercent", 0, 1);
+                    animations.add(new SwipeObjectAnimator(ani, 0, 1));
             }
-            self.imageLayer = imageLayer
-            */
         }
 
         String spriteSrc = info.optString("sprite", null);
