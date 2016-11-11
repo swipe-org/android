@@ -69,7 +69,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     private Float offsetPaused = null;
 
     SwipePage(Context _context, CGSize _dimension, CGSize _scrDimension, CGSize _scale, int _index, JSONObject _info, SwipePage.Delegate _delegate) {
-        super(_context, _dimension, _scrDimension, _scale, _info);
+        super(_context, _dimension, _scrDimension, _scale, _info, /* parent */ null);
         index = _index;
         delegate = _delegate;
 

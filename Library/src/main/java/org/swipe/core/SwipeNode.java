@@ -12,21 +12,22 @@ import java.util.List;
  */
 
 public class SwipeNode {
+    SwipeNode parent = null;
+    JSONObject info = null;
+    List<SwipeNode> children = new ArrayList<>();
 
-    protected JSONObject info = null;
-    protected List<SwipeNode> children = new ArrayList<>();
-
-    protected void MyLog(String tag, String text) {
+    void MyLog(String tag, String text) {
         MyLog(tag, text, 0);
     }
 
-    protected void MyLog(String tag, String text, int level) {
+    void MyLog(String tag, String text, int level) {
         if (level <= 4) {
             Log.d(tag, text);
         }
     }
 
-    public SwipeNode(JSONObject _info) {
+    SwipeNode(JSONObject _info, SwipeNode _parent) {
         info = _info;
+        parent = _parent;
     }
 }

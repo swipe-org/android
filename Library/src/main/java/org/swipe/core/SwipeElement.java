@@ -28,6 +28,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewDebug;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.animation.LinearInterpolator;
 import android.webkit.WebView;
 import android.widget.ImageView;
@@ -82,6 +83,7 @@ public class SwipeElement extends SwipeView {
     private SwipeElement.Delegate delegate = null;
     private List<SwipeObjectAnimator> animations = new ArrayList<>();
     private boolean fRepeat = false;
+    private boolean fClip = false;
     private SwipeShapeLayer shapeLayer = null;
     private SwipeTextLayer textLayer = null;
     private SwipeImageLayer imageLayer = null;
@@ -110,8 +112,8 @@ public class SwipeElement extends SwipeView {
         return allAni;
     }
 
-    SwipeElement(Context _context, CGSize _dimension, CGSize _scrDimension, CGSize _scale, JSONObject _info, SwipeNode parent, SwipeElement.Delegate _delegate) {
-        super(_context, _dimension, _scrDimension, _scale, _info);
+    SwipeElement(Context _context, CGSize _dimension, CGSize _scrDimension, CGSize _scale, JSONObject _info, SwipeNode _parent, SwipeElement.Delegate _delegate) {
+        super(_context, _dimension, _scrDimension, _scale, _info, _parent);
         delegate = _delegate;
 
         String template = info.optString("template", null);
@@ -292,9 +294,9 @@ public class SwipeElement extends SwipeView {
         // The natural size is determined by the contents (either image or mask)
         CGSize sizeContents = null;
         if (imageBitmap != null) {
-            sizeContents = new CGSize(imageBitmap.getWidth() / dm.density, imageBitmap.getHeight() / dm.density);
+            sizeContents = new CGSize(imageBitmap.getWidth(), imageBitmap.getHeight());
         } else if (maskBitmap != null) {
-            sizeContents = new CGSize(maskBitmap.getWidth() / dm.density, imageBitmap.getHeight() / dm.density);
+            sizeContents = new CGSize(maskBitmap.getWidth(), imageBitmap.getHeight());
         } else  if (path != null) {
             RectF rc = new RectF();
             path.getPath().computeBounds(rc, false /* unused */);
@@ -384,7 +386,7 @@ public class SwipeElement extends SwipeView {
         viewGroup.setY(dipY);
         viewGroup.setPivotX(dipW / 2);
         viewGroup.setPivotY(dipH / 2);
-        viewGroup.setLayoutParams(new ViewGroup.LayoutParams(dipW,dipH));
+        viewGroup.setLayoutParams(new ViewGroup.LayoutParams(dipW, dipH));
 
         JSONArray anchorValues = info.optJSONArray("anchor");
         if (anchorValues != null && anchorValues.length() == 2 && w0 > 0 && h0 > 0) {
@@ -447,14 +449,28 @@ public class SwipeElement extends SwipeView {
         }
         */
 
-        viewGroup.setClipToOutline(info.optBoolean("clip", false)); // TODO does not work for some "images" test cases
+        fClip = info.optBoolean("clip", false);
+        if (fClip) {
+            viewGroup.setClipToOutline(true); // TODO CLIP works with paths but not nested images :(
+        }
 
         if (imageBitmap != null) {
             imageLayer = new SwipeImageLayer(getContext());
+            imageLayer.setScaleType(ImageView.ScaleType.FIT_CENTER);
             imageLayer.setImageBitmap(imageBitmap);
             imageLayer.setMaskBitmap(maskBitmap);
 
-            if (info.optBoolean("tiling", false)) {
+            if (parent != null && parent instanceof SwipeElement) {
+                SwipeElement p = (SwipeElement)parent;
+                if (p.fClip) {
+                    p.viewGroup.setClipToOutline(false);  // ToDo CLIP doesn't work with images
+                    p.viewGroup.setClipBounds(new Rect(0, 0, p.viewGroup.getLayoutParams().width, p.viewGroup.getLayoutParams().height));
+                }
+            }
+
+            if (!info.optBoolean("tiling", false)) {
+                viewGroup.addView(imageLayer, new ViewGroup.LayoutParams(dipW, dipH));
+            } else {
                 ViewGroup hostLayer = new ViewGroup(getContext()) {
                     @Override
                     protected void onLayout(boolean changed, int l, int t, int r, int b) {
@@ -483,8 +499,6 @@ public class SwipeElement extends SwipeView {
                     subLayer.setY(ys[i]);
                     hostLayer.addView(subLayer, new ViewGroup.LayoutParams(dipW, dipH));
                 }
-            } else {
-                viewGroup.addView(imageLayer, new ViewGroup.LayoutParams(dipW, dipH));
             }
             /*
             // Handling GIF animation

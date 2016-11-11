@@ -1,6 +1,7 @@
 package org.swipe.browser;
 
 import android.app.Activity;
+import android.graphics.Color;
 import android.graphics.RectF;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -84,7 +85,7 @@ public class SwipeBookBrowserView extends SwipeBrowserView implements SwipeBook.
         RelativeLayout rl = new RelativeLayout(getContext());
         RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(book.viewWidthDIP, book.viewHeightDIP);
         lp.addRule(CENTER_IN_PARENT, 1);
-        rl.setBackgroundColor(0xffc0c0c0);
+        rl.setBackgroundColor(Color.BLACK);
         rl.addView(book.loadView(), lp);
         addView(rl, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     }

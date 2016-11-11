@@ -22,7 +22,7 @@ import java.util.List;
  * Created by pete on 10/5/16.
  */
 
-public abstract class SwipeView extends SwipeNode {
+abstract class SwipeView extends SwipeNode {
     private final static String TAG = "SwView";
     protected List<URL> resourceURLs = null;
     protected Context context = null;
@@ -35,8 +35,8 @@ public abstract class SwipeView extends SwipeNode {
 
     View getView() { return viewGroup; }
 
-    public SwipeView(Context _context, CGSize _dimension, CGSize _scrDimension, CGSize _scale, JSONObject _info) {
-        super(_info);
+    SwipeView(Context _context, CGSize _dimension, CGSize _scrDimension, CGSize _scale, JSONObject _info, SwipeNode _parent) {
+        super(_info, _parent);
         context = _context;
         dimension = _dimension;
         scrDimension = _scrDimension;
