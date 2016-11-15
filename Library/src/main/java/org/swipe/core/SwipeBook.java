@@ -218,7 +218,6 @@ public class SwipeBook implements SwipePage.Delegate {
     }
 
     private void onMove() {
-        MyLog(TAG, "onMove x:" + scrollView.getScrollX() + " y:" + scrollView.getScrollY());
         syncScrollOffset();
 
         final float pos = scrollPos(); // int part is page number, fraction is offset into page (0.0 - 0.999)
@@ -448,9 +447,7 @@ public class SwipeBook implements SwipePage.Delegate {
         scrollView.setOnScrollChangeListener(new View.OnScrollChangeListener() {
             @Override
             public void onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
-                MyLog(TAG, "onScrollChange x:" + scrollX + " y:" + scrollY + " oldX:" + oldScrollX + " oldY:" + oldScrollY);
                 onMove();
-
             }
         });
 
@@ -460,7 +457,6 @@ public class SwipeBook implements SwipePage.Delegate {
                 for (int c = 0; c < this.getChildCount(); c++) {
                     View v = this.getChildAt(c);
                     ViewGroup.LayoutParams lp = v.getLayoutParams();
-                    //Log.d(TAG, "layout " + c + " w:" + lp.width + " h:" + lp.height + " mw:" + v.getMeasuredWidth() + " mh:" + v.getMeasuredHeight());
                     v.layout(0, 0, lp.width, lp.height);
                 }
             }
@@ -472,7 +468,6 @@ public class SwipeBook implements SwipePage.Delegate {
                 for (int c = 0; c < this.getChildCount(); c++) {
                     View v = this.getChildAt(c);
                     ViewGroup.LayoutParams lp = v.getLayoutParams();
-                    //Log.d(TAG, "layout " + c + " w:" + lp.width + " h:" + lp.height + " mw:" + v.getMeasuredWidth() + " mh:" + v.getMeasuredHeight());
                     v.layout(0, 0, lp.width, lp.height);
                 }
             }

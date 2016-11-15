@@ -79,7 +79,7 @@ public class SwipeElement extends SwipeView {
     private SwipeTextLayer textLayer = null;
     private SwipeImageLayer imageLayer = null;
     private ViewGroup innerLayer = null;
-
+    private SwipeSpriteLayer spriteLayer = null;
     private SwipeBackgroundDrawable bgDrawable = new SwipeBackgroundDrawable();
 
     // Video Element Specific
@@ -92,7 +92,6 @@ public class SwipeElement extends SwipeView {
     private Float videoStart = 0.0f;
     private Float videoDuration = 1.0f;
 
-    private SwipeSpriteLayer spriteLayer = null;
 
     List<SwipeObjectAnimator> getAllAnimations() {
         List<SwipeObjectAnimator> allAni = new ArrayList<>();

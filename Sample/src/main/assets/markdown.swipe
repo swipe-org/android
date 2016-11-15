@@ -3,29 +3,29 @@
     "markdown":{
         "shadow":{ "color":"blue", "offset":[-2,2], "radius":3, "opacity":0.5 },
         "styles":{
-            "#":{ "color":"#008", "font":{ "size":"5%", "name":["foo", "Courier"] }},
-            "##":{ "color":"#080", "font":{ "size":"4.5%", "name":"Chalkboard SE" }},
-            "###":{ "color":"#800", "font":{ "size":"4%", "name":"Helvetica" }},
+            "#":{ "color":"#008", "font":{ "size":"5%", "xname":["foo", "Courier"] }},
+            "##":{ "color":"#080", "font":{ "size":"4.5%", "xname":"Chalkboard SE" }},
+            "###":{ "color":"#800", "font":{ "size":"4%", "xname":"Helvetica" }},
             "####":{ "color":"#800", "font":{ "size":"3.5%"}},
             "#5":{ "color":"red", "font":{ "size":"3.5%"}},
-            "*":{ "color":"#880", "font":{ "size":"3%", "name":"Helvetica" }},
-            "-":{ "color":"#808", "font":{ "size":"3%", "name":"Helvetica" }, "prefix":"◆ "},
-            "+":{ "color":"#808", "font":{ "size":"3%", "name":"Helvetica" }, "prefix":"✅ "},
-            "```":{ "color":"#808", "prefix":"| " },
-        },
+            "*":{ "color":"#880", "font":{ "size":"3%", "xname":"Helvetica" }},
+            "-":{ "color":"#808", "font":{ "size":"3%", "xname":"Helvetica" }, "prefix":"◆ "},
+            "+":{ "color":"#808", "font":{ "size":"3%", "xname":"Helvetica" }, "prefix":"✅ "},
+            "```":{ "color":"#808", "prefix":"| " }
+        }
     },
     "templates": {
         "elements":{
-            "slide": { "x":"10%", "y":"10%", "w":"80%", "h":"80%", "bc":"#ffc" },
-        },
+            "slide": { "x":"10%", "y":"10%", "w":"80%", "h":"80%", "bc":"#ffc" }
+        }
     },
     "pages":[
         {
             "elements":[
                 { "template":"slide","markdown":[
-                    "# スマートフォンの時代に相応しい『漫画・アニメ体験』と、その実現に必要なマークアップ言語の提案",
-                ]},
-            ],
+                    "# スマートフォンの時代に相応しい『漫画・アニメ体験』と、その実現に必要なマークアップ言語の提案"
+                ]}
+            ]
         },
         {
             "elements":[
@@ -36,9 +36,9 @@
                     "- Smartphone User Experience",
                     "+ Native vs. HTML5",
                     "+ Domain-Specific Language",
-                    "+ Declarative Language",
-                ]},
-            ],
+                    "+ Declarative Language"
+                ]}
+            ]
         },
         {
             "elements":[
@@ -51,9 +51,9 @@
                     "Hello World",
                     "- Hello World",
                     "- Hello World",
-                    "- Hello World",
-                ]},
-            ],
+                    "- Hello World"
+                ]}
+            ]
         },
         {
             "elements":[
@@ -68,14 +68,14 @@
                     "} Hello World",
                     "```",
                     "Hello World",
-                    "Hello World",
-                ]},
-            ],
+                    "Hello World"
+                ]}
+            ]
         },
         {
             "elements":[
-                { "template":"slide", "text":"Hello World" },
-            ],
-        },
-    ],
+                { "template":"slide", "text":"Hello World" }
+            ]
+        }
+    ]
 }

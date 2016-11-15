@@ -261,9 +261,9 @@ public class SwipeBrowserActivity extends Activity implements SwipeBrowserView.D
         ViewGroup vg = null;
         String documentType = document.optString("type", "net.swipe.swipe");
 
-        if (documentType.equalsIgnoreCase("net.swipe.swipe")) {
+        if (documentType.equalsIgnoreCase("net.swipe.swipe") || documentType.equalsIgnoreCase("org.swipe.swipe")) {
             vg = new SwipeBookBrowserView(this);
-        } else if (documentType.equalsIgnoreCase("net.swipe.list")) {
+        } else if (documentType.equalsIgnoreCase("net.swipe.list") || documentType.equalsIgnoreCase("org.swipe.list")) {
             vg = new SwipeTableBrowserView(this);
         } else {
             displayError(getString(R.string.unknown_type) + ": " + documentType);

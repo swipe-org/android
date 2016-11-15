@@ -19,7 +19,7 @@ import java.util.List;
 
 public class SwipePageTemplate {
     private static final String TAG = "SwPageTemplate";
-    public JSONObject pageTemplateInfo = null;
+    public JSONObject info = null;
 
     private SwipePage.Delegate delegate = null;
     private MediaPlayer bgmPlayer = null;
@@ -27,13 +27,14 @@ public class SwipePageTemplate {
     protected List<URL> resourceURLs = null;
 
     public SwipePageTemplate(JSONObject info, SwipePage.Delegate delegate) {
-        pageTemplateInfo = info;
+        this.info = info;
+        this.delegate = delegate;
     }
 
     public List<URL> getResourceURLs() {
         if (resourceURLs == null) {
             resourceURLs = new ArrayList<>();
-            String value = pageTemplateInfo.optString("bgm", null);
+            String value = info.optString("bgm", null);
             if (value != null) {
                 URL url = delegate.makeFullURL(value);
                 resourceURLs.add(url);
@@ -50,7 +51,7 @@ public class SwipePageTemplate {
         if (fDebugEntered) throw new AssertionError("re-entering");
         fDebugEntered = true;
 
-        String value = pageTemplateInfo.optString("bgm", null);
+        String value = info.optString("bgm", null);
         if (value == null) {
             return;
         }
@@ -73,7 +74,7 @@ public class SwipePageTemplate {
                         bgmPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                             @Override
                             public void onCompletion(MediaPlayer mp) {
-                                // We repeat the bgm
+                                // repeat the bgm
                                 mp.seekTo(0);
                                 mp.start();
                             }

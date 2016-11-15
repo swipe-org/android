@@ -86,7 +86,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
             }
         }
 
-        super.info = SwipeParser.inheritProperties(_info, pageTemplate != null ? pageTemplate.pageTemplateInfo : null);
+        super.info = SwipeParser.inheritProperties(_info, pageTemplate != null ? pageTemplate.info : null);
     }
 
     int getIndex() { return index; }
