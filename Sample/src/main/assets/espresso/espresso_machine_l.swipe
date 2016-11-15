@@ -7,43 +7,43 @@
     "templates": {
         "pages":{
             "*":{
-                "bc":"#333",
-            },
+                "bc":"#333"
+            }
         },
         "elements":{
             "full": { "w":"fill", "h":"fill" },
             "caption" : { "y":"bottom", "h":100, "x":"5%", "w":"90%" },
             "play" : { "x":"center", "y":"center", "w":80, "h":80, "text":"▶︎", "fontSize":40.0, "textColor":"#fffe",
                         "borderWidth":3.0, "borderColor":"#fffe",
-                        "bc":"#000a", "cornerRadius":40, "action":"play" },
-        },
+                        "bc":"#000a", "cornerRadius":40, "action":"play" }
+        }
     },
     "markdown":{
         "shadow":{ "color":"black", "offset":[2,2], "blurRadius":2 },
         "styles":{
             "#":{ "color":"white", "alignment":"center", "font":{ "size":24 } },
-            "##":{ "color":"white", "font":{ "size":20 } },
-        },
+            "##":{ "color":"white", "font":{ "size":20 } }
+        }
     },
     "pages":[
         {
             "elements":[
                 { "template":"full", "img":"IMG_8152.JPG" },
-                { "template":"caption", "markdown":["# Breville BES870XL","# Quick Start Guide"] },
+                { "template":"caption", "markdown":["# Breville BES870XL","# Quick Start Guide"] }
             ]
         },
         {
             "elements":[
                 { "template":"full", "video":"IMG_8153.m4v" },
                 { "template":"caption", "markdown":"## 1. Attach the filter basket to the portafilter." },
-                { "template":"play" },
+                { "template":"play" }
             ]
         },
         {
             "elements":[
                 { "template":"full", "video":"IMG_8154.m4v" },
                 { "template":"caption", "markdown":"## 2. Set the filter below the grinder, and tap the handle once." },
-                { "template":"play" },
+                { "template":"play" }
             ]
         },
         {
@@ -62,14 +62,14 @@
             "elements":[
                 { "template":"full", "video":"IMG_8159.m4v" },
                 { "template":"caption", "markdown":"## 5. Insert the Portafilter underneath the group head, and rotate the handle towards the center." },
-                { "template":"play" },
+                { "template":"play" }
             ]
         },
         {
             "elements":[
                 { "template":"full", "video":"IMG_8160.m4v" },
                 { "template":"caption", "markdown":"## 6. Press the 1 CPU button once to extract a single shot of expresso at the preset volume." },
-                { "template":"play" },
+                { "template":"play" }
             ]
         },
         {
@@ -81,35 +81,35 @@
         {
             "elements":[
                 { "template":"full", "img":"IMG_8162.JPG" },
-                { "template":"caption", "markdown":"## 8. Fill the jug with milk just below the \"V\" at the bottom of the spout." },
+                { "template":"caption", "markdown":"## 8. Fill the jug with milk just below the \"V\" at the bottom of the spout." }
             ]
         },
         {
             "elements":[
                 { "template":"full", "video":"IMG_8163.m4v" },
                 { "template":"caption", "markdown":"## 9. Set the STEAM/HOT WATER dial to the STEAM position." },
-                { "template":"play" },
+                { "template":"play" }
             ]
         },
         {
             "elements":[
                 { "template":"full", "video":"IMG_8171.m4v" },
                 { "template":"caption", "markdown":"## 10. With the milk spinning, slowly lower the jug to introduce air into the milk." },
-                { "template":"play" },
+                { "template":"play" }
             ]
         },
         {
             "elements":[
                 { "template":"full", "video":"IMG_8166.m4v" },
                 { "template":"caption", "markdown":"## 11. Tap the jug on the table to collapse large bubbles." },
-                { "template":"play" },
+                { "template":"play" }
             ]
         },
         {
             "elements":[
                 { "template":"full", "video":"IMG_8167.m4v" },
                 { "template":"caption", "markdown":"## 12. Pour milk directly into the expresso." },
-                { "template":"play" },
+                { "template":"play" }
             ]
         },
         {
@@ -118,6 +118,6 @@
                 { "template":"full", "img":"IMG_8168.JPG", "to":{ "scale":1.2 } },
                 { "template":"caption", "markdown":"# Enjoy your late!" }
             ]
-        },
+        }
     ]
 }

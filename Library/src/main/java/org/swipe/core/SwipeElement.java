@@ -21,9 +21,11 @@ import android.text.GetChars;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -53,8 +55,8 @@ public class SwipeElement extends SwipeView {
         JSONObject prototypeWith(String name);
         /* TODO
         func pathWith(name:String?) -> AnyObject?
-        func onAction(element:SwipeElement)
         */
+        void onAction(SwipeElement element);
         boolean shouldRepeat(SwipeElement element);
         void didStartPlaying(SwipeElement element);
         void didFinishPlaying(SwipeElement element, boolean completed);
@@ -74,7 +76,10 @@ public class SwipeElement extends SwipeView {
     private SwipeElement.Delegate delegate = null;
     private List<SwipeObjectAnimator> animations = new ArrayList<>();
     private boolean fRepeat = false;
+    private boolean fFocusable = false;
+    private boolean fEnabled = true;
     private boolean fClip = false;
+    private String action = null;
     private SwipeShapeLayer shapeLayer = null;
     private SwipeTextLayer textLayer = null;
     private SwipeImageLayer imageLayer = null;
@@ -92,6 +97,7 @@ public class SwipeElement extends SwipeView {
     private Float videoStart = 0.0f;
     private Float videoDuration = 1.0f;
 
+    String getAction() { return action; }
 
     List<SwipeObjectAnimator> getAllAnimations() {
         List<SwipeObjectAnimator> allAni = new ArrayList<>();
@@ -307,7 +313,7 @@ public class SwipeElement extends SwipeView {
         if (!dvalue.isNaN()){
             y = dvalue.floatValue();
         } else  {
-            String value = info.optString("y");
+            String value = info.optString("y", null);
             if (value != null) {
                 switch (value) {
                     case "bottom":
@@ -362,46 +368,61 @@ public class SwipeElement extends SwipeView {
             }
         }
 
-        /* TODO
-        if let value = info["action"] as? String {
-            action = value
-            #if os(iOS) // tvOS has some focus issue with UIButton, figure out OSX later
-            let btn = UIButton(type: UIButtonType.Custom)
-            btn.frame = view.bounds
-            btn.addTarget(self, action: #selector(SwipeElement.buttonPressed), forControlEvents: UIControlEvents.TouchUpInside)
-            btn.addTarget(self, action: #selector(SwipeElement.touchDown), forControlEvents: UIControlEvents.TouchDown)
-            btn.addTarget(self, action: #selector(SwipeElement.touchUpOutside), forControlEvents: UIControlEvents.TouchUpOutside)
-            view.addSubview(btn)
-            self.btn = btn
-            #endif
-            if action == "play" {
-                notificationManager.addObserverForName(SwipePage.didStartPlaying, object: self.delegate, queue: NSOperationQueue.mainQueue()) {
-                    /[unowned self]/ (_: NSNotification!) -> Void in
-                    // NOTE: Animation does not work because we are performing animation using the parent layer
-                    //UIView.animateWithDuration(0.2, animations: { () -> Void in
-                    layer.opacity = 0.0
-                    //})
+        action = info.optString("action", null);
+        if (action != null) {
+            Button btn = new Button(getContext());
+            btn.setBackgroundColor(Color.TRANSPARENT);
+            btn.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    MyLog(TAG, "buttonPressed", 1);
+                    viewGroup.setAlpha(0);
+                    delegate.onAction(SwipeElement.this);
                 }
-                notificationManager.addObserverForName(SwipePage.didFinishPlaying, object: self.delegate, queue: NSOperationQueue.mainQueue()) {
-                    /[unowned self]/ (_: NSNotification!) -> Void in
-                    // NOTE: Animation does not work because we are performing animation using the parent layer
-                    //UIView.animateWithDuration(0.2, animations: { () -> Void in
-                    layer.opacity = 1.0
-                    //})
+            });
+            btn.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    switch (event.getAction()) {
+                        case MotionEvent.ACTION_DOWN:
+                            MyLog(TAG, "touchDown", 1);
+                            viewGroup.setAlpha(0.5f);
+                            break;
+                        case MotionEvent.ACTION_UP:
+                            MyLog(TAG, "touchUp", 1);
+                            viewGroup.setAlpha(1);
+                            break;
+                    }
+
+                    return false;
                 }
+            });
+            viewGroup.addView(btn, new ViewGroup.LayoutParams(dipW, dipH));
+
+            if (action.equals("play")) {
+                NotificationCenter.defaultCenter().addFunctionForNotification(SwipePage.didStartPlaying, new Runnable() {
+                    @Override
+                    public void run() {
+                        viewGroup.setAlpha(0);
+                    }
+                });
+
+                NotificationCenter.defaultCenter().addFunctionForNotification(SwipePage.didFinishPlaying, new Runnable() {
+                    @Override
+                    public void run() {
+                        viewGroup.setAlpha(1);
+                    }
+                });
             }
-        } else if let eventsInfo = info["events"] as? [String:AnyObject] {
-            eventHandler.parse(eventsInfo)
+        } else {
+            JSONObject eventsInfo = info.optJSONObject("events");
+            if (eventsInfo != null) {
+                // TODO eventHandler.parse(eventsInfo)
+            }
         }
 
-        if let enabled = info["enabled"] as? Bool {
-            self.fEnabled = enabled
-        }
-
-        if let focusable = info["focusable"] as? Bool {
-            self.fFocusable = focusable
-        }
-        */
+        fEnabled = info.optBoolean("enabled", true);
+        fFocusable = info.optBoolean("focusable", false);
 
         fClip = info.optBoolean("clip", false);
         if (fClip) {
@@ -590,7 +611,7 @@ public class SwipeElement extends SwipeView {
                 }
             };
 
-            float nextY = dipY;
+            float nextY = 0;
             for (SwipeMarkdown.Element e : markdown) {
                 TextView tv = new TextView(getContext());
                 tv.setText(e.text);
@@ -607,7 +628,7 @@ public class SwipeElement extends SwipeView {
             }
 
             wrapper.setY((dipH - nextY)/2); // center vertically in self
-            viewGroup.addView(wrapper, new ViewGroup.LayoutParams(dipW, ViewGroup.LayoutParams.WRAP_CONTENT));
+            viewGroup.addView(wrapper, new ViewGroup.LayoutParams(dipW, (int)nextY));
         }
 
         /* TODO

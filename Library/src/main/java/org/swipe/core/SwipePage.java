@@ -440,4 +440,16 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         didFinishPlayingInternal();
     }
 
+    @Override
+    public void onAction(SwipeElement element) {
+        String action = element.getAction();
+        if (action != null) {
+            MyLog(TAG, "onAction " + action, 2);
+            if (action.equals("play")) {
+                //prepareToPlay()
+                //autoPlay()
+                play();
+            }
+        }
+    }
 }

@@ -370,6 +370,7 @@ public class SwipeBook implements SwipePage.Delegate {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 boolean didFling = gestureDetector.onTouchEvent(event);
+                boolean handled = false;
 
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
@@ -430,7 +431,7 @@ public class SwipeBook implements SwipePage.Delegate {
                         offset += pgOffset * pgSize;
                         smoothScrollTo(position, offset);
                         prevPosition = position;
-                        return true;
+                        handled = true;
                     }
                     case MotionEvent.ACTION_CANCEL:
                         Log.d(TAG, "onTouch ACTION_CANCEL");
@@ -440,7 +441,8 @@ public class SwipeBook implements SwipePage.Delegate {
                         break;
                 }
 
-                return false;
+                currentPage().getView().dispatchTouchEvent(event);
+                return handled;
             }
         });
 
