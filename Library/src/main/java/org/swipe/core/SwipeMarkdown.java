@@ -83,7 +83,7 @@ class SwipeMarkdown {
         return attr;
     }
     
-    public SwipeMarkdown(JSONObject info, float scale, float scrWidth, float scrHeight, DisplayMetrics dm) {
+    public SwipeMarkdown(JSONObject info, float scale, CGSize dimension, DisplayMetrics dm) {
         this.scale = new CGSize(scale, scale);
         this.dm = dm;
 
@@ -142,15 +142,13 @@ class SwipeMarkdown {
                     case "font": {
                         if (attrValue instanceof JSONObject) {
                             JSONObject fontInfo = (JSONObject)attrValue;
-                            if (fontInfo != null) {
-                                float fontSize = SwipeParser.parseFontSize(fontInfo, this.scale.height, Float.NaN, /*markdown*/ true);
-                                if (!Float.isNaN(fontSize)) {
-                                    attrCopy.fontSize = (int)(fontSize * this.scale.height);
-                                }
-                                List<String> names = SwipeParser.parseFontName(fontInfo, /*markdown*/ true);
-                                if (names.size() > 0) {
-                                    attrCopy.fontName = names.get(0);
-                                }
+                            float fontSize = SwipeParser.parseFontSize(fontInfo, dimension.height, Float.NaN, /*markdown*/ true);
+                            if (!Float.isNaN(fontSize)) {
+                                attrCopy.fontSize = (int)(fontSize * this.scale.height);
+                            }
+                            List<String> names = SwipeParser.parseFontName(fontInfo, /*markdown*/ true);
+                            if (names.size() > 0) {
+                                attrCopy.fontName = names.get(0);
                             }
                         }
                         break;

@@ -157,7 +157,7 @@ public class SwipeBook implements SwipePage.Delegate {
         viewWidthDIP = (int)(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, scrWidth, dm));
         viewHeightDIP = (int)(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, scrHeight, dm));
 
-        markdown = new SwipeMarkdown(bookInfo.optJSONObject("markdown"), scale, scrWidth, scrHeight, dm);
+        markdown = new SwipeMarkdown(bookInfo.optJSONObject("markdown"), scale, dimension, dm);
 
         JSONArray pageInfos = bookInfo.optJSONArray("pages");
         if (pageInfos != null) {
