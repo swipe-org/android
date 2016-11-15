@@ -3,6 +3,7 @@ package org.swipe.core;
 import android.animation.ArgbEvaluator;
 import android.animation.ObjectAnimator;
 import android.animation.TypeEvaluator;
+import android.content.ContentProvider;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -13,18 +14,28 @@ import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.media.MediaMetadataRetriever;
+import android.media.MediaPlayer;
+import android.net.Uri;
+import android.text.GetChars;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.VideoView;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.swipe.browser.SwipeBrowserActivity;
 import org.swipe.network.SwipeAssetManager;
+import org.w3c.dom.Text;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -42,19 +53,19 @@ public class SwipeElement extends SwipeView {
         JSONObject prototypeWith(String name);
         /* TODO
         func pathWith(name:String?) -> AnyObject?
-        func shouldRepeat(element:SwipeElement) -> Bool
         func onAction(element:SwipeElement)
-        func didStartPlaying(element:SwipeElement)
-        func didFinishPlaying(element:SwipeElement, completed:Bool)
         */
+        boolean shouldRepeat(SwipeElement element);
+        void didStartPlaying(SwipeElement element);
+        void didFinishPlaying(SwipeElement element, boolean completed);
         List<SwipeMarkdown.Element> parseMarkdown(Object markdowns);
         URL baseURL();
         URL map(URL url);
         URL makeFullURL(String url);
         /*
         func addedResourceURLs(urls:[NSURL:String], callback:() -> Void)
-        func pageIndex() -> Int // for debugging
         */
+        boolean isCurrentPage();
         String localizedStringForKey(String key);
         String languageIdentifier();
     }
@@ -72,7 +83,8 @@ public class SwipeElement extends SwipeView {
     private SwipeBackgroundDrawable bgDrawable = new SwipeBackgroundDrawable();
 
     // Video Element Specific
-    private Object videoPlayer = null;
+    private VideoView videoPlayer = null;
+    private boolean fReady = false;
     private boolean fSeeking = false;
     private boolean fNeedRewind = false;
     private boolean fPlaying = false;
@@ -139,7 +151,9 @@ public class SwipeElement extends SwipeView {
                 for (int c = 0; c < this.getChildCount(); c++) {
                     View v = this.getChildAt(c);
                     ViewGroup.LayoutParams lp = v.getLayoutParams();
-                    //Log.d(TAG, "layout " + c + " w:" + lp.width + " h:" + lp.height);
+                    v.measure(View.MeasureSpec.makeMeasureSpec(lp.width, MeasureSpec.EXACTLY),
+                            View.MeasureSpec.makeMeasureSpec(lp.height, MeasureSpec.EXACTLY));
+                    //Log.d(TAG, "layout " + c + " w:" + lp.width + " h:" + lp.height + " mw:" + v.getMeasuredWidth() + " mh:" + v.getMeasuredHeight());
                     v.layout(0, 0, lp.width, lp.height);
                 }
             }
@@ -194,14 +208,14 @@ public class SwipeElement extends SwipeView {
             }
         }
 
-        InputStream imageStream = null;
+        URL imageUrl = null;
         Bitmap imageBitmap = null;
         String imgUrlStr = info.optString("img", null);
         if (imgUrlStr != null) {
             URL url = delegate.makeFullURL(imgUrlStr);
-            URL localUrl = delegate.map(url);
-            if (localUrl != null) {
-                imageStream = SwipeAssetManager.sharedInstance().loadLocalAsset(localUrl);
+            imageUrl = delegate.map(url);
+            if (imageUrl != null) {
+                FileInputStream imageStream = SwipeAssetManager.sharedInstance().loadLocalAsset(imageUrl);
                 if (imageStream != null){
                     imageBitmap = BitmapFactory.decodeStream(imageStream);
                 }
@@ -400,7 +414,10 @@ public class SwipeElement extends SwipeView {
             imageLayer.setScaleType(ImageView.ScaleType.FIT_CENTER);
             imageLayer.setImageBitmap(imageBitmap);
             imageLayer.setMaskBitmap(maskBitmap);
-            imageLayer.setStream(imageStream, this);
+            InputStream imageStream = SwipeAssetManager.sharedInstance().loadLocalAsset(imageUrl);
+            if (imageStream != null) {
+                imageLayer.setStream(imageStream, this);
+            }
 
             if (parent != null && parent instanceof SwipeElement) {
                 SwipeElement p = (SwipeElement)parent;
@@ -491,7 +508,7 @@ public class SwipeElement extends SwipeView {
         if (path != null) {
             //shapeLayer.contentsScale = contentScale
             shapeLayer = new SwipeShapeLayer(getContext(), path);
-            Matrix xform = path.parsePathTransform(info, dipW, dipH);
+            Matrix xform = SwipePath.parsePathTransform(info, dipW, dipH);
             if (xform != null) {
                 shapeLayer.setPathTransform(xform);
             }
@@ -560,7 +577,7 @@ public class SwipeElement extends SwipeView {
         }
 
         List<SwipeMarkdown.Element> markdown = delegate.parseMarkdown(info.opt("markdown"));
-        if (markdown != null) {
+        if (markdown != null && markdown.size() > 0) {
             ViewGroup wrapper = new ViewGroup(getContext()) {
                 @Override
                 protected void onLayout(boolean changed, int l, int t, int r, int b) {
@@ -622,90 +639,104 @@ public class SwipeElement extends SwipeView {
             //    SwipeElement.processShadow(info, scale:scale, layer: layer)
             //}
         }
-        /*
-        // http://stackoverflow.com/questions/9290972/is-it-possible-to-make-avurlasset-work-without-a-file-extension
-        var fStream:Bool = {
-        if let fStream = info["stream"] as? Bool {
-            return fStream
-        }
-        return false
-        }()
-        let urlVideoOrRadio:NSURL? = {
-        if let src = info["video"] as? String,
-                let url = NSURL.url(src, baseURL: baseURL) {
-            return url
-        }
-        if let src = info["radio"] as? String,
-                let url = NSURL.url(src, baseURL: baseURL) {
-            fStream = true
-            return url
-        }
-        return nil
-        }()
-        if let url = urlVideoOrRadio {
-            let videoPlayer = AVPlayer()
-            self.videoPlayer = videoPlayer
-            let videoLayer = XAVPlayerLayer(player: videoPlayer)
-            videoLayer.frame = CGRectMake(0.0, 0.0, w, h)
-            if fScaleToFill {
-                videoLayer.videoGravity = AVLayerVideoGravityResizeAspectFill
-            }
-            layer.addSublayer(videoLayer)
 
-            let urlLocalOrStream:NSURL?
-            if fStream {
-                MyLog("SWElem stream=\(url)", level:2)
-                urlLocalOrStream = url
-            } else if let urlLocal = self.delegate.map(url) {
-                urlLocalOrStream = urlLocal
-            } else {
-                urlLocalOrStream = nil
-            }
+        boolean fStream = info.optBoolean("stream", false);
 
-            if let urlVideo = urlLocalOrStream {
-                let playerItem = AVPlayerItem(URL: urlVideo)
-                videoPlayer.replaceCurrentItemWithPlayerItem(playerItem)
+        String mediaSrc = info.optString("video", null);
+        if (mediaSrc == null) {
+            mediaSrc = info.optString("radio", null);
+        }
 
-                notificationManager.addObserverForName(AVPlayerItemDidPlayToEndTimeNotification, object: playerItem, queue: NSOperationQueue.mainQueue()) {
-                    [unowned self] (_:NSNotification!) -> Void in
-                    MyLog("SWElem play to end!", level: 1)
-                    if self.delegate != nil && self.delegate!.shouldRepeat(self) {
-                        videoPlayer.seekToTime(kCMTimeZero)
-                        videoPlayer.play()
+        if (mediaSrc != null) {
+            videoPlayer = new VideoView(getContext());
+            videoPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+                @Override
+                public boolean onError(MediaPlayer mp, int what, int extra) {
+                    Log.e(TAG, "onError what:" + what + " extra:" + extra);
+                    return true;
+                }
+            });
+
+            videoPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                @Override
+                public void onPrepared(MediaPlayer mp) {
+                    MyLog(TAG, "prepared w:" + mp.getVideoWidth() + " h:" + mp.getVideoHeight());
+                    videoPlayer.measure(View.MeasureSpec.makeMeasureSpec(dipW, View.MeasureSpec.AT_MOST),
+                            View.MeasureSpec.makeMeasureSpec(dipH, View.MeasureSpec.AT_MOST));
+                    MyLog(TAG, "vp mw:" + videoPlayer.getWidth() + " mh:" + videoPlayer.getHeight());
+                    fReady = true;
+                }
+            });
+
+            videoPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                @Override
+                public void onCompletion(MediaPlayer mp) {
+                    MyLog(TAG, "play to end!", 1);
+                    if (delegate != null && delegate.shouldRepeat(SwipeElement.this)) {
+                        videoPlayer.seekTo(0);
+                        videoPlayer.start();
+                        ;
                     } else {
-                        self.fNeedRewind = true
-                        if self.fPlaying {
-                            self.fPlaying = false
-                            self.delegate.didFinishPlaying(self, completed:true)
+                        fNeedRewind = true;
+                        if (fPlaying) {
+                            fPlaying = false;
+                            delegate.didFinishPlaying(SwipeElement.this, true);
                         }
                     }
+
                 }
+            });
+
+            URL mediaUrl = delegate.makeFullURL(mediaSrc);
+            URL localUrl = delegate.map(mediaUrl);
+            if (localUrl != null) {
+                mediaUrl = localUrl;
+            }
+            videoPlayer.setVideoURI(Uri.parse(mediaUrl.toString()));
+
+            RelativeLayout rl = new RelativeLayout(getContext());
+            rl.setBackgroundColor(Color.GREEN);
+            RelativeLayout.LayoutParams lp;
+
+            if (fScaleToFill) {
+                lp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
+            } else {
+                lp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+                lp.addRule(RelativeLayout.CENTER_IN_PARENT);
             }
 
-            notificationManager.addObserverForName(SwipePage.shouldPauseAutoPlay, object: delegate, queue: NSOperationQueue.mainQueue()) {
-                [unowned self] (_:NSNotification!) -> Void in
-                if self.fPlaying {
-                    self.fPlaying = false
-                    self.delegate.didFinishPlaying(self, completed:false)
-                    videoPlayer.pause()
-                }
-            }
-            notificationManager.addObserverForName(SwipePage.shouldStartAutoPlay, object: delegate, queue: NSOperationQueue.mainQueue()) {
-                [unowned self] (_:NSNotification!) -> Void in
-                if !self.fPlaying && layer.opacity > 0 {
-                    self.fPlaying = true
-                    self.delegate.didStartPlaying(self)
-                    MyLog("SWElem videoPlayer.state = \(videoPlayer.status.rawValue)", level: 1)
-                    if self.fNeedRewind {
-                        videoPlayer.seekToTime(kCMTimeZero)
+            rl.addView(videoPlayer, lp);
+            viewGroup.addView(rl, new ViewGroup.LayoutParams(dipW, dipH));
+
+            NotificationCenter center = NotificationCenter.defaultCenter();
+            center.addFunctionForNotification(SwipePage.shouldPauseAutoPlay, new Runnable() {
+                @Override
+                public void run() {
+                    if (fPlaying) {
+                        MyLog(TAG, "shouldPauseAutoPlay", 2);
+                        fPlaying = false;
+                        delegate.didFinishPlaying(SwipeElement.this, false);
+                        videoPlayer.pause();
                     }
-                    videoPlayer.play()
-                    self.fNeedRewind = false
                 }
-            }
+            });
+            center.addFunctionForNotification(SwipePage.shouldStartAutoPlay, new Runnable() {
+                @Override
+                public void run() {
+                    if (!fPlaying && delegate.isCurrentPage()) {
+                        MyLog(TAG, "shouldStartAutoPlay", 2);
+                        fPlaying = true;
+                        delegate.didStartPlaying(SwipeElement.this);
+                        if (fNeedRewind) {
+                            videoPlayer.seekTo(0);
+                        }
+                        videoPlayer.start();
+                        fNeedRewind = false;
+                    }
+                }
+            });
         }
 
-        */
         Double dopt;
 
         JSONObject transform = SwipeParser.parseTransform(info, null, false, shapeLayer != null);
@@ -1240,14 +1271,11 @@ public class SwipeElement extends SwipeView {
                 pendingOffset = offset;
                 return;
             }
-            double timeSec = videoStart + offset * videoDuration;
-            /* TODO
-            double time = CMTimeMakeWithSeconds(Float64(timeSec), 600)
-            let tolerance = CMTimeMake(10, 600) // 1/60sec
-            if player.status == AVPlayerStatus.ReadyToPlay {
-                self.fSeeking = true
-                SwipeElement.objectCount -= 1 // to avoid false memory leak detection
-                player.seekToTime(time, toleranceBefore: tolerance, toleranceAfter: tolerance) { (_:Bool) -> Void in
+            if (fReady) {
+                //fSeeking = true;
+                int timeMsec = (int)((videoStart + offset * videoDuration) * 1000);
+                videoPlayer.seekTo(timeMsec);
+                /*videoPlayer.setOnSeekListener(
                     assert(NSThread.currentThread() == NSThread.mainThread(), "thread error")
                     SwipeElement.objectCount += 1
                     self.fSeeking = false
@@ -1255,10 +1283,11 @@ public class SwipeElement extends SwipeView {
                         self.pendingOffset = nil
                         self.setTimeOffsetTo(pendingOffset, fAutoPlay: false, fElementRepeat: fElementRepeat)
                     }
-                }
+                */
             }
-            */
-        }    }
+        }
+    }
+
     void setTimeOffsetTo(final float offset) {
         setTimeOffsetTo(offset, false, false);
     }
@@ -1274,7 +1303,7 @@ public class SwipeElement extends SwipeView {
                 MyLog(TAG, "ani.setCurrentFraction("+offset+")", 10);
             }
         } else {
-            MyLog(TAG, "ani.setCurrentFraction("+offset+") SKIPPED", 1);
+            //MyLog(TAG, "ani.setCurrentFraction("+offset+") SKIPPED", 1);
         }
 
         for (SwipeNode c : children) {
@@ -1294,24 +1323,27 @@ public class SwipeElement extends SwipeView {
                 pendingOffset = offset;
                 return;
             }
-            double timeSec = videoStart + offset * videoDuration;
-            /* TODO
-            double time = CMTimeMakeWithSeconds(Float64(timeSec), 600)
-            let tolerance = CMTimeMake(10, 600) // 1/60sec
-            if player.status == AVPlayerStatus.ReadyToPlay {
-                self.fSeeking = true
-                SwipeElement.objectCount -= 1 // to avoid false memory leak detection
-                player.seekToTime(time, toleranceBefore: tolerance, toleranceAfter: tolerance) { (_:Bool) -> Void in
-                    assert(NSThread.currentThread() == NSThread.mainThread(), "thread error")
-                    SwipeElement.objectCount += 1
-                    self.fSeeking = false
-                    if let pendingOffset = self.pendingOffset {
-                        self.pendingOffset = nil
-                        self.setTimeOffsetTo(pendingOffset, fAutoPlay: false, fElementRepeat: fElementRepeat)
+
+            if (fReady) {
+                int timeMsec = (int)((videoStart + offset * videoDuration) * 1000);
+                Log.d(TAG, "seekTo: " + timeMsec + " of " + (int)(videoDuration * 1000));
+                videoPlayer.seekTo(timeMsec);
+                videoPlayer.invalidate();
+                /* TODO
+                if player.status == AVPlayerStatus.ReadyToPlay {
+                    self.fSeeking = true
+                    SwipeElement.objectCount -= 1 // to avoid false memory leak detection
+                    player.seekToTime(time, toleranceBefore: tolerance, toleranceAfter: tolerance) { (_:Bool) -> Void in
+                        assert(NSThread.currentThread() == NSThread.mainThread(), "thread error")
+                        SwipeElement.objectCount += 1
+                        self.fSeeking = false
+                        if let pendingOffset = self.pendingOffset {
+                            self.pendingOffset = nil
+                            self.setTimeOffsetTo(pendingOffset, fAutoPlay: false, fElementRepeat: fElementRepeat)
+                        }
                     }
-                }
+                */
             }
-            */
         }
     }
 
@@ -1403,15 +1435,14 @@ public class SwipeElement extends SwipeView {
     public List<URL> getResourceURLs() {
         if (resourceURLs == null) {
             resourceURLs = new ArrayList<>();
-            URL baseURL = delegate.baseURL();
 
             final String[] mediaKeys = {"img", "mask", "video", "sprite" };
             for (String key : mediaKeys) {
                 String src = info.optString(key, null);
                 if (src != null) {
-                    URL url = SwipeBrowserActivity.makeFullURL(src, baseURL);
+                    URL url = delegate.makeFullURL(src);
                     if (info.optBoolean("stream")) {
-                        Log.e(TAG, "no need to cache streaming video " + url);
+                        MyLog(TAG, "no need to cache streaming video " + url, 5);
                     } else {
                         resourceURLs.add(url);
                     }

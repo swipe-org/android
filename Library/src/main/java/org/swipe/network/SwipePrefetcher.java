@@ -21,21 +21,32 @@ public class SwipePrefetcher {
     }
 
     private static final String TAG = "SwPref";
-    protected List<URL> urls = new ArrayList<>();
-    protected List<URL> urlsFetching = new ArrayList<>();
-    protected Map<URL, URL> urlsFetched = new HashMap<>();
-    protected List<URL> urlsFailed = new ArrayList<>();
-    protected List<Exception> errors = new ArrayList<>();
-    protected boolean fComplete = false;
-    protected float progress = 0;
-    protected int count = 0;
+    private List<URL> urls = new ArrayList<>();
+    private Map<URL, Integer> urlsFetching = new HashMap<>();
+    private Map<URL, URL> urlsFetched = new HashMap<>();
+    private List<URL> urlsFailed = new ArrayList<>();
+    private List<Exception> errors = new ArrayList<>();
+    private boolean fComplete = false;
+    private float progress = 0;
+    private int count = 0;
 
     public float  getProgress() {
         return progress;
     }
 
-    public SwipePrefetcher() {
-        // Required empty public constructor
+    private void updateListener(final Listener listener) {
+        count -= 1;
+        if (count == 0) {
+            fComplete = true;
+            progress = 1;
+            Log.d(TAG, "completed " + urlsFetched.size());
+            //callback(true, self.urlsFailed, self.errors)
+            listener.didComplete(this);
+        } else {
+            progress = (float)(urlsFetched.size() - count) / (float)(urlsFetched.size());
+            //callback(false, self.urlsFailed, self.errors)
+            listener.progress(this);
+        }
     }
 
     public void get(final List<URL> resourceURLs, final Listener listener) {
@@ -58,10 +69,16 @@ public class SwipePrefetcher {
         }
 
         SwipeAssetManager manager = SwipeAssetManager.sharedInstance();
-        final SwipePrefetcher prefetcher = this;
 
         for (final URL url : resourceURLs) {
-            urlsFetching.add(url);
+            if (urlsFetching.containsKey(url)) {
+                //Log.d(TAG, "skipping " + url);
+                updateListener(listener);
+                continue;
+            }
+
+            urlsFetching.put(url, 0);
+            Log.d(TAG, "fetching " + url);
 
             manager.loadAsset(url, false, new SwipeAssetManager.LoadAssetRunnable() {
                 @Override
@@ -76,22 +93,12 @@ public class SwipePrefetcher {
                     if (localURL != null) {
                         //Log.d(TAG, "fetched " + localURL);
                         urlsFetched.put(url, localURL);
-                    }else{
+                    } else {
                         urlsFailed.add(url);
                         errors.add(error);
                     }
-                    count -= 1;
-                    if (count == 0) {
-                        fComplete = true;
-                        progress = 1;
-                        Log.d(TAG, "completed " + urlsFetched.size());
-                        //callback(true, self.urlsFailed, self.errors)
-                        listener.didComplete(prefetcher);
-                    } else {
-                        progress = (float)(urlsFetched.size() - count) / (float)(urlsFetched.size());
-                        //callback(false, self.urlsFailed, self.errors)
-                        listener.progress(prefetcher);
-                    }
+
+                    updateListener(listener);
                 }
             });
         }

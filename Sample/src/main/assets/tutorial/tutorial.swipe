@@ -11,7 +11,7 @@
             "logo": {
                 "elements":[
                     {
-                        "id":"back", "w":192, "h":192, "x":"center", "y":"center", "bc":"#00ACC1",
+                        "id":"back", "w":192, "h":192, "x":"center", "y":"center", "bc":"#00ACC1"
                     },
                     {
                         "id":"frame", "w":192, "h":192, "x":"center", "y":"center", "bc":"#00ACC1",
@@ -25,16 +25,16 @@
                               "shadow":{ "offset":[0,1.4], "opacity":0.2, "radius":2 } },
                             { "w":40, "h":40, "fillColor":"#E0F7FA", "path":"ellipse",
                               "anchor":[20, 40], "pos":["50%","50%"], "rotate":-45,
-                              "shadow":{ "offset":[-2,2], "opacity":0.3, "radius":3 } },
-                        ],
-                    },
+                              "shadow":{ "offset":[-2,2], "opacity":0.3, "radius":3 } }
+                        ]
+                    }
                 ]
-            },
+            }
         },
         "pages":{
             "*": { "bc":"#ddf" },
-            "demo": { "bc":"#fff" },
-        },
+            "demo": { "bc":"#fff" }
+        }
     },
     "markdown":{
         "styles": {
@@ -43,20 +43,20 @@
             "###":{ "color":"#040", "font":{ "size":48 } },
             "-":{ "font":{ "size":42 } },
             "*":{ "font":{ "size":42 } },
-            "```": { "font":{ "size":24, "name":"Damascus" } },
+            "```": { "font":{ "size":24, "name":"Damascus" } }
         }
     },
     "styles":{
-        "*":"body{ font-family:Helvetica, sans-serif;margin:0;font-size:36px } h1{ color:#000080;font-size:50px } h2{ color:#000080;font-size:44px } h3 { color:#004000 } li { margin-top:12px } .code { color:#000080;font-size:24px;font-weight:200;font-family:Damascus }",
+        "*":"body{ font-family:Helvetica, sans-serif;margin:0;font-size:36px } h1{ color:#000080;font-size:50px } h2{ color:#000080;font-size:44px } h3 { color:#004000 } li { margin-top:12px } .code { color:#000080;font-size:24px;font-weight:200;font-family:Damascus }"
     },
 
     "pages":[
         {
             "elements":[
                 { "template":"body", "markdown":[
-                    "# Simple Animations",
-                ]},
-            ],
+                    "# Simple Animations"
+                ]}
+            ]
         },
 
         {
@@ -73,9 +73,9 @@
                     "    },",
                     "  ]",
                     "}",
-                    "```",
+                    "```"
                 ]},
-                { "template":"demo", "text":"Hello World" },
+                { "template":"demo", "text":"Hello World" }
             ]
         },
         {
@@ -93,9 +93,9 @@
                     "    },",
                     "  ]",
                     "}",
-                    "```",
+                    "```"
                 ]},
-                { "template":"demo", "text":"Hello World", "to":{ "translate":[0,300] } },
+                { "template":"demo", "text":"Hello World", "to":{ "translate":[0,300] } }
             ]
         },
         {
@@ -115,9 +115,9 @@
                     "    },",
                     "  ]",
                     "}",
-                    "```",
+                    "```"
                 ]},
-                { "template":"demo", "text":"Hello World", "to":{ "translate":[0,300] } },
+                { "template":"demo", "text":"Hello World", "to":{ "translate":[0,300] } }
             ]
         },
         {
@@ -137,11 +137,11 @@
                     "    },",
                     "  ]",
                     "}",
-                    "```",
+                    "```"
                 ]},
                 { "template":"demo", "text":"Hello World",
                   "opacity":0,
-                  "to":{ "opacity":1 } },
+                  "to":{ "opacity":1 } }
             ]
         },
         {
@@ -161,10 +161,10 @@
                     "    },",
                     "  ]",
                     "}",
-                    "```",
+                    "```"
                 ]},
                 { "template":"demo", "text":"Hello World",
-                  "loop":{ "style":"wiggle", "count":10 } },
+                  "loop":{ "style":"wiggle", "count":10 } }
             ]
         },
         {
@@ -183,9 +183,9 @@
                     "    },",
                     "  ]",
                     "}",
-                    "```",
+                    "```"
                 ]},
-                { "template":"demo", "text":"Hello World" },
+                { "template":"demo", "text":"Hello World" }
             ]
         },
 
@@ -204,12 +204,12 @@
                     "    },",
                     "  ]",
                     "}",
-                    "```",
+                    "```"
                 ]},
                 { "template":"demo",
                     "elements": [
                       { "path":"M 0,0 C 500,0 0,800 500,500",
-                      "x":0, "y":50, "lineWidth":3 },
+                      "x":0, "y":50, "lineWidth":3 }
                     ]
                 }
             ]
@@ -231,13 +231,13 @@
                     "    },",
                     "  ]",
                     "}",
-                    "```",
+                    "```"
                 ]},
                 { "template":"demo",
                     "elements": [
                         { "path":"M 0,0 C 500,0 0,800 500,500",
                           "to":{ "path":"M 0,0 C 800,0 0,900 90,250" },
-                          "x":0, "y":50, "lineWidth":3 },
+                          "x":0, "y":50, "lineWidth":3 }
                     ]
                 }
             ]
@@ -260,12 +260,12 @@
                     "    },",
                     "  ]",
                     "}",
-                    "```",
+                    "```"
                 ]},
                 { "template":"demo",
                     "elements": [
                         { "img":"shuttle.png", "x":0, "y":50,
-                          "to": { "mode":"auto", "pos":"M 0,0 C 500,0 0,800 500,500" } },
+                          "to": { "mode":"auto", "pos":"M 0,0 C 500,0 0,800 500,500" } }
                     ]
                 }
             ]
@@ -290,12 +290,12 @@
                     "    },",
                     "  ]",
                     "}",
-                    "```",
+                    "```"
                 ]},
                 { "template":"demo",
                     "elements": [
                         { "img":"shuttle.png", "x":0, "y":50,
-                          "to": { "mode":"auto", "pos":"M 0,0 C 500,0 0,800 500,500" } },
+                          "to": { "mode":"auto", "pos":"M 0,0 C 500,0 0,800 500,500" } }
                     ]
                 }
             ]
@@ -320,7 +320,7 @@
                     "    },",
                     "  ]",
                     "}",
-                    "```",
+                    "```"
                 ]},
                 { "template":"demo",
                     "elements": [
@@ -328,7 +328,7 @@
                           "sprite":"chara_walk.png",
                           "slice":[14, 4], "slot":[0,2],
                           "loop":{ "style":"sprite", "count":3 },
-                          "to":{ "translate":[440,0] } },
+                          "to":{ "translate":[440,0] } }
                     ]
                 }
             ]
@@ -350,11 +350,11 @@
                     "    },",
                     "  ]",
                     "}",
-                    "```",
+                    "```"
                 ]},
                 { "template":"demo",
                     "elements": [
-                        { "img":"epsilon.gif", "w":"100%", "y":"center" },
+                        { "img":"epsilon.gif", "w":"100%", "y":"center" }
                     ]
                 }
             ]
@@ -375,11 +375,11 @@
                     "    },",
                     "  ]",
                     "}",
-                    "```",
+                    "```"
                 ]},
                 { "template":"demo",
                     "elements": [
-                        { "video":"izumi_06.mov", "w":"100%", "y":"center" },
+                        { "video":"izumi_06.mov", "w":"100%", "y":"center" }
                     ]
                 }
             ]
@@ -387,9 +387,9 @@
         {
             "elements":[
                 { "template":"body", "markdown":[
-                    "# Scroll Animations",
-                ]},
-            ],
+                    "# Scroll Animations"
+                ]}
+            ]
         },
 
         {
@@ -410,11 +410,11 @@
                     "    },",
                     "  ]",
                     "}",
-                    "```",
+                    "```"
                 ]},
                 { "template":"demo",
                     "elements": [
-                        { "img":"shuttle.png", "x":0, "y":50 },
+                        { "img":"shuttle.png", "x":0, "y":50 }
                     ]
                 }
             ]
@@ -437,12 +437,12 @@
                     "    },",
                     "  ]",
                     "}",
-                    "```",
+                    "```"
                 ]},
                 { "template":"demo",
                     "elements": [
                         { "img":"shuttle.png", "x":0, "y":50,
-                            "to": { "mode":"auto", "pos":"M 0,0 C 500,0 0,800 500,500" } },
+                            "to": { "mode":"auto", "pos":"M 0,0 C 500,0 0,800 500,500" } }
                     ]
                 }
             ]
@@ -468,14 +468,14 @@
                     "    },",
                     "  ]",
                     "}",
-                    "```",
+                    "```"
                 ]},
                 { "template":"demo",
                     "elements": [
                     { "path":"M 0,0 C 500,0 0,800 500,500",
                       "to":{
-                        "path":"M 0,0 C 800,0 0,900 90,250",
-                      }, "x":50, "y":50, "lineWidth":3 },
+                        "path":"M 0,0 C 800,0 0,900 90,250"
+                      }, "x":50, "y":50, "lineWidth":3 }
                     ]
                 }
             ]
@@ -499,14 +499,14 @@
                     "    },",
                     "  ]",
                     "}",
-                    "```",
+                    "```"
                 ]},
                 { "template":"demo",
                     "elements": [
                     { "path":"M 0,0 C 500,0 0,800 500,500",
                       "to":{
-                        "path":"M 0,0 C 800,0 0,900 90,250",
-                      }, "x":50, "y":50, "lineWidth":3 },
+                        "path":"M 0,0 C 800,0 0,900 90,250"
+                      }, "x":50, "y":50, "lineWidth":3 }
                     ]
                 }
             ]
@@ -531,12 +531,12 @@
                     "    },",
                     "  ]",
                     "}",
-                    "```",
+                    "```"
                 ]},
                 { "template":"demo",
                     "elements": [
                         { "x":0, "y":"center", "w":192, "h":288, "sprite":"chara_walk.png",
-                          "slice":[14, 4], "slot":[0,2] },
+                          "slice":[14, 4], "slot":[0,2] }
                     ]
                 }
             ]
@@ -560,14 +560,14 @@
                     "    },",
                     "  ]",
                     "}",
-                    "```",
+                    "```"
                 ]},
                 { "template":"demo",
                     "elements": [
                         { "x":0, "y":"center", "w":192, "h":288, "sprite":"chara_walk.png",
                           "slice":[14, 4], "slot":[0,2],
                            "loop":{ "style":"sprite", "count":3 },
-                            "to":{ "translate":[440,0] } },
+                            "to":{ "translate":[440,0] } }
                     ]
                 }
             ]
@@ -589,11 +589,11 @@
                     "    },",
                     "  ]",
                     "}",
-                    "```",
+                    "```"
                 ]},
                 { "template":"demo",
                     "elements": [
-                        { "img":"epsilon.gif", "w":"100%", "y":"center" },
+                        { "img":"epsilon.gif", "w":"100%", "y":"center" }
                     ]
                 }
             ]
@@ -614,11 +614,11 @@
                     "    },",
                     "  ]",
                     "}",
-                    "```",
+                    "```"
                 ]},
                 { "template":"demo",
                     "elements": [
-                        { "img":"epsilon.gif", "w":"100%", "y":"center" },
+                        { "img":"epsilon.gif", "w":"100%", "y":"center" }
                     ]
                 }
             ]
@@ -641,11 +641,11 @@
                     "    },",
                     "  ]",
                     "}",
-                    "```",
+                    "```"
                 ]},
                 { "template":"demo",
                     "elements": [
-                        { "video":"izumi_06.mov", "w":"100%", "y":"center" },
+                        { "video":"izumi_06.mov", "w":"100%", "y":"center" }
                     ]
                 }
             ]
@@ -667,16 +667,16 @@
                     "    },",
                     "  ]",
                     "}",
-                    "```",
+                    "```"
                 ]},
                 { "template":"demo",
                     "elements": [
                         { "video":"izumi_06.mov", "w":"100%", "y":"center",
-                            "videoStart":0.0, "videoDuration":1.87 },
+                            "videoStart":0.0, "videoDuration":1.87 }
                     ]
                 }
             ]
-        },
+        }
 
     ]
 }

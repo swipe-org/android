@@ -48,16 +48,16 @@ public class SwipeImageLayer extends ImageView {
     public void setStream(final InputStream stream, final SwipeElement delegate) {
         // TODO
         // Decoding GIFs to individual frames takes a bit of time so we use a background thread and let
-        // our delegate now when finished.
-        // The PROBLEM is that we could attempt to animate before fully decoded.  Really need to do this in the
-        // resource loading phase.
-        
+        // our delegate know when finished.
+        //
+        // The PROBLEM is that we could attempt to display/animate before fully decoded.  Need to do this in the
+        // resource loading phase and save the frames as bitmap files the first time.
+
         if (stream != null){
             Thread t = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        stream.reset();
                         GifDecoder gifDecoder = new GifDecoder();
                         int status = gifDecoder.read(stream);
                         if (status == GifDecoder.STATUS_OK && gifDecoder.getFrameCount() > 0) {

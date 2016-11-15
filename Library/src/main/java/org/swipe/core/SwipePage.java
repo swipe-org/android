@@ -46,6 +46,11 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         */
     }
 
+    static final String didStartPlaying = "SwipePageDidStartPlaying";
+    static final String didFinishPlaying = "SwipePageDidFinishPlaying";
+    static final String shouldStartAutoPlay = "SwipePageShouldStartAutoPlay";
+    static final String shouldPauseAutoPlay = "SwipePageShouldPauseAutoPlay";
+
     private static final String TAG = "SwPage";
     private Delegate delegate = null;
     private SwipePageTemplate pageTemplate = null;
@@ -56,7 +61,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     private int fps = 60;
     private int cPlaying = 0;
     private boolean vibrate = false;
-    private boolean repeat = false;
+    private boolean fRepeat = false;
     private boolean rewind = false;
     private boolean autoplay = false;
     private boolean always = false;
@@ -85,6 +90,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     }
 
     int getIndex() { return index; }
+    SwipePageTemplate getPageTemplate() { return pageTemplate; }
 
     @Override
     void createViewGroup() {
@@ -113,7 +119,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         duration = (float)info.optDouble("duration", 0.2f);
         fps = info.optInt("fps", 60);
         vibrate = info.optBoolean("vibrate", false);
-        repeat = info.optBoolean("repeat", false);
+        fRepeat = info.optBoolean("repeat", false);
         rewind = info.optBoolean("rewind", false);
 
         String oldAnimation = info.optString("animation", null);
@@ -152,7 +158,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
             fEntered = false; // stops the element animation
             for (SwipeNode c : children) {
                 if (c instanceof SwipeElement) {
-                    ((SwipeElement) c).setTimeOffsetTo(offset, /* autoPlay */ false, /* animate */ true);
+                    ((SwipeElement) c).setTimeOffsetTo(offset);
                 }
             }
         }
@@ -175,9 +181,9 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         if let player = self.audioPlayer {
             player.stop()
         }
-
-        NSNotificationCenter.defaultCenter().postNotificationName(SwipePage.shouldPauseAutoPlay, object: self)
         */
+
+        NotificationCenter.defaultCenter().postNotification(SwipePage.shouldPauseAutoPlay);
 
         // auto rewind
         if (rewind || fForceRewind) {
@@ -219,7 +225,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     void didEnter(boolean fForward) {
         MyLog(TAG, "didEnter " + index + " " + fForward, 2);
         fEntered = true;
-        if ((fForward && autoplay) || always || repeat) {
+        if ((fForward && autoplay) || always || fRepeat) {
             autoPlay(false);
         } else if (hasRepeatElement()) {
             autoPlay(true);
@@ -263,17 +269,17 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     }
 
     private void autoPlay(boolean fElementRepeat) {
+        MyLog(TAG, "autoplay " + fElementRepeat, 2);
         fPausing = false;
         if (!fElementRepeat) {
             playAudio();
-            // TOD) NSNotificationCenter.defaultCenter().postNotificationName(SwipePage.shouldStartAutoPlay, object: self)
+            NotificationCenter.defaultCenter().postNotification(SwipePage.shouldStartAutoPlay);
         }
         if (offsetPaused != null) {
             timerTick(offsetPaused.floatValue(), fElementRepeat);
         } else {
             timerTick(0.0f, fElementRepeat);
         }
-        cPlaying += 1;
         didStartPlayingInternal();
     }
 
@@ -290,7 +296,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
                         offsetForNextTick = nextOffset;
                     } else {
                         nextOffset = 1.0f;
-                        if (repeat) {
+                        if (fRepeat) {
                             playAudio();
                             offsetForNextTick = 0.0f;
                         } else if (hasRepeatElement()) {
@@ -309,7 +315,6 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
                     timerTick(offsetForNextTick, fElementRepeatNext);
                 } else {
                     offsetPaused = fPausing ? offset : null;
-                    cPlaying -= 1;
                     didFinishPlayingInternal();
                 }
 
@@ -321,15 +326,15 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         cPlaying += 1;
         if (cPlaying == 1) {
             MyLog(TAG, "didStartPlaying " + index, 5);
-            // TODO NSNotificationCenter.defaultCenter().postNotificationName(SwipePage.didStartPlaying, object: self)
+            NotificationCenter.defaultCenter().postNotification(SwipePage.didStartPlaying);
         }
     }
 
     private void didFinishPlayingInternal() {
-        if (cPlaying < 0) throw new AssertionError( "didFinishPlaying going negative! " + index);
         cPlaying -= 1;
+        if (cPlaying < 0) throw new AssertionError( "didFinishPlaying going negative! " + index);
         if (cPlaying == 0) {
-            // TODO NSNotificationCenter.defaultCenter().postNotificationName(SwipePage.didFinishPlaying, object: self)
+            NotificationCenter.defaultCenter().postNotification(SwipePage.didFinishPlaying);
         }
     }
 
@@ -412,6 +417,27 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     public String languageIdentifier() {
         // TODO
         return null;
+    }
+
+    @Override
+    public boolean isCurrentPage() {
+        return delegate.currentPageIndex() == index;
+    }
+
+    @Override
+    public boolean shouldRepeat(SwipeElement element) {
+        return fEntered && fRepeat;
+    }
+
+
+    @Override
+    public void didStartPlaying(SwipeElement element) {
+        didStartPlayingInternal();
+    }
+
+    @Override
+    public void didFinishPlaying(SwipeElement element, boolean completed) {
+        didFinishPlayingInternal();
     }
 
 }

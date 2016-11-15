@@ -48,7 +48,7 @@ public class SwipeBookBrowserView extends SwipeBrowserView implements SwipeBook.
         DisplayMetrics dm = getResources().getDisplayMetrics();
         float fwidth = dm.widthPixels / dm.density;
         float fheight = dm.heightPixels / dm.density;
-        if (landscape() && fwidth < fheight || !landscape() && fwidth > fheight) {
+        if (landscape()&& fwidth < fheight || !landscape() && fwidth > fheight) {
             float temp = fwidth;
             fwidth = fheight;
             fheight = temp;

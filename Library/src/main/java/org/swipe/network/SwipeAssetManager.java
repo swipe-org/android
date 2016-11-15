@@ -1,9 +1,11 @@
 package org.swipe.network;
 
 import android.app.Activity;
+import android.content.res.AssetFileDescriptor;
 import android.util.Log;
 
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -25,7 +27,7 @@ public class SwipeAssetManager {
 
     public static abstract class LoadAssetRunnable implements Runnable {
         public boolean success = false;
-        public InputStream in = null;
+        public FileInputStream in = null;
         public URL localURL = null;
         public Exception error = null;
     }
@@ -51,19 +53,8 @@ public class SwipeAssetManager {
     }
 
     private final static String ASSET_PATH = "file:///android_asset/";
-    public InputStream loadLocalAsset(final URL url) {
-        final String urlStr = url.toString();
-        final int assetIndex = urlStr.indexOf(ASSET_PATH);
-        if (assetIndex == 0){
-            try {
-                String fileName = url.toString().substring(ASSET_PATH.length()); // remove path
-                return context.getResources().getAssets().open(fileName);
-            } catch (IOException e) {
-                Log.e(TAG, e.toString());
-                return null;
-            }
-        }
 
+    public FileInputStream loadLocalAsset(final URL url) {
         final String path = url.getHost() + url.getPath();
         final File localF = new File(path);
 
@@ -81,23 +72,13 @@ public class SwipeAssetManager {
     }
 
     public void loadAsset(final URL url, final boolean bypassCache, final LoadAssetRunnable callback) {
-        if (url.getProtocol().equalsIgnoreCase("file")) {
-            try {
-                String fileName = url.toString().substring("file:///android_asset/".length()); // remove path
-                callback.in = context.getResources().getAssets().open(fileName);
-                callback.localURL = url;
-                callback.success = true;
-            } catch (IOException e) {
-                Log.e(TAG, e.toString());
-            }
-            context.runOnUiThread(callback);
-            return;
-        }
-
-        final String path = url.getHost() +  url.getPath();
+        final String path = url.getPath();
         final String dirPath = path.substring(0, path.lastIndexOf('/'));
         final String fileName = path.substring(path.lastIndexOf('/') + 1);
-        final File localF = new File(cacheDir, path);
+        File localF = new File(cacheDir, path);
+        if (!localF.exists()) {
+            localF = new File(path);
+        }
 
         if (!bypassCache && localF.exists()) {
             try {
@@ -117,17 +98,35 @@ public class SwipeAssetManager {
             @Override
             public void run() {
                 try {
-                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                    InputStream in = connection.getInputStream();
+                    InputStream in = null;
+                    final String urlStr = url.toString();
+                    final int assetIndex = urlStr.indexOf(ASSET_PATH);
+                    if (assetIndex == 0) {
+                        String fileName = url.toString().substring("file:///android_asset/".length()); // remove path
+                        in = context.getResources().getAssets().open(fileName);
+                    } else {
+                        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                        in = connection.getInputStream();
+                    }
+
                     File outD = new File(cacheDir, dirPath);
                     outD.mkdirs();
                     File outF = new File(outD, fileName);
                     outF.createNewFile();
                     Log.d(TAG, "saving to " + outF.getPath());
                     FileOutputStream out = new FileOutputStream(outF);
+                    int bufCnt = 0;
                     byte[] buffer = new byte[1024];
                     int len;
                     while ((len = in.read(buffer)) != -1) {
+                        if (bufCnt == 0 && len > 5) {
+                            StringBuilder sb = new StringBuilder();
+                            for (int i = 0; i < 6; i++) {
+                                sb.append((char)buffer[i]);
+                            }
+                            Log.d(TAG, "header: '" + sb.toString() + "' " + fileName);
+                        }
+                        bufCnt++;
                         out.write(buffer, 0, len);
                     }
                     out.close();
@@ -135,7 +134,7 @@ public class SwipeAssetManager {
                     callback.in = new FileInputStream(outF);
                     callback.localURL = outF.toURL();
                     callback.success = true;
-                } catch (IOException e) {
+                } catch (Exception e) {
                     Log.e(TAG, e.toString());
                 }
                 context.runOnUiThread(callback);
