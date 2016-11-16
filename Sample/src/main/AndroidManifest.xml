@@ -14,6 +14,24 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <intent-filter >
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <!-- Accepts URIs that begin with "https://studio.swipe.net/player” -->
+                <data android:scheme="https"
+                    android:host="studio.swipe.net"
+                    android:pathPrefix="/player" />
+            </intent-filter>
+            <intent-filter >
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <!-- Accepts URIs that begin with "http://studio.swipe.net/player” -->
+                <data android:scheme="http"
+                    android:host="studio.swipe.net"
+                    android:pathPrefix="/player" />
+            </intent-filter>
         </activity>
     </application>
 

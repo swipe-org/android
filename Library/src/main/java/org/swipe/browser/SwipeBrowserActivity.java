@@ -23,12 +23,16 @@ import org.json.JSONObject;
 import org.swipe.network.SwipeAssetManager;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Locale;
@@ -90,19 +94,50 @@ public class SwipeBrowserActivity extends Activity implements SwipeBrowserView.D
         {
             Log.d(TAG, intent.toString());
 
-            if (intent.getAction().equals(Intent.ACTION_VIEW))
-            {
-                // TODO
-                Uri dataUri = intent.getData();
-                try
-                {
-                    //InputStream in = getContentResolver().openInputStream(dataUri);
+            if (intent.getAction().equals(Intent.ACTION_VIEW)) {
+                final Uri dataUri = intent.getData();
+                Thread thread = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                    try {
+                        final String urlStr = dataUri.toString();
+                        final URL url = new URL(urlStr);
+                        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                        InputStream in = connection.getInputStream();
 
-                }
-                catch (Exception e)
-                {
-                    Log.e(TAG, String.format(Locale.US, "Copy run exception %s", e));
-                }
+                        StringBuilder htmlBuf = new StringBuilder();
+                        int bufCnt = 0;
+                        byte[] buffer = new byte[1024];
+                        int len;
+                        while ((len = in.read(buffer)) != -1) {
+                            for (int i = 0; i < len; i++ )
+                                htmlBuf.append((char)buffer[i]);
+                        }
+
+                        String html = htmlBuf.toString();
+                        final String START_STR = "getJSON(\"";
+                        int startIndex = html.indexOf(START_STR);
+                        if (startIndex >= 0) {
+                            final String SUFFIX_STR = ".swipe";
+                            int suffixIndex = html.indexOf(SUFFIX_STR, startIndex);
+                            if (suffixIndex > startIndex) {
+                                final String swipeUrl = html.substring(startIndex + START_STR.length(), suffixIndex + SUFFIX_STR.length());
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        openUrl(swipeUrl);
+                                    }
+                                });
+                            }
+                        }
+
+                        in.close();
+                    } catch (Exception e) {
+                        Log.e(TAG, e.toString());
+                    }
+                    }
+                });
+                thread.start();
             } else if (intent.getAction().equals(ACTION_BROWSE_TO)) {
                 openUrl(intent.getStringExtra(ARG_URL));
             } else {
