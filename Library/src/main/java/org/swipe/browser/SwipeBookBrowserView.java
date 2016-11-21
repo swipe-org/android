@@ -24,7 +24,7 @@ import static android.widget.RelativeLayout.CENTER_IN_PARENT;
 /**
  * Created by pete on 9/12/16.
  */
-public class SwipeBookBrowserView extends SwipeBrowserView implements SwipeBook.Delegate, SwipePrefetcher.Listener {
+public class SwipeBookBrowserView extends SwipeBrowserView implements SwipeBook.Delegate {
     private final static String TAG = "SwBookBrowser";
 
     protected SwipeBook book = null;
@@ -40,6 +40,16 @@ public class SwipeBookBrowserView extends SwipeBrowserView implements SwipeBook.
         }
 
         return resourceURLs;
+    }
+
+    @Override
+    protected void onPause() {
+        book.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        book.onResume();
     }
 
     @Override
@@ -77,22 +87,20 @@ public class SwipeBookBrowserView extends SwipeBrowserView implements SwipeBook.
         }
 
         prefetcher = new SwipePrefetcher();
-        prefetcher.get(getResourceURLs(), this);
+        List<URL> urls = getResourceURLs();
+        prefetcher.get(urls, this);
     }
 
     @Override
     public void didComplete(SwipePrefetcher prefetcher) {
+        super.didComplete(prefetcher);
+
         RelativeLayout rl = new RelativeLayout(getContext());
         RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(book.viewWidthDIP, book.viewHeightDIP);
         lp.addRule(CENTER_IN_PARENT, 1);
         rl.setBackgroundColor(Color.BLACK);
         rl.addView(book.loadView(), lp);
         addView(rl, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-    }
-
-    @Override
-    public void progress(SwipePrefetcher prefetcher) {
-        // TODO
     }
 
     // SwipeBookDelegate

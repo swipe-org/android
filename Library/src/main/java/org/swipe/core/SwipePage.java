@@ -2,6 +2,7 @@ package org.swipe.core;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -108,11 +109,18 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
                 }
             }
         };
+
+        // No clipping of any sort by default
+        viewGroup.setClipChildren(false);
+        viewGroup.setClipToPadding(false);
+        viewGroup.setClipToOutline(false);
+        viewGroup.setClipBounds(null);
     }
 
     @Override
     ViewGroup loadView() {
         super.loadView();
+        MyLog(TAG, "loadView " + index, 2);
         int bc = SwipeParser.parseColor(info, "bc", Color.WHITE);
         viewGroup.setBackgroundColor(bc);
 
@@ -235,11 +243,27 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     void prepare() {
         MyLog(TAG, "prepare " + (index), 2);
 
+        for (SwipeNode c : children) {
+            if (c instanceof SwipeElement) {
+                SwipeElement e = (SwipeElement)c;
+                e.prepare();
+            }
+        }
+
         if (scroll) {
             prepareToPlay(index > delegate.currentPageIndex());
         } else {
             if (index < delegate.currentPageIndex()) {
                 prepareToPlay(rewind);
+            }
+        }
+    }
+
+    void release() {
+        for (SwipeNode c : children) {
+            if (c instanceof SwipeElement) {
+                SwipeElement e = (SwipeElement)c;
+                e.release();
             }
         }
     }
@@ -276,22 +300,43 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
             NotificationCenter.defaultCenter().postNotification(SwipePage.shouldStartAutoPlay);
         }
         if (offsetPaused != null) {
-            timerTick(offsetPaused.floatValue(), fElementRepeat);
+            timerTick(offsetPaused.floatValue(), fElementRepeat, SystemClock.elapsedRealtime());
         } else {
-            timerTick(0.0f, fElementRepeat);
+            timerTick(0.0f, fElementRepeat, SystemClock.elapsedRealtime());
         }
         didStartPlayingInternal();
     }
 
-    private void timerTick(final float offset, final boolean fElementRepeat) {
+    int accum = 0;
+    int actualDuration = 0;
+    int skipCnt = 0;
+
+    private void timerTick(final float offset, final boolean fElementRepeat, final long callTime) {
         // During the shutdown sequence, the loop will stop when didLeave was called.
+        final float kFrameOffset = 1.0f / duration / fps;
+        final int kFrameMsec = 1000 / fps;
+
         viewGroup.postDelayed(new Runnable() {
             @Override
             public void run() {
+                long startTime = SystemClock.elapsedRealtime();
+                long frameDuration = startTime - callTime;
+                accum += frameDuration - kFrameMsec;
+                actualDuration += frameDuration;
+                if (frameDuration > kFrameMsec) {
+                    //Log.w(TAG, "frame duration delta:" + (frameDuration - kFrameMsec));
+                }
                 boolean fElementRepeatNext = fElementRepeat;
                 Float offsetForNextTick = null;
                 if (fEntered && !fPausing) {
-                    float nextOffset = offset + 1.0f / duration / fps;
+                    float nextOffset = offset + kFrameOffset;
+
+                    if (accum >= kFrameMsec) {
+                        int frames = (int)(accum / kFrameMsec);
+                        skipCnt += frames;
+                        accum -= kFrameMsec * frames;
+                        nextOffset += kFrameOffset * frames;
+                    }
                     if (nextOffset < 1.0f) {
                         offsetForNextTick = nextOffset;
                     } else {
@@ -312,14 +357,17 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
                     }
                 }
                 if (offsetForNextTick != null) {
-                    timerTick(offsetForNextTick, fElementRepeatNext);
+                    timerTick(offsetForNextTick, fElementRepeatNext, startTime);
                 } else {
+                    Log.d(TAG, "duration:" + (int)(duration * 1000) + " actual:" + actualDuration + " skipped:" + skipCnt + " frames");
+                    actualDuration = 0;
+                    accum = 0;
+                    skipCnt = 0;
                     offsetPaused = fPausing ? offset : null;
                     didFinishPlayingInternal();
                 }
-
             }
-        }, 1000 / fps);
+        }, kFrameMsec);
     }
 
     private void didStartPlayingInternal() {

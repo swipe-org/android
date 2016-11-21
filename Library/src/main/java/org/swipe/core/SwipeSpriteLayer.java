@@ -6,6 +6,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.util.Log;
 import android.view.View;
 
 import java.util.ArrayList;
@@ -18,7 +19,7 @@ import java.util.List;
 public class SwipeSpriteLayer extends View {
     private static final String TAG = "SwSpriteLayer";
     private List<Bitmap> sprites = new ArrayList<>();
-    private int current = 0;
+    private int currentFrame = 0;
     private float animationPercent = 0;
     private float animationSpritePercent = 0;
     private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -46,15 +47,20 @@ public class SwipeSpriteLayer extends View {
 
     public void setAnimationPercent(float animationPercent) {
         this.animationPercent = animationPercent;
-        this.current = (int)(animationPercent / animationSpritePercent);
-        invalidate();
+        int frame = Math.min((int) (animationPercent / animationSpritePercent), sprites.size() - 1);
+        if (frame != currentFrame) {
+            currentFrame = frame;
+            invalidate();
+        }
     }
 
     @Override
     public void onDraw(Canvas canvas) {
+        //Log.d(TAG, "onDraw");
+
         dst.right = getRight();
         dst.bottom = getBottom();
 
-        canvas.drawBitmap(sprites.get(current), src, dst, paint);
+        canvas.drawBitmap(sprites.get(currentFrame), src, dst, paint);
     }
 }

@@ -12,9 +12,11 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.util.Log;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import org.swipe.network.SwipeAssetManager;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -29,10 +31,14 @@ public class SwipeImageLayer extends ImageView {
     private static final String TAG = "SwImageLayer";
     private Rect bounds = new Rect(getLeft(), getTop(), getRight(), getBottom());
     private GifDecoder gifDecoder = null;
+    private URL url = null;
     private Bitmap mask = null;
     private float animationPercent = 0;
     private float animationFramePercent = 1;
     private Paint maskPaint;
+    private boolean prepared = true;
+    private boolean ignoreRelease = false;
+    private int currentFrame = 0;
 
     public SwipeImageLayer(Context context) {
         super(context);
@@ -43,6 +49,47 @@ public class SwipeImageLayer extends ImageView {
 
     public void setMaskBitmap(Bitmap mask) {
         this.mask = mask;
+    }
+
+    public void setIgnoreRelease(boolean ignoreRelease) {
+        this.ignoreRelease = ignoreRelease;
+    }
+
+    public void release() {
+        if (ignoreRelease) return;
+
+        if (prepared) {
+            this.setImageBitmap(null);
+            prepared = false;
+        }
+    }
+
+    public void prepare() {
+        if (!prepared) {
+            prepared = true;
+
+            FileInputStream imageStream = SwipeAssetManager.sharedInstance().loadLocalAsset(url);
+            if (imageStream != null) {
+                try {
+                    final BitmapFactory.Options options = new BitmapFactory.Options();
+                    this.setImageBitmap(BitmapFactory.decodeStream(imageStream, null, options));
+                } catch (OutOfMemoryError e) {
+                    Log.e(TAG, "Out of memory " + url + " " + e);
+                    Toast.makeText(getContext(), "Out of memory.  Use smaller image " + SwipeUtil.fileName(url.toString()), Toast.LENGTH_LONG).show();
+                }
+            }
+        }
+    }
+
+    public void setImageURL(URL url, BitmapFactory.Options opts,  SwipeElement delegate) {
+        this.url = url;
+        if (opts.outMimeType.indexOf("gif") >= 0) {
+            FileInputStream imageStream = SwipeAssetManager.sharedInstance().loadLocalAsset(url);
+            if (imageStream != null) {
+
+                setStream(imageStream, delegate);
+            }
+        }
     }
 
     public void setStream(final InputStream stream, final SwipeElement delegate) {
@@ -88,7 +135,7 @@ public class SwipeImageLayer extends ImageView {
 
     public void setGifDecoder(GifDecoder gifDecoder) {
         this.gifDecoder = gifDecoder;
-        animationFramePercent = 1.0f / (gifDecoder.getFrameCount() - 1);
+        animationFramePercent = 1.0f / (gifDecoder.getFrameCount());
     }
 
     public float getAnimationPercent() {
@@ -97,13 +144,17 @@ public class SwipeImageLayer extends ImageView {
 
     public void setAnimationPercent(float animationPercent) {
         this.animationPercent = animationPercent;
-        int current = (int) (animationPercent / animationFramePercent);
-        setImageBitmap(gifDecoder.getFrame(current));
-        invalidate();
+        int frame = Math.min((int) (animationPercent / animationFramePercent), gifDecoder.getFrameCount());
+        if (frame != currentFrame) {
+            currentFrame = frame;
+            setImageBitmap(gifDecoder.getFrame(currentFrame));
+            invalidate();
+        }
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
+        //Log.d(TAG, "onDraw");
         super.onDraw(canvas);
 
         if (mask != null) {
@@ -112,10 +163,5 @@ public class SwipeImageLayer extends ImageView {
             canvas.drawBitmap(mask, null, bounds, maskPaint);
             canvas.restore();
         }
-    }
-
-    @Override
-    public void setImageBitmap(Bitmap bitmap) {
-        super.setImageBitmap(bitmap);
     }
 }

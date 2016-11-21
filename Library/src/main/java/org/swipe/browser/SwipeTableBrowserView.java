@@ -2,6 +2,7 @@ package org.swipe.browser;
 
 import android.app.Activity;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
@@ -34,13 +35,15 @@ import static android.content.Context.LAYOUT_INFLATER_SERVICE;
 /**
  * Created by pete on 9/12/16.
  */
-public class SwipeTableBrowserView extends SwipeBrowserView implements SwipePrefetcher.Listener {
+public class SwipeTableBrowserView extends SwipeBrowserView {
     private final static String TAG = "SwTblBrowser";
-    protected LayoutInflater inflater = null;
-    protected ArrayList<JSONObject> items = new ArrayList<>();
-    protected TextView titleView = null;
-    protected ListView listView = null;
-    protected int rowHeight = -1;
+    private LayoutInflater inflater = null;
+    private ArrayList<JSONObject> items = new ArrayList<>();
+    private TextView titleView = null;
+    private ListView listView = null;
+    private int rowHeight = -1;
+    private int selected = -1;
+    private static final int SELECTED_COLOR = 0xffeeeeee;
 
     public SwipeTableBrowserView(Activity context) {
         super(context);
@@ -54,7 +57,7 @@ public class SwipeTableBrowserView extends SwipeBrowserView implements SwipePref
         final int pixels = (int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 45, getResources().getDisplayMetrics());
         titleView.setMinHeight(pixels);
         titleView.setTextAlignment(TEXT_ALIGNMENT_CENTER);
-        titleView.setText(R.string.tbd);
+        titleView.setText("");
 
         addView(titleView, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, pixels));
 
@@ -130,94 +133,92 @@ public class SwipeTableBrowserView extends SwipeBrowserView implements SwipePref
         }
 
         prefetcher = new SwipePrefetcher();
-        prefetcher.get(getResourceURLs(), this);
+        List<URL> urls = getResourceURLs();
+        prefetcher.get(urls, this);
     }
 
     // SwipePrefetcher.Listener
 
     @Override
     public void didComplete(final SwipePrefetcher prefetcher) {
-        Log.d(TAG, "prefetcher.didComplete");
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                Log.d(TAG, "items.count " + items.size());
-                final DisplayMetrics dm = getResources().getDisplayMetrics();
-                float fwidth = dm.density * dm.widthPixels;
-                float fheight = dm.density * dm.heightPixels;
-                Log.d(TAG, "display w=" + fwidth + " h=" + fheight);
+        super.didComplete(prefetcher);
 
-                rowHeight = (int) document.optDouble("rowHeight", -1);
-                if (rowHeight == -1) {
-                    String rowHeightStr = document.optString("rowHeight");
-                    if (rowHeightStr != null) {
-                        rowHeight = (int) SwipeParser.parsePercent(rowHeightStr, landscape() ? fwidth / dm.density : fheight / dm.density, -1);
+        Log.d(TAG, "items.count " + items.size());
+        final DisplayMetrics dm = getResources().getDisplayMetrics();
+        float fwidth = dm.density * dm.widthPixels;
+        float fheight = dm.density * dm.heightPixels;
+        Log.d(TAG, "display w=" + fwidth + " h=" + fheight);
+
+        rowHeight = (int) document.optDouble("rowHeight", -1);
+        if (rowHeight == -1) {
+            String rowHeightStr = document.optString("rowHeight");
+            if (rowHeightStr != null) {
+                rowHeight = (int) SwipeParser.parsePercent(rowHeightStr, landscape() ? fwidth / dm.density : fheight / dm.density, -1);
+            }
+        }
+
+        ArrayAdapter<JSONObject> adapter = new ArrayAdapter<JSONObject>(getActivity(), R.layout.list_item, items)
+        {
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent)
+            {
+                View view = convertView;
+                if (view == null) {
+                    view = (View)inflater.inflate(R.layout.list_item, parent, false);
+                }
+
+                // icon
+                String urlStr = items.get(position).optString("icon", null);
+                if (urlStr != null) {
+                    URL localUrl = prefetcher.map(delegate.makeFullURL(urlStr));
+                    if (localUrl != null) {
+                        final ImageView iv = (ImageView) view.findViewById(R.id.list_view_image);
+                        SwipeAssetManager.sharedInstance().loadAsset(localUrl, false, new SwipeAssetManager.LoadAssetRunnable() {
+                            @Override
+                            public void run() {
+                            if (this.success) {
+                                iv.setImageBitmap(BitmapFactory.decodeStream(this.in));
+                                iv.getLayoutParams().width = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 60, dm);
+                                try {
+                                    this.in.close();
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                            }
+                        });
                     }
                 }
 
-                ArrayAdapter<JSONObject> adapter = new ArrayAdapter<JSONObject>(getActivity(), R.layout.list_item, items)
-                {
-                    @Override
-                    public View getView(int position, View convertView, ViewGroup parent)
-                    {
-                        View view = convertView;
-                        if (view == null) {
-                            view = (View)inflater.inflate(R.layout.list_item, parent, false);
-                        }
+                // title
+                TextView tv = (TextView) view.findViewById(R.id.list_view_text);
+                tv.setMinHeight(rowHeight);
+                tv.setText(items.get(position).optString("title", urlStr));
+                // selection
+                if (position == selected) {
+                    view.setBackgroundColor(SELECTED_COLOR);
+                } else {
+                    view.setBackgroundColor(Color.TRANSPARENT);
+                }
+                return view;
+            }
+        };
 
-                        // icon
-                        String urlStr = items.get(position).optString("icon");
-                        if (urlStr != null) {
-                            URL localUrl = prefetcher.map(delegate.makeFullURL(urlStr));
-                            if (localUrl != null) {
-                                final ImageView iv = (ImageView) view.findViewById(R.id.list_view_image);
-                                SwipeAssetManager.sharedInstance().loadAsset(localUrl, false, new SwipeAssetManager.LoadAssetRunnable() {
-                                    @Override
-                                    public void run() {
-                                    if (this.success) {
-                                        iv.setImageBitmap(BitmapFactory.decodeStream(this.in));
-                                        iv.getLayoutParams().width = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 60, dm);
-                                        try {
-                                            this.in.close();
-                                        } catch (IOException e) {
-                                            e.printStackTrace();
-                                        }
-                                    }
-                                    }
-                                });
-                            }
-                        }
+        titleView.setText(document.optString("title", delegate.getFileName()));
 
-                        // title
-                        TextView tv = (TextView) view.findViewById(R.id.list_view_text);
-                        tv.setMinHeight(rowHeight);
-                        tv.setText(items.get(position).optString("title", urlStr));
-                        return view;
-                    }
-                };
-
-                titleView.setText(document.optString("title", delegate.getFileName()));
-
-                listView.setAdapter(adapter);
-                listView.setOnItemClickListener(new ListView.OnItemClickListener() {
-                    public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
-                        Log.d(TAG, "clicked on " + position + ", " + items.get(position).optString("title"));
-                        if (delegate != null)
-                            delegate.browseTo(items.get(position).optString("url"));
-                    }
-                });
+        listView.setAdapter(adapter);
+        listView.setOnItemClickListener(new ListView.OnItemClickListener() {
+            public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
+                View prevSelected = listView.getChildAt(selected);
+                if (prevSelected != null) {
+                    prevSelected.setBackgroundColor(Color.TRANSPARENT);
+                }
+                selected = position;
+                v.setBackgroundColor(SELECTED_COLOR);
+                if (delegate != null) {
+                    delegate.browseTo(items.get(position).optString("url"));
+                }
             }
         });
     }
-
-    @Override
-    public void progress(SwipePrefetcher prefetcher) {
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                // TODO: implement
-            }
-        });
-    }
-
 }

@@ -25,10 +25,12 @@ import android.view.MotionEvent;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewOutlineProvider;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.VideoView;
 
 import org.json.JSONArray;
@@ -123,9 +125,35 @@ public class SwipeElement extends SwipeView {
             }
         }
 
-        super.info =  SwipeParser.inheritProperties(info, delegate.prototypeWith(template));
+        super.info = SwipeParser.inheritProperties(info, delegate.prototypeWith(template));
     }
 
+
+    public void release() {
+        if (imageLayer != null) {
+            imageLayer.release();
+        }
+
+        for (SwipeNode c : children) {
+            if (c instanceof SwipeElement) {
+                SwipeElement e = (SwipeElement)c;
+                e.release();
+            }
+        }
+    }
+
+    public void prepare() {
+        if (imageLayer != null) {
+            imageLayer.prepare();
+        }
+
+        for (SwipeNode c : children) {
+            if (c instanceof SwipeElement) {
+                SwipeElement e = (SwipeElement)c;
+                e.prepare();
+            }
+        }
+    }
 
     @Override
     void createViewGroup() {
@@ -151,6 +179,11 @@ public class SwipeElement extends SwipeView {
             }
 
             @Override
+            public ViewOutlineProvider getOutlineProvider() {
+                return null;
+            }
+
+            @Override
             protected void onLayout(boolean changed, int l, int t, int r, int b) {
                 //Log.d(TAG, "onLayout");
                 for (int c = 0; c < this.getChildCount(); c++) {
@@ -164,7 +197,11 @@ public class SwipeElement extends SwipeView {
             }
         };
 
+        // No clipping of any sort by default
         viewGroup.setClipChildren(false);
+        viewGroup.setClipToPadding(false);
+        viewGroup.setClipToOutline(false);
+        viewGroup.setClipBounds(null);
     }
 
     @Override
@@ -215,14 +252,24 @@ public class SwipeElement extends SwipeView {
 
         URL imageUrl = null;
         Bitmap imageBitmap = null;
+        BitmapFactory.Options imageBitmapOptions = new BitmapFactory.Options();
+
         String imgUrlStr = info.optString("img", null);
         if (imgUrlStr != null) {
             URL url = delegate.makeFullURL(imgUrlStr);
             imageUrl = delegate.map(url);
             if (imageUrl != null) {
-                FileInputStream imageStream = SwipeAssetManager.sharedInstance().loadLocalAsset(imageUrl);
-                if (imageStream != null){
-                    imageBitmap = BitmapFactory.decodeStream(imageStream);
+                FileInputStream stream = SwipeAssetManager.sharedInstance().loadLocalAsset(imageUrl);
+                try {
+                    if (stream != null){
+                        imageBitmap = BitmapFactory.decodeStream(stream, null, imageBitmapOptions);
+                        stream.close();
+                    }
+                } catch (OutOfMemoryError e) {
+                    Log.e(TAG, "Out of memory " + url + " " + e);
+                    Toast.makeText(getContext(), "Out of memory.  Use smaller image " + SwipeUtil.fileName(imageUrl.toString()), Toast.LENGTH_LONG).show();
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             } else {
                 // TODO: imageSrc = CGImageSourceCreateWithURL(url, nil)
@@ -237,9 +284,12 @@ public class SwipeElement extends SwipeView {
             if (localUrl != null) {
                 InputStream stream = SwipeAssetManager.sharedInstance().loadLocalAsset(localUrl);
                 if (stream != null){
-                    maskBitmap = BitmapFactory.decodeStream(stream);
                     try {
+                        maskBitmap = BitmapFactory.decodeStream(stream);
                         stream.close();
+                    } catch (OutOfMemoryError e) {
+                        Log.e(TAG, "Out of memory " + url + " " + e);
+                        Toast.makeText(getContext(), "Out of memory.  Use smaller image " + SwipeUtil.fileName(localUrl.toString()), Toast.LENGTH_LONG).show();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -434,14 +484,12 @@ public class SwipeElement extends SwipeView {
             imageLayer.setScaleType(ImageView.ScaleType.FIT_CENTER);
             imageLayer.setImageBitmap(imageBitmap);
             imageLayer.setMaskBitmap(maskBitmap);
-            InputStream imageStream = SwipeAssetManager.sharedInstance().loadLocalAsset(imageUrl);
-            if (imageStream != null) {
-                imageLayer.setStream(imageStream, this);
-            }
+            imageLayer.setImageURL(imageUrl, imageBitmapOptions, this);
 
             if (parent != null && parent instanceof SwipeElement) {
                 SwipeElement p = (SwipeElement)parent;
                 if (p.fClip) {
+                    imageLayer.setIgnoreRelease(true);
                     p.viewGroup.setClipToOutline(false);  // ToDo CLIP doesn't work with images
                     p.viewGroup.setClipBounds(new Rect(0, 0, p.viewGroup.getLayoutParams().width, p.viewGroup.getLayoutParams().height));
                 }
@@ -450,6 +498,7 @@ public class SwipeElement extends SwipeView {
             if (!info.optBoolean("tiling", false)) {
                 viewGroup.addView(imageLayer, new ViewGroup.LayoutParams(dipW, dipH));
             } else {
+                imageLayer.setIgnoreRelease(true);
                 ViewGroup hostLayer = new ViewGroup(getContext()) {
                     @Override
                     protected void onLayout(boolean changed, int l, int t, int r, int b) {
@@ -526,7 +575,6 @@ public class SwipeElement extends SwipeView {
         bgDrawable.setBorderColor(SwipeParser.parseColor(info.opt("borderColor"), Color.BLACK));
 
         if (path != null) {
-            //shapeLayer.contentsScale = contentScale
             shapeLayer = new SwipeShapeLayer(getContext(), path);
             Matrix xform = SwipePath.parsePathTransform(info, dipW, dipH);
             if (xform != null) {
@@ -759,6 +807,8 @@ public class SwipeElement extends SwipeView {
 
         Double dopt;
 
+        Log.d(TAG, "info:" + info);
+
         JSONObject transform = SwipeParser.parseTransform(info, null, false, shapeLayer != null);
         if (transform != null) {
             dopt = transform.optDouble("rotate");
@@ -808,6 +858,7 @@ public class SwipeElement extends SwipeView {
                 Double translate0 = translate.optDouble(0);
                 Double translate1 = translate.optDouble(1);
                 Double translate2 = translate.optDouble(2);
+                Log.d(TAG, "transform:" + transform);
                 if (!translate0.isNaN()) {
                     viewGroup.setTranslationX(px2Dip(translate0.floatValue() * scale.width) + dipX);
                 }
@@ -820,9 +871,16 @@ public class SwipeElement extends SwipeView {
             }
         }
 
-        viewGroup.setAlpha(SwipeParser.parseFloat(info.optDouble("opacity"), viewGroup.getAlpha()));
+        float opacity = SwipeParser.parseFloat(info.opt("opacity"), 1);
         if (!info.optBoolean("visible", true)) {
-            viewGroup.setAlpha(0);
+            opacity = 0;
+        }
+
+        if (shapeLayer != null) {
+            // See SwipeShapeLayer comments
+            shapeLayer.setAlpha(opacity);
+        } else {
+            viewGroup.setAlpha(opacity);
         }
 
         JSONObject to = info.optJSONObject("to");
@@ -838,36 +896,10 @@ public class SwipeElement extends SwipeView {
                     duration = timing[1] - start;
                 }
             }
-            
-            boolean fSkipTranslate = false;
+
             SwipePath posPath = parsePath(to.opt("pos"), w0, h0, scale, dm);
-            if (posPath != null){
-                Matrix xform = new Matrix();
-                xform.setTranslate(dipX, dipY);
-                posPath.getPath().transform(xform);
-                ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "x", "y", posPath.getPath());
-                animations.add(new SwipeObjectAnimator(ani, start, duration));
 
-                String mode = to.optString("mode");
-                switch(mode) {
-                    case "auto": {
-                        ObjectAnimator aniR = ObjectAnimator.ofObject(viewGroup, "rotation", new SwipePath.RotationEvaluator(posPath.getPath()), 0);
-                        animations.add(new SwipeObjectAnimator(aniR, start, duration));
-                        break;
-                    }
-                    case "reverse": {
-                        ObjectAnimator aniR = ObjectAnimator.ofObject(viewGroup, "rotation", new SwipePath.ReverseRotationEvaluator(posPath.getPath()), 0);
-                        animations.add(new SwipeObjectAnimator(aniR, start, duration));
-                        break;
-                    }
-                    default: // or "none"
-                        break;
-                }
-
-                fSkipTranslate = true;
-            }
-
-            transform = SwipeParser.parseTransform(to, info, fSkipTranslate, shapeLayer != null);
+            transform = SwipeParser.parseTransform(to, info, posPath != null, shapeLayer != null);
             if (transform != null) {
                 dopt = transform.optDouble("rotate");
                 if (!dopt.isNaN()) {
@@ -920,10 +952,11 @@ public class SwipeElement extends SwipeView {
                 }
 
                 JSONArray translate = transform.optJSONArray("translate");
-                if (translate != null && translate.length() >= 2 && !fSkipTranslate) {
+                if (translate != null && translate.length() >= 2 && posPath == null) {
                     Double translate0 = translate.optDouble(0);
                     Double translate1 = translate.optDouble(1);
                     Double translate2 = translate.optDouble(2);
+
                     if (!translate0.isNaN()) {
                         ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "translationX", px2Dip(translate0.floatValue() * scale.width) + dipX);
                         animations.add(new SwipeObjectAnimator(ani, start, duration));
@@ -939,9 +972,52 @@ public class SwipeElement extends SwipeView {
                 }
             }
 
+            if (posPath != null){
+                Matrix xform = new Matrix();
+                xform.setTranslate(dipX, dipY);  // Default if no translate
+                if (transform != null) {
+                    JSONArray translate = transform.optJSONArray("translate");
+                    if (translate != null && translate.length() >= 2) {
+                        Double translate0 = translate.optDouble(0);
+                        Double translate1 = translate.optDouble(1);
+                        //Double translate2 = translate.optDouble(2);
+
+                        if (!translate0.isNaN() && !translate1.isNaN()) {
+                            xform = new Matrix();
+                            xform.setTranslate(px2Dip(translate0.floatValue() * scale.width) + dipX, px2Dip(translate1.floatValue() * scale.height) + dipY);
+                        }
+                    }
+                }
+
+                posPath.getPath().transform(xform);
+                ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "x", "y", posPath.getPath());
+                animations.add(new SwipeObjectAnimator(ani, start, duration));
+
+                String mode = to.optString("mode");
+                switch(mode) {
+                    case "auto": {
+                        ObjectAnimator aniR = ObjectAnimator.ofObject(viewGroup, "rotation", new SwipePath.RotationEvaluator(posPath.getPath()), 0);
+                        animations.add(new SwipeObjectAnimator(aniR, start, duration));
+                        break;
+                    }
+                    case "reverse": {
+                        ObjectAnimator aniR = ObjectAnimator.ofObject(viewGroup, "rotation", new SwipePath.ReverseRotationEvaluator(posPath.getPath()), 0);
+                        animations.add(new SwipeObjectAnimator(aniR, start, duration));
+                        break;
+                    }
+                    default: // or "none"
+                        break;
+                }
+            }
+
             dopt = to.optDouble("opacity");
             if (!dopt.isNaN()){
-                ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "alpha",  dopt.floatValue());
+                Object obj = viewGroup;
+                if (shapeLayer != null) {
+                    // See SwipeShapeLayer comments
+                    obj = shapeLayer;
+                }
+                ObjectAnimator ani = ObjectAnimator.ofFloat(obj, "alpha",  dopt.floatValue());
                 animations.add(new SwipeObjectAnimator(ani, start, duration));
             }
 

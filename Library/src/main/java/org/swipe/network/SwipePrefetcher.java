@@ -28,9 +28,11 @@ public class SwipePrefetcher {
     private List<Exception> errors = new ArrayList<>();
     private boolean fComplete = false;
     private float progress = 0;
+    private int skipped = 0;
+    private int total = 0;
     private int count = 0;
 
-    public float  getProgress() {
+    public float getProgress() {
         return progress;
     }
 
@@ -39,31 +41,25 @@ public class SwipePrefetcher {
         if (count == 0) {
             fComplete = true;
             progress = 1;
-            Log.d(TAG, "completed " + urlsFetched.size());
-            //callback(true, self.urlsFailed, self.errors)
             listener.didComplete(this);
         } else {
-            progress = (float)(urlsFetched.size() - count) / (float)(urlsFetched.size());
-            //callback(false, self.urlsFailed, self.errors)
+            progress = (float)(total - count) / (float)total;
             listener.progress(this);
         }
     }
 
     public void get(final List<URL> resourceURLs, final Listener listener) {
-        Log.d(TAG, "url count = " + resourceURLs.size());
-
         if (fComplete) {
             Log.d(TAG, "already completed");
-            //callback(true, self.urlsFailed, self.errors);
             listener.didComplete(this);
             return;
         }
 
-        count = resourceURLs.size();
+        skipped = 0;
+        total = count = resourceURLs.size();
         if (count == 0) {
             fComplete = true;
             progress = 1;
-            //callback(true, urlsFailed, errors)
             listener.didComplete(this);
             return;
         }
@@ -72,7 +68,7 @@ public class SwipePrefetcher {
 
         for (final URL url : resourceURLs) {
             if (urlsFetching.containsKey(url)) {
-                //Log.d(TAG, "skipping " + url);
+                skipped++;
                 updateListener(listener);
                 continue;
             }
@@ -91,7 +87,6 @@ public class SwipePrefetcher {
                         }
                     }
                     if (localURL != null) {
-                        //Log.d(TAG, "fetched " + localURL);
                         urlsFetched.put(url, localURL);
                     } else {
                         urlsFailed.add(url);
@@ -105,6 +100,10 @@ public class SwipePrefetcher {
     }
 
     public URL map(URL url) {
+        if (url == null) {
+            return null;
+        }
+
         URL found = urlsFetched.get(url);
         if (found != null) {
             //Log.d(TAG, "found " + url.toString());

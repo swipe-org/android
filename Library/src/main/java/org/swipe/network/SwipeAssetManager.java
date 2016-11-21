@@ -72,31 +72,32 @@ public class SwipeAssetManager {
     }
 
     public void loadAsset(final URL url, final boolean bypassCache, final LoadAssetRunnable callback) {
-        final String path = url.getPath();
+        final String path = url.getHost().concat(url.getPath());
         final String dirPath = path.substring(0, path.lastIndexOf('/'));
         final String fileName = path.substring(path.lastIndexOf('/') + 1);
-        File localF = new File(cacheDir, path);
-        if (!localF.exists()) {
-            localF = new File(path);
-        }
-
-        if (!bypassCache && localF.exists()) {
-            try {
-                localF.setLastModified(new Date().getTime());
-                callback.in = new FileInputStream(localF);
-                callback.localURL = localF.toURL();
-                callback.success = true;
-                Log.d(TAG, "reuse " + fileName);
-            } catch (IOException e) {
-                Log.e(TAG, e.toString());
-            }
-            context.runOnUiThread(callback);
-            return;
-        }
 
         Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
+
+                File localF = new File(cacheDir, path);
+                if (!localF.exists()) {
+                    localF = new File(path);
+                }
+                if (!bypassCache && localF.exists()) {
+                    try {
+                        localF.setLastModified(new Date().getTime());
+                        callback.in = new FileInputStream(localF);
+                        callback.localURL = localF.toURL();
+                        callback.success = true;
+                        Log.d(TAG, "reuse " + fileName);
+                    } catch (IOException e) {
+                        Log.e(TAG, e.toString());
+                    }
+                    context.runOnUiThread(callback);
+                    return;
+                }
+
                 try {
                     InputStream in = null;
                     final String urlStr = url.toString();

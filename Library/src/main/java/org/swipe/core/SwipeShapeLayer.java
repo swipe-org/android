@@ -1,5 +1,6 @@
 package org.swipe.core;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.graphics.BlurMaskFilter;
 import android.graphics.Canvas;
@@ -11,11 +12,20 @@ import android.graphics.PathMeasure;
 import android.graphics.drawable.ShapeDrawable;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewOutlineProvider;
+import android.view.ViewParent;
 
 import org.json.JSONObject;
 
 /**
  * Created by pete on 10/21/16.
+ *
+ * TODO: Alpha Clipping
+ * There is an issue where the View is clipped to it's parent's outline when alpha is < 1.0. It acts
+ * as if the parent has clipToOutline == true but that does not seem to be the case.  So, as a
+ * workaround, we don't let the View see anything other than alpha == 1 and we handle the alpha
+ * ourselves in onDraw.
  */
 
 class SwipeShapeLayer extends View {
@@ -25,6 +35,7 @@ class SwipeShapeLayer extends View {
     private int fillColor = Color.TRANSPARENT;
     private int strokeColor = Color.BLACK;
     private float lineWidth = 0;
+    private float alpha = 1;
     private Paint.Cap lineCap = Paint.Cap.ROUND;
     private float strokeStart = 0;
     private float strokeEnd = 1;
@@ -39,6 +50,11 @@ class SwipeShapeLayer extends View {
         super(context);
         setPath(path);
     }
+
+    @Override
+    public float getAlpha() { return alpha; }
+    @Override
+    public void setAlpha(float alpha) { this.alpha = alpha; invalidate(); }
 
     private void updateDrawPath() {
         final float startD = pathLength * strokeStart;
@@ -107,16 +123,17 @@ class SwipeShapeLayer extends View {
 
     @Override
     public void draw(Canvas canvas) {
+        //Log.d(TAG, "onDraw");
         p.reset();
-        p.setAntiAlias(true);
 
         if (shadowOffset != null) {
             p.setShadowLayer(shadowRadius, shadowOffset.width, shadowOffset.height, shadowColor);
         }
 
-        if (fillColor != Color.TRANSPARENT) {
+        if (Color.alpha(fillColor) != 0) {
             p.setStyle(Paint.Style.FILL);
-            p.setColor(fillColor);
+            int realFillColor = Color.argb((int) (Color.alpha(fillColor) * alpha), Color.red(fillColor), Color.green(fillColor), Color.blue(fillColor));
+            p.setColor(realFillColor);
             canvas.drawPath(drawPath, p);
         }
 
@@ -124,7 +141,8 @@ class SwipeShapeLayer extends View {
             p.setStyle(Paint.Style.STROKE);
             p.setStrokeWidth(lineWidth);
             p.setStrokeCap(lineCap);
-            p.setColor(strokeColor);
+            int realStrokeColor = Color.argb((int) (Color.alpha(strokeColor) * alpha), Color.red(strokeColor), Color.green(strokeColor), Color.blue(strokeColor));
+            p.setColor(realStrokeColor);
             canvas.drawPath(drawPath, p);
         } else {
             p.setStyle(Paint.Style.STROKE);

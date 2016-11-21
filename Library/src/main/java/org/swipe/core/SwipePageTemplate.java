@@ -23,7 +23,8 @@ public class SwipePageTemplate {
 
     private SwipePage.Delegate delegate = null;
     private MediaPlayer bgmPlayer = null;
-    private boolean fDebugEntered = false;
+    private boolean fEntered = false;
+    private boolean fPrepared = false;
     protected List<URL> resourceURLs = null;
 
     public SwipePageTemplate(JSONObject info, SwipePage.Delegate delegate) {
@@ -48,8 +49,9 @@ public class SwipePageTemplate {
     //  AND the previous page is NOT associated with this pageTemplate object.
 
     void didEnter(SwipePage.Delegate delegate) {
-        if (fDebugEntered) throw new AssertionError("re-entering");
-        fDebugEntered = true;
+        Log.d(TAG, "didEnter");
+        if (fEntered) throw new AssertionError("re-entering");
+        fEntered = true;
 
         String value = info.optString("bgm", null);
         if (value == null) {
@@ -68,6 +70,7 @@ public class SwipePageTemplate {
                         bgmPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
                             @Override
                             public void onPrepared(MediaPlayer mp) {
+                                fPrepared = true;
                                 bgmPlayer.start();
                             }
                         });
@@ -96,12 +99,26 @@ public class SwipePageTemplate {
     //  AND the subsequent page is not associated with this pageTemplate object.
 
     void didLeave() {
-        if (!fDebugEntered) throw new AssertionError("leaving without entering");
-        fDebugEntered = false;
+        Log.d(TAG, "didLeave");
+        if (!fEntered) throw new AssertionError("leaving without entering");
 
         if (bgmPlayer != null) {
             bgmPlayer.stop();
             bgmPlayer = null;
+        }
+
+        fEntered = false;
+    }
+
+    void pause() {
+        if (fEntered && fPrepared) {
+            bgmPlayer.pause();
+        }
+    }
+
+    void resume() {
+        if (fEntered && fPrepared) {
+            bgmPlayer.start();
         }
     }
 }

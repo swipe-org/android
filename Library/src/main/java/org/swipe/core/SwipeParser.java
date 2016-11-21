@@ -222,18 +222,39 @@ public class SwipeParser {
     }
 
 
-    static JSONObject parseTransform(JSONObject value, JSONObject base, boolean fSkipTranslate, boolean fSkipScale) {
-        if (value == null) {
+    static JSONObject parseTransform(JSONObject param, JSONObject _base, boolean fSkipTranslate, boolean fSkipScale) {
+        final String TAG = "SwParser.parseTransform";
+        if (param == null) {
             return null;
         }
 
         try {
-            JSONObject transform = new JSONObject("{}");
             boolean hasValue = false;
+            JSONObject transform = new JSONObject("{}");
+            JSONObject value = new JSONObject(param.toString()); // copy
+            JSONObject b = null;
+
+            if (_base != null) {
+                b = new JSONObject(_base.toString()); // copy
+
+                Iterator<String> basekeys = b.keys();
+                while (basekeys.hasNext()) {
+                    String key = basekeys.next();
+                    switch (key) {
+                        case "translate":
+                        case "rotate":
+                        case "scale":
+                            if (!value.has(key)) {
+                                value.put(key, b.get(key));
+                            }
+                            break;
+                    }
+                }
+            }
 
             if (fSkipTranslate) {
-                if (base != null && base.has("translate")) {
-                    transform.put("translate", base.get("translate"));
+                if (b != null && b.has("translate")) {
+                    transform.put("translate", b.get("translate"));
                 }
             } else if (value.has("translate")) {
                 transform.put("translate", value.get("translate"));
@@ -247,17 +268,11 @@ public class SwipeParser {
             if (value.has("rotate")) {
                 transform.put("rotate", value.get("rotate"));
                 hasValue = true;
-            } else if (base != null && base.has("rotate")) {
-                transform.put("rotate", base.get("rotate"));
-                hasValue = true;
             }
 
             if (!fSkipScale) {
                 if (value.has("scale")) {
                     transform.put("scale", value.get("scale"));
-                    hasValue = true;
-                } else if (base != null && base.has("scale")) {
-                    transform.put("scale", base.get("scale"));
                     hasValue = true;
                 }
             }
@@ -275,41 +290,48 @@ public class SwipeParser {
     //   Object property: Instance properties overrides Base properties
     //   Array property: Merge (inherit properties in case of "id" matches, otherwise, just append)
     //
-    static JSONObject inheritProperties(JSONObject object, JSONObject proto) {
+    static JSONObject inheritProperties(JSONObject object, JSONObject _baseObject) {
+        final String TAG = "SwParser.inheritProperties";
         try {
             JSONObject ret = new JSONObject(object.toString()); // copy
 
-            final String TAG = "SwInheritProperties";
-            if (proto != null) {
-                JSONObject prototype = new JSONObject(proto.toString()); // copy
-                Iterator<String> keyStrings = prototype.keys();
-                while (keyStrings.hasNext()) {
-                    try {
-                        String keyString = keyStrings.next();
-                        if (!ret.has(keyString)) {
-                            // Only the baseObject has the property
-                            ret.put(keyString, prototype.get(keyString));
-                        } else if (ret.optJSONArray(keyString) != null && prototype.optJSONArray(keyString) != null) {
-                            // Each has the property array. We need to merge them
-                            JSONArray arrayObject = ret.optJSONArray(keyString);
-                            JSONArray retArray = prototype.optJSONArray(keyString);
+            if (_baseObject != null) {
+                JSONObject prototype = new JSONObject(_baseObject.toString()); // copy
+                Iterator<String> protoKeys = prototype.keys();
+
+                while (protoKeys.hasNext()) {
+                    String keyString = protoKeys.next();
+                    Object value = prototype.get(keyString);
+                    Log.d(TAG, "keyString: " + keyString);
+
+                    if (!ret.has(keyString)) {
+                        // Only the prototype has the property so simply add it
+                        ret.put(keyString, value);
+
+                    } else if (ret.optJSONArray(keyString) != null && value instanceof JSONArray) {
+                        if (keyString.equals("elements")) {
+                            JSONArray retArray = (JSONArray) value;
+                            JSONArray arrayObject = ret.getJSONArray(keyString);
                             Map<String, Integer> idMap = new HashMap<>();
+
                             for (int index = 0; index < retArray.length(); index++) {
                                 JSONObject item = retArray.getJSONObject(index);
-                                String key = item.optString("id");
-                                if (key != null) {
-                                    idMap.put(key, index);
+                                if (item != null) {
+                                    String key = item.optString("id");
+                                    if (key != null) {
+                                        idMap.put(key, index);
+                                    }
                                 }
                             }
 
                             for (int i = 0; i < arrayObject.length(); i++) {
                                 JSONObject item = arrayObject.getJSONObject(i);
-                                String key = item.optString("id");
+                                String key = item.optString("id", null);
                                 if (key != null) {
                                     Integer index = idMap.get(key);
                                     if (index != null) {
                                         // id matches, merge them
-                                        retArray.put(index, SwipeParser.inheritProperties(item, retArray.getJSONObject(index)));
+                                        retArray.put(index, SwipeParser.inheritProperties((JSONObject)item, retArray.getJSONObject(index)));
                                     } else {
                                         // no id match, just append
                                         retArray.put(item);
@@ -320,25 +342,26 @@ public class SwipeParser {
                                 }
                             }
                             ret.put(keyString, retArray);
-                        } else if (ret.optJSONObject(keyString) != null && prototype.optJSONObject(keyString) != null) {
-                            // Each has the property objects. We need to merge them.  Example: '"events" { }'
-                            JSONObject objects = ret.getJSONObject(keyString);
-                            JSONObject retObjects = prototype.getJSONObject(keyString);
-                            Iterator<String> keys = objects.keys();
-                            while (keys.hasNext()) {
-                                String key = keys.next();
-                                retObjects.put(key, objects.get(key));
-                            }
-                            ret.put(keyString, retObjects);
+                        } else {
+                            Log.d(TAG, "ignoring " + keyString);
                         }
-                    } catch (JSONException e) {
-                        Log.e(TAG, e.toString());
+                    } else if (ret.optJSONObject(keyString) != null && prototype.optJSONObject(keyString) != null) {
+                        // Each has the property objects. We need to merge them.  Example: '"events" { }'
+                        JSONObject objects = ret.getJSONObject(keyString);
+                        JSONObject retObjects = prototype.getJSONObject(keyString);
+                        Iterator<String> keys = objects.keys();
+                        while (keys.hasNext()) {
+                            String key = keys.next();
+                            retObjects.put(key, objects.get(key));
+                        }
+                        ret.put(keyString, retObjects);
                     }
                 }
             }
+
             return ret;
         } catch (JSONException e) {
-            return object;
+            throw new AssertionError(e);
         }
     }
 

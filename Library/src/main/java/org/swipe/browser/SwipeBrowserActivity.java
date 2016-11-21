@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
+import android.app.ProgressDialog;
 import android.content.ContentResolver;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -17,7 +18,9 @@ import android.util.Log;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.swipe.network.SwipeAssetManager;
@@ -50,6 +53,7 @@ public class SwipeBrowserActivity extends Activity implements SwipeBrowserView.D
     protected String urlStr = null;
     protected String fileName = "";
     protected URL baseURL = null;
+    protected SwipeBrowserView browserView = null;
 
     /**
      * Use this factory method to create a new instance of
@@ -57,7 +61,6 @@ public class SwipeBrowserActivity extends Activity implements SwipeBrowserView.D
      *
      * @param url
      */
-
 
     public static URL makeFullURL(String url, URL baseURL) {
         try {
@@ -82,6 +85,94 @@ public class SwipeBrowserActivity extends Activity implements SwipeBrowserView.D
 
     public String getFileName() { return fileName; }
 
+    void openTimeLineUrl(final Uri dataUri) {
+        final ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.show();
+
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                    StringBuilder builder = new StringBuilder();
+                    builder.append("{\n" +
+                            "    \"type\":\"net.swipe.list\",\n" +
+                            "    \"rowHeight\":\"10%\",\n" +
+                            "    \"sections\":[\n" +
+                            "        {\n" +
+                            "            \"items\":[");
+
+
+
+                    int totalItemCnt = 0;
+                    boolean hasData = true;
+                    int loopCnt = 0;
+
+                    while (hasData && loopCnt < 10) {
+                        loopCnt++;
+
+                        try {
+                            String offset = "?offset=" + totalItemCnt;
+                            final String urlStr = dataUri.toString().concat(offset);
+                            final URL url = new URL(urlStr);
+                            Log.d(TAG, "fetching " + url.toString());
+                            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                            final JSONObject json = new JSONObject(convertStreamToString(connection.getInputStream()));
+                            JSONArray projects = json.getJSONArray("projects");
+                            final int itemCnt = projects.length();
+                            if (itemCnt > 0) {
+                                totalItemCnt += itemCnt;
+                                for (int i = 0; i < itemCnt; i++) {
+                                    StringBuilder item = new StringBuilder();
+                                    JSONObject project = projects.getJSONObject(i);
+                                    JSONObject swipe = project.getJSONObject("swipe");
+                                    item.append("    { \"url\":\"");
+                                    item.append(swipe.getString("url"));
+                                    item.append("\", \"title\":\"");
+                                    item.append(project.getString("title"));
+                                    JSONObject thumbnail = project.optJSONObject("thumbnail");
+                                    if (thumbnail != null) {
+                                        item.append("\", \"icon\":\"");
+                                        item.append(thumbnail.optString("url"));
+                                    }
+                                    item.append("\" },\n");
+                                    String swipeItem = item.toString();
+                                    Log.d(TAG, "item: " + swipeItem);
+                                    builder.append(swipeItem);
+                                }
+                            } else {
+                                hasData = false;
+                            }
+                            connection.disconnect();
+                        } catch (Exception e) {
+                            Log.e(TAG, e.toString());
+                            hasData = false;
+                        }
+                    }
+
+                    builder.append("    {}\n");  // dummy item to deal with trailing comma
+                    builder.append("    ]\n" +
+                            "        }\n" +
+                            "    ]\n" +
+                            "}");
+
+                    final String swipe = builder.toString();
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                progressDialog.dismiss();
+                                openDocument(new JSONObject(swipe));
+                            } catch (Exception e) {
+                                Log.e(TAG, e.toString());
+                            }
+                        }
+                    });
+
+            }
+        });
+        thread.start();
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -96,48 +187,12 @@ public class SwipeBrowserActivity extends Activity implements SwipeBrowserView.D
 
             if (intent.getAction().equals(Intent.ACTION_VIEW)) {
                 final Uri dataUri = intent.getData();
-                Thread thread = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                    try {
-                        final String urlStr = dataUri.toString();
-                        final URL url = new URL(urlStr);
-                        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                        InputStream in = connection.getInputStream();
-
-                        StringBuilder htmlBuf = new StringBuilder();
-                        int bufCnt = 0;
-                        byte[] buffer = new byte[1024];
-                        int len;
-                        while ((len = in.read(buffer)) != -1) {
-                            for (int i = 0; i < len; i++ )
-                                htmlBuf.append((char)buffer[i]);
-                        }
-
-                        String html = htmlBuf.toString();
-                        final String START_STR = "getJSON(\"";
-                        int startIndex = html.indexOf(START_STR);
-                        if (startIndex >= 0) {
-                            final String SUFFIX_STR = ".swipe";
-                            int suffixIndex = html.indexOf(SUFFIX_STR, startIndex);
-                            if (suffixIndex > startIndex) {
-                                final String swipeUrl = html.substring(startIndex + START_STR.length(), suffixIndex + SUFFIX_STR.length());
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        openUrl(swipeUrl);
-                                    }
-                                });
-                            }
-                        }
-
-                        in.close();
-                    } catch (Exception e) {
-                        Log.e(TAG, e.toString());
-                    }
-                    }
-                });
-                thread.start();
+                if (dataUri.getPath().indexOf("/api/1.0/projects/timeline") == 0) {
+                    openTimeLineUrl(dataUri);
+                } else {
+                    String swipeUrl = dataUri.toString().replace("player", "swipe");
+                    openUrl(swipeUrl);
+                }
             } else if (intent.getAction().equals(ACTION_BROWSE_TO)) {
                 openUrl(intent.getStringExtra(ARG_URL));
             } else {
@@ -198,10 +253,17 @@ public class SwipeBrowserActivity extends Activity implements SwipeBrowserView.D
         } else {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         }
+
+        if (browserView != null) {
+            browserView.onResume();
+        }
     }
     @Override
     protected void onPause() {
         Log.d(TAG, "onPause");
+        if (browserView != null) {
+            browserView.onPause();
+        }
         super.onPause();
     }
     @Override
@@ -293,13 +355,12 @@ public class SwipeBrowserActivity extends Activity implements SwipeBrowserView.D
     }
     private void openDocument(JSONObject _document) throws JSONException {
         document = _document;
-        ViewGroup vg = null;
         String documentType = document.optString("type", "net.swipe.swipe");
 
         if (documentType.equalsIgnoreCase("net.swipe.swipe") || documentType.equalsIgnoreCase("org.swipe.swipe")) {
-            vg = new SwipeBookBrowserView(this);
+            browserView = new SwipeBookBrowserView(this);
         } else if (documentType.equalsIgnoreCase("net.swipe.list") || documentType.equalsIgnoreCase("org.swipe.list")) {
-            vg = new SwipeTableBrowserView(this);
+            browserView = new SwipeTableBrowserView(this);
         } else {
             displayError(getString(R.string.unknown_type) + ": " + documentType);
             return;
@@ -311,12 +372,11 @@ public class SwipeBrowserActivity extends Activity implements SwipeBrowserView.D
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         }
 
-        SwipeBrowserView viewer = (SwipeBrowserView) vg;
-        viewer.setDelegate(this);
-        viewer.loadDocument(document, baseURL);
+        browserView.setDelegate(this);
+        browserView.loadDocument(document, baseURL);
 
         LinearLayout ll = (LinearLayout) findViewById(R.id.main_activity_fragment_container);
-        ll.addView(viewer, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
+        ll.addView(browserView, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
     }
 
     private void displayError(final String msg) {

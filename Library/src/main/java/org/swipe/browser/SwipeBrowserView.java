@@ -1,7 +1,9 @@
 package org.swipe.browser;
 
 import android.app.Activity;
+import android.util.Log;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 
 import org.swipe.network.SwipePrefetcher;
 
@@ -13,14 +15,17 @@ import java.util.List;
 /**
  * Created by pete on 9/13/16.
  */
-public abstract class SwipeBrowserView extends LinearLayout {
+public abstract class SwipeBrowserView extends LinearLayout implements SwipePrefetcher.Listener {
+    private final static String TAG = "SwBrowserView";
     protected Activity activity = null;
+    protected ProgressBar progressBar = null;
 
     public Activity getActivity() { return activity; }
 
     public SwipeBrowserView(Activity context) {
         super(context);
         activity = context;
+        progressBar = (ProgressBar) getActivity().findViewById(R.id.progressBar);
     }
 
     public interface Delegate {
@@ -29,7 +34,6 @@ public abstract class SwipeBrowserView extends LinearLayout {
         String getFileName();
     }
 
-    private final static String TAG = "SwBrowserView";
     protected SwipeBrowserView.Delegate delegate = null;
     protected SwipePrefetcher prefetcher = null;
     protected JSONObject document = null;
@@ -48,12 +52,38 @@ public abstract class SwipeBrowserView extends LinearLayout {
         document = _document;
         baseURL = url;
         landscape = document.optString("orientation").equalsIgnoreCase("landscape");
+        progressBar.setVisibility(VISIBLE);
     }
 
     public boolean landscape() { return landscape; }
 
     public void setDelegate(SwipeBrowserView.Delegate _delegate) {
         delegate = _delegate;
+    }
+
+    public void progress(SwipePrefetcher prefetcher) {
+        final int progress = (int)(progressBar.getMax() * prefetcher.getProgress());
+        if (progress - progressBar.getProgress() < 2) return;
+
+        progressBar.setProgress(progress);
+    }
+
+    public void didComplete(SwipePrefetcher prefetcher) {
+        progressBar.setProgress(progressBar.getMax());
+        post(new Runnable() {
+            @Override
+            public void run() {
+                progressBar.setVisibility(INVISIBLE);
+            }
+        });
+    }
+
+    protected void onPause() {
+
+    }
+
+    protected void onResume() {
+
     }
 
     //void becomeZombie();

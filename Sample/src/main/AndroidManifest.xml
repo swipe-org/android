@@ -7,6 +7,7 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
+        android:largeHeap="true"
         android:theme="@style/AppTheme">
         <activity android:name="org.swipe.browser.SwipeBrowserActivity"
             android:configChanges="orientation|screenSize|keyboardHidden">
@@ -27,10 +28,10 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <!-- Accepts URIs that begin with "http://studio.swipe.net/player” -->
-                <data android:scheme="http"
-                    android:host="studio.swipe.net"
-                    android:pathPrefix="/player" />
+                <!-- Accepts URIs that begin with "https://api.swipe.net/api/1.0/projects/timeline” -->
+                <data android:scheme="https"
+                    android:host="api.swipe.net"
+                    android:pathPrefix="/api/1.0/projects/timeline" />
             </intent-filter>
         </activity>
     </application>
