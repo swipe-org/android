@@ -207,6 +207,8 @@ public class SwipeElement extends SwipeView {
     @Override
     ViewGroup loadView() {
         super.loadView();
+        String id = info.optString("id");
+        Log.d(TAG, "id: " + id);
 
         setTimeOffsetTo(0);
 
@@ -392,6 +394,7 @@ public class SwipeElement extends SwipeView {
         final int dipY = px2Dip(y);
         final int dipW = px2Dip(w);
         final int dipH = px2Dip(h);
+        final int dipZ = 0; // TODO
         viewGroup.setX(dipX);
         viewGroup.setY(dipY);
         viewGroup.setPivotX(dipW / 2);
@@ -807,7 +810,9 @@ public class SwipeElement extends SwipeView {
 
         Double dopt;
 
-        Log.d(TAG, "info:" + info);
+        if (id.equals("id1")) {
+            Log.d(TAG, "break");
+        }
 
         JSONObject transform = SwipeParser.parseTransform(info, null, false, shapeLayer != null);
         if (transform != null) {
@@ -858,7 +863,6 @@ public class SwipeElement extends SwipeView {
                 Double translate0 = translate.optDouble(0);
                 Double translate1 = translate.optDouble(1);
                 Double translate2 = translate.optDouble(2);
-                Log.d(TAG, "transform:" + transform);
                 if (!translate0.isNaN()) {
                     viewGroup.setTranslationX(px2Dip(translate0.floatValue() * scale.width) + dipX);
                 }
@@ -866,7 +870,7 @@ public class SwipeElement extends SwipeView {
                     viewGroup.setTranslationY(px2Dip(translate1.floatValue() * scale.height) + dipY);
                 }
                 if (!translate2.isNaN()) {
-                    viewGroup.setTranslationZ(px2Dip(translate2.floatValue() * scale.height) + dipY);
+                    viewGroup.setTranslationZ(px2Dip(translate2.floatValue() * scale.height) + dipZ);
                 }
             }
         }
@@ -928,53 +932,57 @@ public class SwipeElement extends SwipeView {
                     }
                 }
 
-                dopt = transform.optDouble("scale");
-                if (!dopt.isNaN()) {
-                    ObjectAnimator aniX = ObjectAnimator.ofFloat(viewGroup, "scaleX", dopt.floatValue());
-                    animations.add(new SwipeObjectAnimator(aniX, start, duration));
-                    ObjectAnimator aniY = ObjectAnimator.ofFloat(viewGroup, "scaleY", dopt.floatValue());
-                    animations.add(new SwipeObjectAnimator(aniY, start, duration));
-                }
-
-                JSONArray scales = transform.optJSONArray("scale");
-                if (scales != null && scales.length() == 2) {
-                    Double d0 = scales.optDouble(0);
-                    Double d1 = scales.optDouble(1);
-                    if (!d0.isNaN()) {
-                        ObjectAnimator aniX = ObjectAnimator.ofFloat(viewGroup, "scaleX", d0.floatValue());
+                if (shapeLayer == null) {
+                    dopt = transform.optDouble("scale");
+                    if (!dopt.isNaN()) {
+                        ObjectAnimator aniX = ObjectAnimator.ofFloat(viewGroup, "scaleX", dopt.floatValue());
                         animations.add(new SwipeObjectAnimator(aniX, start, duration));
-                    }
-
-                    if (!d1.isNaN()) {
-                        ObjectAnimator aniY = ObjectAnimator.ofFloat(viewGroup, "scaleY", d1.floatValue());
+                        ObjectAnimator aniY = ObjectAnimator.ofFloat(viewGroup, "scaleY", dopt.floatValue());
                         animations.add(new SwipeObjectAnimator(aniY, start, duration));
                     }
+
+                    JSONArray scales = transform.optJSONArray("scale");
+                    if (scales != null && scales.length() == 2) {
+                        Double d0 = scales.optDouble(0);
+                        Double d1 = scales.optDouble(1);
+                        if (!d0.isNaN()) {
+                            ObjectAnimator aniX = ObjectAnimator.ofFloat(viewGroup, "scaleX", d0.floatValue());
+                            animations.add(new SwipeObjectAnimator(aniX, start, duration));
+                        }
+
+                        if (!d1.isNaN()) {
+                            ObjectAnimator aniY = ObjectAnimator.ofFloat(viewGroup, "scaleY", d1.floatValue());
+                            animations.add(new SwipeObjectAnimator(aniY, start, duration));
+                        }
+                    }
                 }
 
-                JSONArray translate = transform.optJSONArray("translate");
-                if (translate != null && translate.length() >= 2 && posPath == null) {
-                    Double translate0 = translate.optDouble(0);
-                    Double translate1 = translate.optDouble(1);
-                    Double translate2 = translate.optDouble(2);
+                if (posPath == null) {
+                    JSONArray translate = transform.optJSONArray("translate");
+                    if (translate != null && translate.length() >= 2) {
+                        Double translate0 = translate.optDouble(0);
+                        Double translate1 = translate.optDouble(1);
+                        Double translate2 = translate.optDouble(2);
 
-                    if (!translate0.isNaN()) {
-                        ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "translationX", px2Dip(translate0.floatValue() * scale.width) + dipX);
-                        animations.add(new SwipeObjectAnimator(ani, start, duration));
-                    }
-                    if (!translate1.isNaN()) {
-                        ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "translationY", px2Dip(translate1.floatValue() * scale.height) + dipY);
-                        animations.add(new SwipeObjectAnimator(ani, start, duration));
-                    }
-                    if (!translate2.isNaN()) {
-                        ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "translationZ", px2Dip(translate2.floatValue() * scale.height) + dipY);
-                        animations.add(new SwipeObjectAnimator(ani, start, duration));
+                        if (!translate0.isNaN()) {
+                            ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "translationX", px2Dip(translate0.floatValue() * scale.width) + dipX);
+                            animations.add(new SwipeObjectAnimator(ani, start, duration));
+                        }
+                        if (!translate1.isNaN()) {
+                            ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "translationY", px2Dip(translate1.floatValue() * scale.height) + dipY);
+                            animations.add(new SwipeObjectAnimator(ani, start, duration));
+                        }
+                        if (!translate2.isNaN()) {
+                            ObjectAnimator ani = ObjectAnimator.ofFloat(viewGroup, "translationZ", px2Dip(translate2.floatValue() * scale.height) + dipZ);
+                            animations.add(new SwipeObjectAnimator(ani, start, duration));
+                        }
                     }
                 }
             }
 
             if (posPath != null){
                 Matrix xform = new Matrix();
-                xform.setTranslate(dipX, dipY);  // Default if no translate
+                xform.setTranslate(viewGroup.getTranslationX(), viewGroup.getTranslationY());  // Default if no translate
                 if (transform != null) {
                     JSONArray translate = transform.optJSONArray("translate");
                     if (translate != null && translate.length() >= 2) {
@@ -1079,6 +1087,7 @@ public class SwipeElement extends SwipeView {
                 }
             }
             */
+
             if (shapeLayer != null) {
                 JSONArray params = to.optJSONArray("path");
                 if (params != null) {

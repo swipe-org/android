@@ -3,6 +3,7 @@ package org.swipe.core;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Point;
+import android.os.SystemClock;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutCompat;
 import android.util.DisplayMetrics;
@@ -282,30 +283,60 @@ public class SwipeBook implements SwipePage.Delegate {
         }
     }
 
-    private void smoothScrollTo(final int position, final int toOffset) {
-        final int ANI_FRAME_MSEC = 16; // 60fps
-        final int ANI_MSEC = 100;
-        final int ANI_FRAMES = ANI_MSEC / ANI_FRAME_MSEC;
+    int accum = 0;
+    int actualDuration = 0;
+    int skipCnt = 0;
+
+    private void smoothScrollTo(final int position, final int toOffset, final long callTime) {
+        final int fps = 30;
+        final int kFrameMsec = 1000 / fps;
+        final int ANI_MSEC = 200;
+        final int ANI_FRAMES = ANI_MSEC / kFrameMsec;
         canSmoothScroll = true;
 
         scrollView.postDelayed(new Runnable() {
 
             @Override
             public void run() {
+                long startTime = SystemClock.elapsedRealtime();
+                long frameDuration = startTime - callTime;
+                accum += frameDuration - kFrameMsec;
+                actualDuration += frameDuration;
+                if (frameDuration > kFrameMsec) {
+                    Log.w(TAG, "frame duration delta:" + (frameDuration - kFrameMsec));
+                }
                 boolean finished = false;
 
                 if (horizontal) {
                     SwipeHorizontalScrollView sv = (SwipeHorizontalScrollView) scrollView;
-                    final int deltaOffset = (toOffset - sv.getScrollX()) / ANI_FRAMES;
-                    if (Math.abs(deltaOffset) == 0) {
+                    int deltaOffset = (toOffset - sv.getScrollX()) / ANI_FRAMES;
+
+                    if (accum >= kFrameMsec) {
+                        int frames = (int)(accum / kFrameMsec);
+                        skipCnt += frames;
+                        accum -= kFrameMsec * frames;
+                        deltaOffset *= 1 + frames;
+                        Log.w(TAG, "skipping frames:" + frames);
+                    }
+
+                    if (pagePosition(sv.getScaleX() + deltaOffset, 0) != position) {
                         finished = true;
                     } else {
                         sv.scrollBy(deltaOffset, 0);
                     }
                 } else {
                     SwipeScrollView sv = (SwipeScrollView) scrollView;
-                    final int deltaOffset = (toOffset - sv.getScrollY()) / ANI_FRAMES;
-                    if (Math.abs(deltaOffset) == 0) {
+                    int deltaOffset = (toOffset - sv.getScrollY()) / ANI_FRAMES;
+
+                    if (accum >= kFrameMsec) {
+                        int frames = (int)(accum / kFrameMsec);
+                        skipCnt += frames;
+                        accum -= kFrameMsec * frames;
+                        deltaOffset *= 1 + frames;
+                        Log.w(TAG, "skipping frames:" + frames);
+                    }
+
+                    if (pagePosition(0, sv.getScaleY() + deltaOffset) != position) {
                         finished = true;
                     } else {
                         sv.scrollBy(0, deltaOffset);
@@ -313,13 +344,13 @@ public class SwipeBook implements SwipePage.Delegate {
                 }
 
                 if (!finished && canSmoothScroll) {
-                    smoothScrollTo(position, toOffset);
+                    smoothScrollTo(position, toOffset, startTime);
                 } else {
                     endMove(position);
                     adjustIndex(position);
                 }
             }
-        }, ANI_FRAME_MSEC);
+        }, kFrameMsec);
     }
 
     public ViewGroup loadView() {
@@ -486,7 +517,7 @@ public class SwipeBook implements SwipePage.Delegate {
                     }
 
                     offset += pgOffset * pgSize;
-                    smoothScrollTo(position, offset);
+                    smoothScrollTo(position, offset, SystemClock.elapsedRealtime());
                     prevPosition = position;
                     handled = true;
                 }

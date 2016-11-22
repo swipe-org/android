@@ -102,32 +102,34 @@ public class SwipeBrowserActivity extends Activity implements SwipeBrowserView.D
 
 
 
+                    final int itemsRequested = 200;
                     int totalItemCnt = 0;
                     boolean hasData = true;
                     int loopCnt = 0;
 
-                    while (hasData && loopCnt < 10) {
+                    while (hasData && loopCnt < 5) {
                         loopCnt++;
 
                         try {
-                            String offset = "?offset=" + totalItemCnt;
+                            String offset = "?limit=" + itemsRequested +"&offset=" + totalItemCnt;
                             final String urlStr = dataUri.toString().concat(offset);
                             final URL url = new URL(urlStr);
-                            Log.d(TAG, "fetching " + url.toString());
+                            Log.d(TAG, "fetching url: " + url.toString());
                             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                             final JSONObject json = new JSONObject(convertStreamToString(connection.getInputStream()));
                             JSONArray projects = json.getJSONArray("projects");
                             final int itemCnt = projects.length();
                             if (itemCnt > 0) {
-                                totalItemCnt += itemCnt;
                                 for (int i = 0; i < itemCnt; i++) {
                                     StringBuilder item = new StringBuilder();
                                     JSONObject project = projects.getJSONObject(i);
                                     JSONObject swipe = project.getJSONObject("swipe");
                                     item.append("    { \"url\":\"");
                                     item.append(swipe.getString("url"));
+                                    String title = project.getString("title");
                                     item.append("\", \"title\":\"");
-                                    item.append(project.getString("title"));
+                                    item.append("#").append(totalItemCnt+i).append(" ");
+                                    item.append(title);
                                     JSONObject thumbnail = project.optJSONObject("thumbnail");
                                     if (thumbnail != null) {
                                         item.append("\", \"icon\":\"");
@@ -137,6 +139,10 @@ public class SwipeBrowserActivity extends Activity implements SwipeBrowserView.D
                                     String swipeItem = item.toString();
                                     Log.d(TAG, "item: " + swipeItem);
                                     builder.append(swipeItem);
+                                }
+                                totalItemCnt += itemCnt;
+                                if (itemCnt < itemsRequested) {
+                                    hasData = false;
                                 }
                             } else {
                                 hasData = false;

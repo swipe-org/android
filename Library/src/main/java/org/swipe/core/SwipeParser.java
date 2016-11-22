@@ -302,7 +302,6 @@ public class SwipeParser {
                 while (protoKeys.hasNext()) {
                     String keyString = protoKeys.next();
                     Object value = prototype.get(keyString);
-                    Log.d(TAG, "keyString: " + keyString);
 
                     if (!ret.has(keyString)) {
                         // Only the prototype has the property so simply add it
