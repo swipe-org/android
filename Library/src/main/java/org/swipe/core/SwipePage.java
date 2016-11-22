@@ -2,6 +2,7 @@ package org.swipe.core;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.media.MediaPlayer;
 import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
@@ -10,7 +11,10 @@ import android.view.ViewGroup;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.swipe.browser.SwipeBrowserActivity;
+import org.swipe.network.SwipeAssetManager;
 
+import java.io.FileDescriptor;
+import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -73,6 +77,9 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     private boolean fEntered = false;
     private boolean fPausing = false;
     private Float offsetPaused = null;
+    private MediaPlayer audioPlayer = null;
+    private boolean fPrepared = false;
+    private boolean fStartWhenPrepared = false;
 
     SwipePage(Context _context, CGSize _dimension, CGSize _scrDimension, CGSize _scale, int _index, JSONObject _info, SwipePage.Delegate _delegate) {
         super(_context, _dimension, _scrDimension, _scale, _info, /* parent */ null);
@@ -149,6 +156,39 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         fixed = !transition.equals("scroll");
         replace = transition.equals("replace");
 
+        String value = info.optString("audio", null);
+        if (value != null) {
+            URL urlRaw = delegate.makeFullURL(value);
+            URL url = delegate.map(urlRaw);
+            if (url != null) {
+                Log.d(TAG, "audio=" + value);
+                try {
+                    FileDescriptor fd = SwipeAssetManager.sharedInstance().loadLocalAsset(url).getFD();
+                    if (fd != null) {
+                        audioPlayer = new MediaPlayer();
+                        try {
+                            audioPlayer.setDataSource(fd);
+                            audioPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                                @Override
+                                public void onPrepared(MediaPlayer mp) {
+                                    fPrepared = true;
+                                    if (fStartWhenPrepared) {
+                                        fStartWhenPrepared = false;
+                                        audioPlayer.start();
+                                    }
+                                }
+                            });
+                            audioPlayer.prepareAsync();
+                        } catch (IOException e) {
+                            audioPlayer = null;
+                        }
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
         JSONArray elementsInfo = info.optJSONArray("elements");
         if (elementsInfo != null) {
             for (int i = 0; i < elementsInfo.length(); i++) {
@@ -185,11 +225,10 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         MyLog(TAG, "pause " + (index) + " " + fForceRewind, 2);
 
         fPausing = true;
-        /* TODO
-        if let player = self.audioPlayer {
-            player.stop()
+
+        if (audioPlayer != null) {
+            audioPlayer.stop();
         }
-        */
 
         NotificationCenter.defaultCenter().postNotification(SwipePage.shouldPauseAutoPlay);
 
@@ -216,11 +255,15 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     }
 
     private void playAudio() {
-        /* TODO
-        if let player = audioPlayer {
-            player.currentTime = 0.0
-            player.play()
+        if (audioPlayer != null) {
+            audioPlayer.seekTo(0);
+            if (fPrepared) {
+                audioPlayer.start();
+            } else {
+                fStartWhenPrepared = true;
+            }
         }
+        /* TODO
         if let utterance = self.utterance {
             delegate.speak(utterance)
         }

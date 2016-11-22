@@ -811,10 +811,6 @@ public class SwipeElement extends SwipeView {
 
         Double dopt;
 
-        if (id.equals("id1")) {
-            Log.d(TAG, "break");
-        }
-
         JSONObject transform = SwipeParser.parseTransform(info, null, false, shapeLayer != null);
         if (transform != null) {
             dopt = transform.optDouble("rotate");
