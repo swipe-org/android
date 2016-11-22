@@ -1,6 +1,8 @@
 package org.swipe.browser;
 
 import android.app.Activity;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.util.Log;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -19,6 +21,7 @@ public abstract class SwipeBrowserView extends LinearLayout implements SwipePref
     private final static String TAG = "SwBrowserView";
     protected Activity activity = null;
     protected ProgressBar progressBar = null;
+    protected SharedPreferences prefs = null;
 
     public Activity getActivity() { return activity; }
 
@@ -48,9 +51,11 @@ public abstract class SwipeBrowserView extends LinearLayout implements SwipePref
         return document.optString("title", "");
     }
 
-    public void loadDocument(JSONObject _document, URL url) {
+    public void loadDocument(JSONObject _document, final String urlStr, URL url) {
         document = _document;
         baseURL = url;
+        String prefsName = urlStr.replace(":", "_").replace("/", "_").replace(" ", "_").replace(".", "_");
+        prefs = getActivity().getSharedPreferences(prefsName, Context.MODE_PRIVATE);
         landscape = document.optString("orientation").equalsIgnoreCase("landscape");
         progressBar.setVisibility(VISIBLE);
     }
@@ -79,7 +84,6 @@ public abstract class SwipeBrowserView extends LinearLayout implements SwipePref
     }
 
     protected void onPause() {
-
     }
 
     protected void onResume() {

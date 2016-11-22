@@ -167,7 +167,7 @@ public class SwipeBrowserActivity extends Activity implements SwipeBrowserView.D
                         public void run() {
                             try {
                                 progressDialog.dismiss();
-                                openDocument(new JSONObject(swipe));
+                                openDocument(new JSONObject(swipe), dataUri.toString());
                             } catch (Exception e) {
                                 Log.e(TAG, e.toString());
                             }
@@ -319,7 +319,7 @@ public class SwipeBrowserActivity extends Activity implements SwipeBrowserView.D
                 String path = urlStr.substring("file:///android_asset/".length()); // remove path
                 String data = convertStreamToString(getResources().getAssets().open(path));
                 //Log.d(TAG, data);
-                openDocument(new JSONObject(data));
+                openDocument(new JSONObject(data), urlStr);
             } else {
                 URL url = new URL(urlStr);
                 SwipeAssetManager.sharedInstance().loadAsset(url, true /* bypassCache for Swipe files*/, new SwipeAssetManager.LoadAssetRunnable() {
@@ -328,18 +328,18 @@ public class SwipeBrowserActivity extends Activity implements SwipeBrowserView.D
                         if (this.success && this.in != null) {
                             try {
                                 String data = convertStreamToString(this.in);
-                                openDocument(new JSONObject(data));
+                                openDocument(new JSONObject(data), urlStr);
                             } catch (Exception e) {
                                 displayError(e.toString());
                                 try {
-                                    openDocument(new JSONObject("{}"));
+                                    openDocument(new JSONObject("{}"), "error");
                                 } catch (JSONException e1) {
                                     e1.printStackTrace();
                                 }
                             }
                         } else {
                             try {
-                                openDocument(new JSONObject("{}"));
+                                openDocument(new JSONObject("{}"), "error");
                             } catch (JSONException e1) {
                                 e1.printStackTrace();
                             }
@@ -349,17 +349,17 @@ public class SwipeBrowserActivity extends Activity implements SwipeBrowserView.D
             }
         } catch (JSONException e) {
             displayError(e.toString());
-            try { openDocument(new JSONObject("{}"));} catch (JSONException e1) { e1.printStackTrace(); }
+            try { openDocument(new JSONObject("{}"), "error");} catch (JSONException e1) { e1.printStackTrace(); }
         } catch (MalformedURLException e) {
             displayError(e.toString());
-            try { openDocument(new JSONObject("{}"));} catch (JSONException e1) { e1.printStackTrace(); }
+            try { openDocument(new JSONObject("{}"), "error");} catch (JSONException e1) { e1.printStackTrace(); }
         } catch (IOException e) {
             displayError(e.toString());
-            try { openDocument(new JSONObject("{}"));} catch (JSONException e1) { e1.printStackTrace(); }
+            try { openDocument(new JSONObject("{}"), "error");} catch (JSONException e1) { e1.printStackTrace(); }
         }
 
     }
-    private void openDocument(JSONObject _document) throws JSONException {
+    private void openDocument(JSONObject _document, final String urlStr) throws JSONException {
         document = _document;
         String documentType = document.optString("type", "net.swipe.swipe");
 
@@ -379,7 +379,7 @@ public class SwipeBrowserActivity extends Activity implements SwipeBrowserView.D
         }
 
         browserView.setDelegate(this);
-        browserView.loadDocument(document, baseURL);
+        browserView.loadDocument(document, urlStr, baseURL);
 
         LinearLayout ll = (LinearLayout) findViewById(R.id.main_activity_fragment_container);
         ll.addView(browserView, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));

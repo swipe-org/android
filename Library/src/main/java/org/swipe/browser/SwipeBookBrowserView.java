@@ -44,6 +44,11 @@ public class SwipeBookBrowserView extends SwipeBrowserView implements SwipeBook.
 
     @Override
     protected void onPause() {
+        //save state
+        prefs.edit()
+                .putInt("pageIndex", book.currentPageIndex())
+                .putString("langId", book.langId())
+                .commit();
         book.onPause();
     }
 
@@ -53,8 +58,8 @@ public class SwipeBookBrowserView extends SwipeBrowserView implements SwipeBook.
     }
 
     @Override
-    public void loadDocument(JSONObject _document, URL url) {
-        super.loadDocument(_document, url);
+    public void loadDocument(JSONObject _document, final String urlStr, URL url) {
+        super.loadDocument(_document, urlStr, url);
         DisplayMetrics dm = getResources().getDisplayMetrics();
         float fwidth = dm.widthPixels / dm.density;
         float fheight = dm.heightPixels / dm.density;
@@ -76,14 +81,8 @@ public class SwipeBookBrowserView extends SwipeBrowserView implements SwipeBook.
         */
 
         if (book.viewstate()) {
-            /* TODO
-            if let pageIndex = state?["page"] as? Int where pageIndex < self.book.pages.count {
-                self.book.pageIndex = pageIndex
-            }
-            if let langId = state?["langId"] as? String {
-                self.book.langId = langId
-            }
-            */
+            book.setCurrentPageIndex(prefs.getInt("pageIndex", book.currentPageIndex()));
+            book.setLangId(prefs.getString("langId", book.langId()));
         }
 
         prefetcher = new SwipePrefetcher();

@@ -36,13 +36,13 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         func stopSpeaking()
         */
         int currentPageIndex();
+        String langId();
         List<SwipeMarkdown.Element> parseMarkdown(Object markdowns);
         URL baseURL();
         URL map(URL url);
         URL makeFullURL(String url);
         /*
         func voice(k:String?) -> [String:AnyObject]
-        func languageIdentifier() -> String?
         func tapped()
         */
     }

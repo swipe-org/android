@@ -1,5 +1,6 @@
 package org.swipe.core;
 
+import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Point;
@@ -15,6 +16,7 @@ import android.view.MotionEvent;
 import android.view.TouchDelegate;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.LinearInterpolator;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
@@ -61,6 +63,7 @@ public class SwipeBook implements SwipePage.Delegate {
     public int viewHeightDIP = 0;
     public CGSize dimension = new CGSize(320, 568);
     private String orientation = "portrait";
+    private String langId = "en";
     public float scale = 1;
     private int pageIndex = 0;
     private Map<String, SwipePageTemplate> templatePages = new HashMap<>();
@@ -71,6 +74,16 @@ public class SwipeBook implements SwipePage.Delegate {
     public View getView() { return viewGroup; }
     public boolean viewstate() { return viewstate; }
     public String orientation() { return orientation; }
+    public void setLangId(String langId) { this.langId = langId; }
+
+    public boolean setCurrentPageIndex(int index) {
+        if (index < 0 || index >= pages.size()) {
+            return false;
+        }
+
+        pageIndex = index;
+        return true;
+    }
 
     private SwipePage currentPage() { return pages.get(pageIndex); }
 
@@ -141,7 +154,7 @@ public class SwipeBook implements SwipePage.Delegate {
             dimension = new CGSize(320, 568);
         }
 
-        if (dimension.height > dimension.width) {
+        if (dimension.height < dimension.width) {
             scale = scrHeight / dimension.height;
         } else {
             scale = scrWidth / dimension.width;
@@ -284,14 +297,25 @@ public class SwipeBook implements SwipePage.Delegate {
     }
 
     int accum = 0;
-    int actualDuration = 0;
     int skipCnt = 0;
+    int frameCnt = 0;
+    int frameOffset = -1;
 
     private void smoothScrollTo(final int position, final int toOffset, final long callTime) {
-        final int fps = 30;
+        final int fps = 60;
         final int kFrameMsec = 1000 / fps;
         final int ANI_MSEC = 200;
         final int ANI_FRAMES = ANI_MSEC / kFrameMsec;
+        if (frameOffset == -1) {
+            if (horizontal) {
+                SwipeHorizontalScrollView sv = (SwipeHorizontalScrollView) scrollView;
+                frameOffset = (toOffset - sv.getScrollX()) / ANI_FRAMES;
+            } else {
+                SwipeScrollView sv = (SwipeScrollView) scrollView;
+                frameOffset = (toOffset - sv.getScrollY()) / ANI_FRAMES;
+            }
+        }
+
         canSmoothScroll = true;
 
         scrollView.postDelayed(new Runnable() {
@@ -301,44 +325,59 @@ public class SwipeBook implements SwipePage.Delegate {
                 long startTime = SystemClock.elapsedRealtime();
                 long frameDuration = startTime - callTime;
                 accum += frameDuration - kFrameMsec;
-                actualDuration += frameDuration;
                 if (frameDuration > kFrameMsec) {
-                    Log.w(TAG, "frame duration delta:" + (frameDuration - kFrameMsec));
+                    //Log.w(TAG, "frame duration delta:" + (frameDuration - kFrameMsec));
                 }
+                frameCnt++;
                 boolean finished = false;
 
                 if (horizontal) {
                     SwipeHorizontalScrollView sv = (SwipeHorizontalScrollView) scrollView;
-                    int deltaOffset = (toOffset - sv.getScrollX()) / ANI_FRAMES;
+                    int deltaOffset = frameOffset;
 
                     if (accum >= kFrameMsec) {
-                        int frames = (int)(accum / kFrameMsec);
+                        int frames = Math.max(1, Math.min(ANI_FRAMES - frameCnt - skipCnt, (int)(accum / kFrameMsec)));
+                        //Log.d(TAG, "skipping frames " + frames);
                         skipCnt += frames;
                         accum -= kFrameMsec * frames;
                         deltaOffset *= 1 + frames;
-                        Log.w(TAG, "skipping frames:" + frames);
                     }
 
-                    if (pagePosition(sv.getScaleX() + deltaOffset, 0) != position) {
+                    if (deltaOffset == 0 || (int)pagePosition(sv.getScrollX() + deltaOffset, 0) != pageIndex) {
+                        Log.w(TAG, "skipped " + skipCnt + " frames of " + ANI_FRAMES);
+                        skipCnt = 0;
+                        frameCnt = 0;
+                        frameOffset = -1;
                         finished = true;
                     } else {
                         sv.scrollBy(deltaOffset, 0);
                     }
                 } else {
                     SwipeScrollView sv = (SwipeScrollView) scrollView;
-                    int deltaOffset = (toOffset - sv.getScrollY()) / ANI_FRAMES;
+                    int deltaOffset = frameOffset;
 
                     if (accum >= kFrameMsec) {
-                        int frames = (int)(accum / kFrameMsec);
+                        int frames = Math.max(1, Math.min(ANI_FRAMES - frameCnt - skipCnt, (int)(accum / kFrameMsec)));
+                        //Log.d(TAG, "skipping frames " + frames);
                         skipCnt += frames;
                         accum -= kFrameMsec * frames;
                         deltaOffset *= 1 + frames;
-                        Log.w(TAG, "skipping frames:" + frames);
                     }
 
-                    if (pagePosition(0, sv.getScaleY() + deltaOffset) != position) {
+                    //Log.d(TAG, "pos:" + position + " cur:" + pageIndex + " page:" + (int)pagePosition(0, sv.getScrollY()) + " delta:" + deltaOffset + " new:" + (int)pagePosition(0, sv.getScrollY() + deltaOffset));
+                    if (deltaOffset == 0 || (int)pagePosition(0, sv.getScrollY() + deltaOffset) != pageIndex) {
+                        Log.w(TAG, "skipped " + skipCnt + " frames of " + ANI_FRAMES);
+                        skipCnt = 0;
+                        frameCnt = 0;
+                        frameOffset = -1;
                         finished = true;
                     } else {
+                        /*
+                        ObjectAnimator ani = ObjectAnimator.ofInt(sv, "scrollY", sv.getScrollY() + deltaOffset);
+                        ani.setDuration(kFrameMsec);
+                        ani.setInterpolator(new LinearInterpolator());
+                        ani.start();
+                        */
                         sv.scrollBy(0, deltaOffset);
                     }
                 }
@@ -589,6 +628,17 @@ public class SwipeBook implements SwipePage.Delegate {
 
         currentPage().didEnter(fAdvancing || fForced);
 
+        getView().post(new Runnable() {
+            @Override
+            public void run() {
+                if (horizontal) {
+                    scrollView.scrollTo(pageIndex * viewWidthDIP, 0);
+                } else {
+                    scrollView.scrollTo(0, pageIndex * viewHeightDIP);
+                }
+            }
+        });
+
         return true;
     }
 
@@ -657,4 +707,9 @@ public class SwipeBook implements SwipePage.Delegate {
 
     @Override
     public int currentPageIndex() { return pageIndex; }
+
+    @Override
+    public String langId() {
+        return langId;
+    }
 }

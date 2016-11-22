@@ -42,7 +42,6 @@ public class SwipeTableBrowserView extends SwipeBrowserView {
     private TextView titleView = null;
     private ListView listView = null;
     private int rowHeight = -1;
-    private int selected = -1;
     private static final int SELECTED_COLOR = 0xffeeeeee;
 
     public SwipeTableBrowserView(Activity context) {
@@ -62,9 +61,9 @@ public class SwipeTableBrowserView extends SwipeBrowserView {
         addView(titleView, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, pixels));
 
         listView = new ListView(getContext());
-        addView(listView, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.MATCH_PARENT));
+        listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+        listView.setSelector(R.color.ltGray);
+        addView(listView, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
     }
 
     // Returns the list of URLs of required resources for this element (including children)
@@ -86,8 +85,8 @@ public class SwipeTableBrowserView extends SwipeBrowserView {
     }
 
     @Override
-    public void loadDocument(JSONObject _document, URL url) {
-        super.loadDocument(_document, url);
+    public void loadDocument(JSONObject _document, String urlStr, URL url) {
+        super.loadDocument(_document, urlStr, url);
 
         try {
             if (document.has("sections")) {
@@ -194,12 +193,6 @@ public class SwipeTableBrowserView extends SwipeBrowserView {
                 TextView tv = (TextView) view.findViewById(R.id.list_view_text);
                 tv.setMinHeight(rowHeight);
                 tv.setText(items.get(position).optString("title", urlStr));
-                // selection
-                if (position == selected) {
-                    view.setBackgroundColor(SELECTED_COLOR);
-                } else {
-                    view.setBackgroundColor(Color.TRANSPARENT);
-                }
                 return view;
             }
         };
@@ -209,12 +202,6 @@ public class SwipeTableBrowserView extends SwipeBrowserView {
         listView.setAdapter(adapter);
         listView.setOnItemClickListener(new ListView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
-                View prevSelected = listView.getChildAt(selected);
-                if (prevSelected != null) {
-                    prevSelected.setBackgroundColor(Color.TRANSPARENT);
-                }
-                selected = position;
-                v.setBackgroundColor(SELECTED_COLOR);
                 if (delegate != null) {
                     delegate.browseTo(items.get(position).optString("url"));
                 }
