@@ -1,22 +1,13 @@
 package org.swipe.core;
 
-import android.app.ProgressDialog;
 import android.content.Context;
-import android.graphics.BlurMaskFilter;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PathMeasure;
-import android.graphics.drawable.ShapeDrawable;
-import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.ViewOutlineProvider;
-import android.view.ViewParent;
-
-import org.json.JSONObject;
 
 /**
  * Created by pete on 10/21/16.

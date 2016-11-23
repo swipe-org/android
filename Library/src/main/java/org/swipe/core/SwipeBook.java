@@ -16,6 +16,7 @@ import android.view.MotionEvent;
 import android.view.TouchDelegate;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.view.animation.LinearInterpolator;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
@@ -89,16 +90,6 @@ public class SwipeBook implements SwipePage.Delegate {
 
     protected Context getContext() { return context; }
 
-    private void MyLog(String tag, String text) {
-        MyLog(tag, text, 0);
-    }
-
-    private void MyLog(String tag, String text, int level) {
-        if (level <= 10) {
-            Log.d(tag, text);
-        }
-    }
-
     private GestureDetector gestureDetector = null;
     private boolean didOverScroll = false;
     private boolean canSmoothScroll = true;
@@ -120,12 +111,12 @@ public class SwipeBook implements SwipePage.Delegate {
         }
 
         if (templateElements == null && bookInfo.has("elements")) {
-            MyLog(TAG, "DEPRECATED named elements; use 'templates'");
+            SwipeUtil.Log(TAG, "DEPRECATED named elements; use 'templates'");
             templateElements = bookInfo.optJSONObject("elements");
         }
 
         if (pageTemplates == null && bookInfo.has("scenes")) {
-            MyLog(TAG, "DEPRECATED scenes; use 'templates'");
+            SwipeUtil.Log(TAG, "DEPRECATED scenes; use 'templates'");
             pageTemplates = bookInfo.optJSONObject("scenes");
         }
 
@@ -231,11 +222,96 @@ public class SwipeBook implements SwipePage.Delegate {
         return horizontal ? offsetX / viewWidthDIP : offsetY / viewHeightDIP;
     }
 
+   private View.OnTouchListener svTouchListener = new View.OnTouchListener() {
+        MotionEvent downEvent = null;
+        int prevPosition = -1;
+
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            boolean didFling = gestureDetector.onTouchEvent(event);
+            boolean handled = false;
+
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    SwipeUtil.Log(TAG, "onTouch ACTION_DOWN", 2);
+                    didOverScroll = false;
+                    canSmoothScroll = false;
+                    downEvent = MotionEvent.obtain(event);
+                    SwipeObjectAnimator.resetInstrumentation();
+                    break;
+                case MotionEvent.ACTION_MOVE: {
+                    //SwipeUtil.Log(TAG, "onTouch ACTION_MOVE");
+                    break;
+                }
+                case MotionEvent.ACTION_UP: {
+                    SwipeUtil.Log(TAG, "onTouch ACTION_UP", 2);
+
+                    final int curPage = currentPageIndex();
+                    int distance;
+                    int pgSize;
+
+                    if (horizontal) {
+                        distance = (int) (downEvent.getX() - event.getX());
+                        pgSize = viewWidthDIP;
+                    } else {
+                        distance = (int) (downEvent.getY() - event.getY());
+                        pgSize = viewHeightDIP;
+                    }
+
+                    int offset = (int) (curPage * pgSize);  // stay on this page by default unless distance dragged is > 50% of page
+                    int pgOffset = 0;
+
+                    if (distance > 0 && (distance >= (pgSize / 2) || didFling) && curPage < pages.size() - 1) {
+                        // Scroll to next page
+                        pgOffset = 1;
+                    } else if (distance < 0 && (Math.abs(distance) >= (pgSize / 2) || didFling) && curPage > 0) {
+                        // Scroll to prev page
+                        pgOffset = -1;
+                    }
+
+                    final int position = curPage + pgOffset;
+
+                    if (prevPosition >= 0) {
+                        if (position != curPage) {
+                            SwipeUtil.Log(TAG, "scrolling from " + prevPosition + " to " + position, 2);
+                            final SwipePage prevPage = pages.get(prevPosition);
+                            prevPage.willLeave(fAdvancing);
+                            final SwipePage page = pages.get(position);
+                            fAdvancing = position > prevPosition;
+                            page.willEnter(fAdvancing);
+                        } else if (position == 0 && didOverScroll && distance < 0 && Math.abs(distance) >= (pgSize / 8)) {
+                            final SwipePage page = pages.get(position);
+                            SwipeUtil.Log(TAG, "overscrolling detected", 2);
+                            page.willLeave(false);
+                            page.willEnter(true);
+                            page.didEnter(true);
+                        }
+                    }
+
+                    offset += pgOffset * pgSize;
+                    smoothScrollTo(position, offset, SystemClock.elapsedRealtime());
+                    prevPosition = position;
+                    handled = true;
+                }
+                case MotionEvent.ACTION_CANCEL:
+                    SwipeUtil.Log(TAG, "onTouch ACTION_CANCEL", 2);
+                    break;
+                default:
+                    SwipeUtil.Log(TAG, "onTouch other: " + event.getAction() + " " + event.toString());
+                    break;
+            }
+
+            currentPage().getView().dispatchTouchEvent(event);
+            return handled;
+        }
+    };
+
     private void onMove() {
         syncScrollOffset();
 
         final float pos = scrollPos(); // int part is page number, fraction is offset into page (0.0 - 0.999)
         final int index = (int)pos;
+
         if (index >= 0) {
             final SwipePage pagePrev = pages.get(index);
             final View prevView = pagePrev.getView();
@@ -290,16 +366,18 @@ public class SwipeBook implements SwipePage.Delegate {
         }
 
         if (horizontal) {
-            scrollView.scrollTo(index * viewWidthDIP, 0);
+            scrollView.scrollTo(index * viewWidthDIP - 1, 0);
         } else {
-            scrollView.scrollTo(0, index * viewHeightDIP);
+            scrollView.scrollTo(0, index * viewHeightDIP - 1);
         }
+
+        SwipeObjectAnimator.printInstrumentation();
     }
 
-    int accum = 0;
-    int skipCnt = 0;
-    int frameCnt = 0;
-    int frameOffset = -1;
+    private int accum = 0;
+    private int skipCnt = 0;
+    private int frameCnt = 0;
+    private int frameOffset = -1;
 
     private void smoothScrollTo(final int position, final int toOffset, final long callTime) {
         final int fps = 60;
@@ -326,7 +404,7 @@ public class SwipeBook implements SwipePage.Delegate {
                 long frameDuration = startTime - callTime;
                 accum += frameDuration - kFrameMsec;
                 if (frameDuration > kFrameMsec) {
-                    //Log.w(TAG, "frame duration delta:" + (frameDuration - kFrameMsec));
+                    //SwipeUtil.Log(TAG, "frame duration delta:" + (frameDuration - kFrameMsec));
                 }
                 frameCnt++;
                 boolean finished = false;
@@ -337,14 +415,14 @@ public class SwipeBook implements SwipePage.Delegate {
 
                     if (accum >= kFrameMsec) {
                         int frames = Math.max(1, Math.min(ANI_FRAMES - frameCnt - skipCnt, (int)(accum / kFrameMsec)));
-                        //Log.d(TAG, "skipping frames " + frames);
+                        //SwipeUtil.Log(TAG, "skipping frames " + frames);
                         skipCnt += frames;
                         accum -= kFrameMsec * frames;
                         deltaOffset *= 1 + frames;
                     }
 
                     if (deltaOffset == 0 || (int)pagePosition(sv.getScrollX() + deltaOffset, 0) != pageIndex) {
-                        Log.w(TAG, "skipped " + skipCnt + " frames of " + ANI_FRAMES);
+                        SwipeUtil.Log(TAG, "skipped " + skipCnt + " frames of " + ANI_FRAMES);
                         skipCnt = 0;
                         frameCnt = 0;
                         frameOffset = -1;
@@ -358,26 +436,20 @@ public class SwipeBook implements SwipePage.Delegate {
 
                     if (accum >= kFrameMsec) {
                         int frames = Math.max(1, Math.min(ANI_FRAMES - frameCnt - skipCnt, (int)(accum / kFrameMsec)));
-                        //Log.d(TAG, "skipping frames " + frames);
+                        //SwipeUtil.Log(TAG, "skipping frames " + frames);
                         skipCnt += frames;
                         accum -= kFrameMsec * frames;
                         deltaOffset *= 1 + frames;
                     }
 
-                    //Log.d(TAG, "pos:" + position + " cur:" + pageIndex + " page:" + (int)pagePosition(0, sv.getScrollY()) + " delta:" + deltaOffset + " new:" + (int)pagePosition(0, sv.getScrollY() + deltaOffset));
                     if (deltaOffset == 0 || (int)pagePosition(0, sv.getScrollY() + deltaOffset) != pageIndex) {
-                        Log.w(TAG, "skipped " + skipCnt + " frames of " + ANI_FRAMES);
+                        SwipeUtil.Log(TAG, "skipped " + skipCnt + " frames of " + ANI_FRAMES);
                         skipCnt = 0;
                         frameCnt = 0;
                         frameOffset = -1;
                         finished = true;
                     } else {
-                        /*
-                        ObjectAnimator ani = ObjectAnimator.ofInt(sv, "scrollY", sv.getScrollY() + deltaOffset);
-                        ani.setDuration(kFrameMsec);
-                        ani.setInterpolator(new LinearInterpolator());
-                        ani.start();
-                        */
+
                         sv.scrollBy(0, deltaOffset);
                     }
                 }
@@ -448,9 +520,9 @@ public class SwipeBook implements SwipePage.Delegate {
 
         scrollView.setOnTouchListener(svTouchListener);
 
-        scrollView.setOnScrollChangeListener(new View.OnScrollChangeListener() {
+        scrollView.getViewTreeObserver().addOnScrollChangedListener(new ViewTreeObserver.OnScrollChangedListener() {
             @Override
-            public void onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
+            public void onScrollChanged() {
                 onMove();
             }
         });
@@ -490,96 +562,13 @@ public class SwipeBook implements SwipePage.Delegate {
         return viewGroup;
     }
 
-    private View.OnTouchListener svTouchListener = new View.OnTouchListener() {
-        MotionEvent downEvent = null;
-        int prevPosition = -1;
-
-        @Override
-        public boolean onTouch(View v, MotionEvent event) {
-            boolean didFling = gestureDetector.onTouchEvent(event);
-            boolean handled = false;
-
-            switch (event.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    Log.d(TAG, "onTouch ACTION_DOWN");
-                    didOverScroll = false;
-                    canSmoothScroll = false;
-                    downEvent = MotionEvent.obtain(event);
-                    break;
-                case MotionEvent.ACTION_MOVE: {
-                    //Log.d(TAG, "onTouch ACTION_MOVE");
-                    break;
-                }
-                case MotionEvent.ACTION_UP: {
-                    Log.d(TAG, "onTouch ACTION_UP");
-
-                    final int curPage = currentPageIndex();
-                    int distance;
-                    int pgSize;
-
-                    if (horizontal) {
-                        distance = (int) (downEvent.getX() - event.getX());
-                        pgSize = viewWidthDIP;
-                    } else {
-                        distance = (int) (downEvent.getY() - event.getY());
-                        pgSize = viewHeightDIP;
-                    }
-
-                    int offset = (int) (curPage * pgSize);  // stay on this page by default unless distance dragged is > 50% of page
-                    int pgOffset = 0;
-
-                    if (distance > 0 && (distance >= (pgSize / 2) || didFling) && curPage < pages.size() - 1) {
-                        // Scroll to next page
-                        pgOffset = 1;
-                    } else if (distance < 0 && (Math.abs(distance) >= (pgSize / 2) || didFling) && curPage > 0) {
-                        // Scroll to prev page
-                        pgOffset = -1;
-                    }
-
-                    final int position = curPage + pgOffset;
-
-                    if (prevPosition >= 0) {
-                        if (position != curPage) {
-                            MyLog(TAG, "scrolling from " + prevPosition + " to " + position, 2);
-                            final SwipePage prevPage = pages.get(prevPosition);
-                            prevPage.willLeave(fAdvancing);
-                            final SwipePage page = pages.get(position);
-                            fAdvancing = position > prevPosition;
-                            page.willEnter(fAdvancing);
-                        } else if (position == 0 && didOverScroll && distance < 0 && Math.abs(distance) >= (pgSize / 8)) {
-                            final SwipePage page = pages.get(position);
-                            MyLog(TAG, "overscrolling detected", 2);
-                            page.willLeave(false);
-                            page.willEnter(true);
-                            page.didEnter(true);
-                        }
-                    }
-
-                    offset += pgOffset * pgSize;
-                    smoothScrollTo(position, offset, SystemClock.elapsedRealtime());
-                    prevPosition = position;
-                    handled = true;
-                }
-                case MotionEvent.ACTION_CANCEL:
-                    Log.d(TAG, "onTouch ACTION_CANCEL");
-                    break;
-                default:
-                    Log.d(TAG, "onTouch other: " + event.getAction() + " " + event.toString());
-                    break;
-            }
-
-            currentPage().getView().dispatchTouchEvent(event);
-            return handled;
-        }
-    };
-
     private boolean adjustIndex(int newPageIndex) {
         return adjustIndex(newPageIndex, false);
     }
 
     private boolean adjustIndex(int newPageIndex, boolean fForced) {
         if (pages.size() == 0) {
-            Log.d(TAG, "adjustIndex ### No Pages");
+            SwipeUtil.Log(TAG, "adjustIndex ### No Pages");
             return false;
         }
 
@@ -593,7 +582,7 @@ public class SwipeBook implements SwipePage.Delegate {
             pagePrev.didLeave(newPageIndex < pageIndex);
         }
 
-        MyLog(TAG, "adjustIndex " + pageIndex, 2);
+        SwipeUtil.Log(TAG, "adjustIndex " + pageIndex, 2);
         pageIndex = newPageIndex;
 
         for (int i = Math.max(0, pageIndex - 1); i < Math.min(pages.size(), pageIndex + 2); i++) {
@@ -647,7 +636,7 @@ public class SwipeBook implements SwipePage.Delegate {
     private void setActivePage(SwipePage page) {
 
         if (pageTemplateActive != page.getPageTemplate()) {
-            MyLog(TAG, "setActive " + pageTemplateActive + " " + page.getPageTemplate(), 1);
+            SwipeUtil.Log(TAG, "setActive " + pageTemplateActive + " " + page.getPageTemplate(), 1);
             if (pageTemplateActive != null) {
                 pageTemplateActive.didLeave();
             }

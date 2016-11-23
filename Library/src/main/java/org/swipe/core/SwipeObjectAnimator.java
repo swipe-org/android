@@ -1,6 +1,7 @@
 package org.swipe.core;
 
 import android.animation.ObjectAnimator;
+import android.util.Log;
 import android.view.animation.LinearInterpolator;
 
 /**
@@ -35,37 +36,65 @@ public class SwipeObjectAnimator {
         ani.setDuration((long)(duration * DURATION_MSEC));
     }
 
+    public static class Instrumentation {
+        long setFractionCnt = 0;
+        long resetCnt = 0;
+    }
+
+    private static Instrumentation instrumentation = new Instrumentation();
+
+    public static Instrumentation getInstrumentation() { return instrumentation; }
+    public static Instrumentation resetInstrumentation() {
+        Instrumentation prev = instrumentation;
+        instrumentation = new Instrumentation();
+        return prev;
+    }
+
+    public static void printInstrumentation() {
+        StringBuilder builder = new StringBuilder();
+        builder.append("\n\n");
+        builder.append(String.format("INST set:%4d reset:%4d", instrumentation.setFractionCnt, instrumentation.resetCnt));
+        builder.append("\n\n");
+        SwipeUtil.Log(TAG, builder.toString());
+    }
+
+    private void ani_setCurrentFraction(float fraction) {
+        instrumentation.setFractionCnt++;
+        ani.setCurrentPlayTime((long) (ani.getDuration() * fraction));
+    }
+
     public void reset(boolean fForward) {
         forward = fForward;
         ended = false;
-        ani.setCurrentFraction(forward ? 0 : 1);
+        instrumentation.resetCnt++;
+        ani.setCurrentPlayTime(forward ? 0 : ani.getDuration());
     }
 
     public void setCurrentFraction(float overallOffset) {
         if (overallOffset >= start && overallOffset < start + duration) {
-            ani.setCurrentFraction((float) ((overallOffset - start) / duration));
+            ani_setCurrentFraction((float) ((overallOffset - start) / duration));
         } else if (overallOffset == 0) {
             if (!ended) {
-                ani.setCurrentFraction(0);
+                ani_setCurrentFraction(0);
                 if (!forward) {
                     ended = true;
                 }
             }
         } else if (!forward && overallOffset < start) {
             if (!ended) {
-                ani.setCurrentFraction(0);
+                ani_setCurrentFraction(0);
                 ended = true;
             }
         } else if (overallOffset == 1) {
             if (!ended) {
-                ani.setCurrentFraction(1);
+                ani_setCurrentFraction(1);
                 if (forward) {
                     ended = true;
                 }
             }
         } else if (forward && overallOffset >+ start + duration) {
             if (!ended) {
-                ani.setCurrentFraction(1);
+                ani_setCurrentFraction(1);
                 ended = true;
             }
         }

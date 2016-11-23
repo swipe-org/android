@@ -78,8 +78,10 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     private boolean fPausing = false;
     private Float offsetPaused = null;
     private MediaPlayer audioPlayer = null;
-    private boolean fPrepared = false;
-    private boolean fStartWhenPrepared = false;
+    private boolean fAudioSeeking = false;
+    private boolean fAudioPrepared = false;
+    private boolean fAudioStartWhenPrepared = false;
+    private boolean fAudioStartWhenSeeked = false;
 
     SwipePage(Context _context, CGSize _dimension, CGSize _scrDimension, CGSize _scale, int _index, JSONObject _info, SwipePage.Delegate _delegate) {
         super(_context, _dimension, _scrDimension, _scale, _info, /* parent */ null);
@@ -90,7 +92,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         if (pageTemplate == null) {
             pageTemplate = delegate.pageTemplateWith(info.optString("scene"));
             if (pageTemplate != null) {
-                Log.w(TAG, "DEPRECATED 'scene'; use 'template'");
+                SwipeUtil.Log(TAG, "DEPRECATED 'scene'; use 'template'");
             }
         }
 
@@ -105,13 +107,13 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         viewGroup = new ViewGroup(getContext()) {
             @Override
             protected void onLayout(boolean changed, int l, int t, int r, int b) {
-                //Log.d(TAG, "onLayout");
+                //SwipeUtil.Log(TAG, "onLayout");
                 setClipChildren(false);
 
                 for (int c = 0; c < this.getChildCount(); c++) {
                     View v = this.getChildAt(c);
                     ViewGroup.LayoutParams lp = v.getLayoutParams();
-                    //Log.d(TAG, "layout " + c + " w:" + lp.width + " h:" + lp.height);
+                    //SwipeUtil.Log(TAG, "layout " + c + " w:" + lp.width + " h:" + lp.height);
                     v.layout(0, 0, lp.width, lp.height);
                 }
             }
@@ -127,7 +129,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     @Override
     ViewGroup loadView() {
         super.loadView();
-        MyLog(TAG, "loadView " + index, 2);
+        SwipeUtil.Log(TAG, "loadView " + index, 2);
         int bc = SwipeParser.parseColor(info, "bc", Color.WHITE);
         viewGroup.setBackgroundColor(bc);
 
@@ -139,7 +141,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
 
         String oldAnimation = info.optString("animation", null);
         if (oldAnimation != null) {
-            Log.w(TAG, "DEPRECATED 'animation'; use 'play'");
+            SwipeUtil.Log(TAG, "DEPRECATED 'animation'; use 'play'");
             animation = oldAnimation;
         } else {
             animation = info.optString("play", animation);
@@ -161,7 +163,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
             URL urlRaw = delegate.makeFullURL(value);
             URL url = delegate.map(urlRaw);
             if (url != null) {
-                Log.d(TAG, "audio=" + value);
+                SwipeUtil.Log(TAG, "audio=" + value);
                 try {
                     FileDescriptor fd = SwipeAssetManager.sharedInstance().loadLocalAsset(url).getFD();
                     if (fd != null) {
@@ -171,13 +173,33 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
                             audioPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
                                 @Override
                                 public void onPrepared(MediaPlayer mp) {
-                                    fPrepared = true;
-                                    if (fStartWhenPrepared) {
-                                        fStartWhenPrepared = false;
+                                    fAudioPrepared = true;
+                                    if (fAudioStartWhenPrepared) {
+                                        fAudioStartWhenPrepared = false;
                                         audioPlayer.start();
                                     }
                                 }
                             });
+                            audioPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                                @Override
+                                public void onCompletion(MediaPlayer mp) {
+                                    if (audioPlayer.getCurrentPosition() != 0) {
+                                        fAudioSeeking = true;
+                                        audioPlayer.seekTo(0);
+                                    }
+                                }
+                            });
+                            audioPlayer.setOnSeekCompleteListener(new MediaPlayer.OnSeekCompleteListener() {
+                                @Override
+                                public void onSeekComplete(MediaPlayer mp) {
+                                    fAudioSeeking = false;
+                                    if (fAudioStartWhenSeeked) {
+                                        fAudioStartWhenSeeked = false;
+                                        audioPlayer.start();
+                                    }
+                                }
+                            });
+
                             audioPlayer.prepareAsync();
                         } catch (IOException e) {
                             audioPlayer = null;
@@ -212,7 +234,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         }
     }
     void willLeave(boolean fAdvancing) {
-        MyLog(TAG, "willLeave " + (index) + " " + fAdvancing, 2);
+        SwipeUtil.Log(TAG, "willLeave " + (index) + " " + fAdvancing, 2);
         /* TODO
         if let _ = self.utterance {
             delegate.stopSpeaking()
@@ -222,12 +244,14 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     }
 
     void pause(boolean fForceRewind) {
-        MyLog(TAG, "pause " + (index) + " " + fForceRewind, 2);
+        SwipeUtil.Log(TAG, "pause " + (index) + " " + fForceRewind, 2);
 
         fPausing = true;
 
         if (audioPlayer != null) {
-            audioPlayer.stop();
+            audioPlayer.pause();
+            fAudioSeeking = true;
+            audioPlayer.seekTo(0);
         }
 
         NotificationCenter.defaultCenter().postNotification(SwipePage.shouldPauseAutoPlay);
@@ -239,13 +263,13 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     }
 
     void didLeave(boolean fGoingBack) {
-        MyLog(TAG, "didLeave " + (index) + " " + fGoingBack, 2);
+        SwipeUtil.Log(TAG, "didLeave " + (index) + " " + fGoingBack, 2);
         fEntered = false;
         pause(fGoingBack);
     }
 
     void willEnter(boolean fForward) {
-        MyLog(TAG, "willEnter " + index + " " + fForward, 2);
+        SwipeUtil.Log(TAG, "willEnter " + index + " " + fForward, 2);
         if (autoplay && fForward || always) {
             prepareToPlay(true);
         }
@@ -256,11 +280,14 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
 
     private void playAudio() {
         if (audioPlayer != null) {
-            audioPlayer.seekTo(0);
-            if (fPrepared) {
-                audioPlayer.start();
+            if (fAudioPrepared) {
+                if (fAudioSeeking) {
+                    fAudioStartWhenSeeked = true;
+                } else {
+                    audioPlayer.start();
+                }
             } else {
-                fStartWhenPrepared = true;
+                fAudioStartWhenPrepared = true;
             }
         }
         /* TODO
@@ -274,7 +301,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     }
 
     void didEnter(boolean fForward) {
-        MyLog(TAG, "didEnter " + index + " " + fForward, 2);
+        SwipeUtil.Log(TAG, "didEnter " + index + " " + fForward, 2);
         fEntered = true;
         if ((fForward && autoplay) || always || fRepeat) {
             autoPlay(false);
@@ -284,7 +311,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     }
 
     void prepare() {
-        MyLog(TAG, "prepare " + (index), 2);
+        SwipeUtil.Log(TAG, "prepare " + (index), 2);
 
         for (SwipeNode c : children) {
             if (c instanceof SwipeElement) {
@@ -312,7 +339,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     }
 
     private void prepareToPlay(boolean fForward) {
-        MyLog(TAG, "prepareToPlay " + (index) + " " + fForward, 2);
+        SwipeUtil.Log(TAG, "prepareToPlay " + (index) + " " + fForward, 2);
 
         for (SwipeNode c : children) {
             if (c instanceof SwipeElement) {
@@ -336,12 +363,15 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     }
 
     private void autoPlay(boolean fElementRepeat) {
-        MyLog(TAG, "autoplay " + fElementRepeat, 2);
+        SwipeUtil.Log(TAG, "autoplay " + fElementRepeat, 2);
         fPausing = false;
         if (!fElementRepeat) {
             playAudio();
             NotificationCenter.defaultCenter().postNotification(SwipePage.shouldStartAutoPlay);
         }
+
+        SwipeObjectAnimator.resetInstrumentation();
+
         if (offsetPaused != null) {
             timerTick(offsetPaused.floatValue(), fElementRepeat, SystemClock.elapsedRealtime());
         } else {
@@ -367,7 +397,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
                 accum += frameDuration - kFrameMsec;
                 actualDuration += frameDuration;
                 if (frameDuration > kFrameMsec) {
-                    //Log.w(TAG, "frame duration delta:" + (frameDuration - kFrameMsec));
+                    //SwipeUtil.Log(TAG, "frame duration delta:" + (frameDuration - kFrameMsec));
                 }
                 boolean fElementRepeatNext = fElementRepeat;
                 Float offsetForNextTick = null;
@@ -402,7 +432,8 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
                 if (offsetForNextTick != null) {
                     timerTick(offsetForNextTick, fElementRepeatNext, startTime);
                 } else {
-                    Log.d(TAG, "duration:" + (int)(duration * 1000) + " actual:" + actualDuration + " skipped:" + skipCnt + " frames");
+                    SwipeUtil.Log(TAG, "skipped:" + skipCnt + " frames");
+                    SwipeObjectAnimator.printInstrumentation();
                     actualDuration = 0;
                     accum = 0;
                     skipCnt = 0;
@@ -416,7 +447,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     private void didStartPlayingInternal() {
         cPlaying += 1;
         if (cPlaying == 1) {
-            MyLog(TAG, "didStartPlaying " + index, 5);
+            SwipeUtil.Log(TAG, "didStartPlaying " + index, 5);
             NotificationCenter.defaultCenter().postNotification(SwipePage.didStartPlaying);
         }
     }
@@ -535,7 +566,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     public void onAction(SwipeElement element) {
         String action = element.getAction();
         if (action != null) {
-            MyLog(TAG, "onAction " + action, 2);
+            SwipeUtil.Log(TAG, "onAction " + action, 2);
             if (action.equals("play")) {
                 //prepareToPlay()
                 //autoPlay()

@@ -16,16 +16,6 @@ public class SwipeNode {
     JSONObject info = null;
     List<SwipeNode> children = new ArrayList<>();
 
-    void MyLog(String tag, String text) {
-        MyLog(tag, text, 0);
-    }
-
-    void MyLog(String tag, String text, int level) {
-        if (level <= 4) {
-            Log.d(tag, text);
-        }
-    }
-
     SwipeNode(JSONObject _info, SwipeNode _parent) {
         info = _info;
         parent = _parent;

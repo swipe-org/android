@@ -122,7 +122,7 @@ public class SwipeElement extends SwipeView {
         if (template == null) {
             template = info.optString("element", null);
             if (template != null) {
-                MyLog(TAG, "DEPRECATED element; use 'template'");
+                SwipeUtil.Log(TAG, "DEPRECATED element; use 'template'");
             }
         }
 
@@ -186,13 +186,13 @@ public class SwipeElement extends SwipeView {
 
             @Override
             protected void onLayout(boolean changed, int l, int t, int r, int b) {
-                //Log.d(TAG, "onLayout");
+                //SwipeUtil.Log(TAG, "onLayout");
                 for (int c = 0; c < this.getChildCount(); c++) {
                     View v = this.getChildAt(c);
                     ViewGroup.LayoutParams lp = v.getLayoutParams();
                     v.measure(View.MeasureSpec.makeMeasureSpec(lp.width, MeasureSpec.EXACTLY),
                             View.MeasureSpec.makeMeasureSpec(lp.height, MeasureSpec.EXACTLY));
-                    //Log.d(TAG, "layout " + c + " w:" + lp.width + " h:" + lp.height + " mw:" + v.getMeasuredWidth() + " mh:" + v.getMeasuredHeight());
+                    //SwipeUtil.Log(TAG, "layout " + c + " w:" + lp.width + " h:" + lp.height + " mw:" + v.getMeasuredWidth() + " mh:" + v.getMeasuredHeight());
                     v.layout(0, 0, lp.width, lp.height);
                 }
             }
@@ -209,7 +209,7 @@ public class SwipeElement extends SwipeView {
     ViewGroup loadView() {
         super.loadView();
         String id = info.optString("id");
-        Log.d(TAG, "id: " + id);
+        SwipeUtil.Log(TAG, "id: " + id, 2);
 
         setTimeOffsetTo(0);
 
@@ -269,7 +269,7 @@ public class SwipeElement extends SwipeView {
                         stream.close();
                     }
                 } catch (OutOfMemoryError e) {
-                    Log.e(TAG, "Out of memory " + url + " " + e);
+                    SwipeUtil.Log(TAG, "Out of memory " + url + " " + e);
                     Toast.makeText(getContext(), "Out of memory.  Use smaller image " + SwipeUtil.fileName(imageUrl.toString()), Toast.LENGTH_LONG).show();
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -291,7 +291,7 @@ public class SwipeElement extends SwipeView {
                         maskBitmap = BitmapFactory.decodeStream(stream);
                         stream.close();
                     } catch (OutOfMemoryError e) {
-                        Log.e(TAG, "Out of memory " + url + " " + e);
+                        SwipeUtil.Log(TAG, "Out of memory " + url + " " + e);
                         Toast.makeText(getContext(), "Out of memory.  Use smaller image " + SwipeUtil.fileName(localUrl.toString()), Toast.LENGTH_LONG).show();
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -429,7 +429,7 @@ public class SwipeElement extends SwipeView {
             btn.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    MyLog(TAG, "buttonPressed", 1);
+                    SwipeUtil.Log(TAG, "buttonPressed", 1);
                     viewGroup.setAlpha(0);
                     delegate.onAction(SwipeElement.this);
                 }
@@ -439,11 +439,11 @@ public class SwipeElement extends SwipeView {
                 public boolean onTouch(View v, MotionEvent event) {
                     switch (event.getAction()) {
                         case MotionEvent.ACTION_DOWN:
-                            MyLog(TAG, "touchDown", 1);
+                            SwipeUtil.Log(TAG, "touchDown", 1);
                             viewGroup.setAlpha(0.5f);
                             break;
                         case MotionEvent.ACTION_UP:
-                            MyLog(TAG, "touchUp", 1);
+                            SwipeUtil.Log(TAG, "touchUp", 1);
                             viewGroup.setAlpha(1);
                             break;
                     }
@@ -506,11 +506,11 @@ public class SwipeElement extends SwipeView {
                 ViewGroup hostLayer = new ViewGroup(getContext()) {
                     @Override
                     protected void onLayout(boolean changed, int l, int t, int r, int b) {
-                        //Log.d(TAG, "onLayout");
+                        //SwipeUtil.Log(TAG, "onLayout");
                         for (int c = 0; c < this.getChildCount(); c++) {
                             View v = this.getChildAt(c);
                             ViewGroup.LayoutParams lp = v.getLayoutParams();
-                            //Log.d(TAG, "layout " + c + " w:" + lp.width + " h:" + lp.height);
+                            //SwipeUtil.Log(TAG, "layout " + c + " w:" + lp.width + " h:" + lp.height);
                             v.layout(0, 0, lp.width, lp.height);
                         }
                     }
@@ -608,11 +608,11 @@ public class SwipeElement extends SwipeView {
                 ViewGroup hostLayer = new ViewGroup(getContext()) {
                     @Override
                     protected void onLayout(boolean changed, int l, int t, int r, int b) {
-                        //Log.d(TAG, "onLayout");
+                        //SwipeUtil.Log(TAG, "onLayout");
                         for (int c = 0; c < this.getChildCount(); c++) {
                             View v = this.getChildAt(c);
                             ViewGroup.LayoutParams lp = v.getLayoutParams();
-                            //Log.d(TAG, "layout " + c + " w:" + lp.width + " h:" + lp.height);
+                            //SwipeUtil.Log(TAG, "layout " + c + " w:" + lp.width + " h:" + lp.height);
                             v.layout(0, 0, lp.width, lp.height);
                         }
                     }
@@ -657,7 +657,7 @@ public class SwipeElement extends SwipeView {
                     for (int c = 0; c < this.getChildCount(); c++) {
                         View v = this.getChildAt(c);
                         ViewGroup.LayoutParams lp = v.getLayoutParams();
-                        //Log.d(TAG, "layout " + c + " w:" + lp.width + " h:" + lp.height);
+                        //SwipeUtil.Log(TAG, "layout " + c + " w:" + lp.width + " h:" + lp.height);
                         v.layout(0, 0, lp.width, lp.height);
                     }
                 }
@@ -724,7 +724,7 @@ public class SwipeElement extends SwipeView {
             videoPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
                 @Override
                 public boolean onError(MediaPlayer mp, int what, int extra) {
-                    Log.e(TAG, "onError what:" + what + " extra:" + extra);
+                    SwipeUtil.Log(TAG, "onError what:" + what + " extra:" + extra);
                     return true;
                 }
             });
@@ -732,10 +732,10 @@ public class SwipeElement extends SwipeView {
             videoPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
                 @Override
                 public void onPrepared(MediaPlayer mp) {
-                    MyLog(TAG, "prepared w:" + mp.getVideoWidth() + " h:" + mp.getVideoHeight());
+                    SwipeUtil.Log(TAG, "prepared w:" + mp.getVideoWidth() + " h:" + mp.getVideoHeight());
                     videoPlayer.measure(View.MeasureSpec.makeMeasureSpec(dipW, View.MeasureSpec.AT_MOST),
                             View.MeasureSpec.makeMeasureSpec(dipH, View.MeasureSpec.AT_MOST));
-                    MyLog(TAG, "vp mw:" + videoPlayer.getWidth() + " mh:" + videoPlayer.getHeight());
+                    SwipeUtil.Log(TAG, "vp mw:" + videoPlayer.getWidth() + " mh:" + videoPlayer.getHeight());
                     fReady = true;
                 }
             });
@@ -743,7 +743,7 @@ public class SwipeElement extends SwipeView {
             videoPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                 @Override
                 public void onCompletion(MediaPlayer mp) {
-                    MyLog(TAG, "play to end!", 1);
+                    SwipeUtil.Log(TAG, "play to end!", 1);
                     if (delegate != null && delegate.shouldRepeat(SwipeElement.this)) {
                         videoPlayer.seekTo(0);
                         videoPlayer.start();
@@ -785,7 +785,7 @@ public class SwipeElement extends SwipeView {
                 @Override
                 public void run() {
                     if (fPlaying) {
-                        MyLog(TAG, "shouldPauseAutoPlay", 2);
+                        SwipeUtil.Log(TAG, "shouldPauseAutoPlay", 2);
                         fPlaying = false;
                         delegate.didFinishPlaying(SwipeElement.this, false);
                         videoPlayer.pause();
@@ -796,7 +796,7 @@ public class SwipeElement extends SwipeView {
                 @Override
                 public void run() {
                     if (!fPlaying && delegate.isCurrentPage()) {
-                        MyLog(TAG, "shouldStartAutoPlay", 2);
+                        SwipeUtil.Log(TAG, "shouldStartAutoPlay", 2);
                         fPlaying = true;
                         delegate.didStartPlaying(SwipeElement.this);
                         if (fNeedRewind) {
@@ -883,6 +883,9 @@ public class SwipeElement extends SwipeView {
         } else {
             viewGroup.setAlpha(opacity);
         }
+
+        final int aniCnt = animations.size();
+        boolean aniAlpha = false;
 
         JSONObject to = info.optJSONObject("to");
         if (to != null) {
@@ -1024,6 +1027,7 @@ public class SwipeElement extends SwipeView {
                 }
                 ObjectAnimator ani = ObjectAnimator.ofFloat(obj, "alpha",  dopt.floatValue());
                 animations.add(new SwipeObjectAnimator(ani, start, duration));
+                aniAlpha = true;
             }
 
             if (to.has("bc")) {
@@ -1265,6 +1269,7 @@ public class SwipeElement extends SwipeView {
                             ObjectAnimator ani = ObjectAnimator.ofFloat(loopLayer, "alpha", 1, 0, 1);
                             animations.add(new SwipeObjectAnimator(ani, start + (r * repeatInterval), repeatInterval));
                         }
+                        aniAlpha = true;
                         break;
                     }
                     case "wiggle": {
@@ -1324,6 +1329,14 @@ public class SwipeElement extends SwipeView {
 
                         break;
                 }
+            }
+        }
+
+
+        if (aniCnt != animations.size() && !aniAlpha) {
+            // animating.  optimize
+            if (imageLayer != null) {
+                imageLayer.setLayerType(View.LAYER_TYPE_HARDWARE, null);
             }
         }
 
@@ -1402,10 +1415,10 @@ public class SwipeElement extends SwipeView {
         if ((!fRepeat && !fResetForRepeat) || (fRepeat)) {
             for (SwipeObjectAnimator ani : animations) {
                 ani.setCurrentFraction(offset);
-                MyLog(TAG, "ani.setCurrentFraction("+offset+")", 10);
+                SwipeUtil.Log(TAG, "ani.setCurrentFraction("+offset+")", 10);
             }
         } else {
-            //MyLog(TAG, "ani.setCurrentFraction("+offset+") SKIPPED", 1);
+            //SwipeUtil.Log(TAG, "ani.setCurrentFraction("+offset+") SKIPPED", 1);
         }
 
         for (SwipeNode c : children) {
@@ -1415,7 +1428,7 @@ public class SwipeElement extends SwipeView {
             }
         }
 
-        viewGroup.invalidate();
+        //viewGroup.invalidate();
 
         if (videoPlayer != null) {
             if (fAutoPlay) {
@@ -1428,7 +1441,7 @@ public class SwipeElement extends SwipeView {
 
             if (fReady) {
                 int timeMsec = (int)((videoStart + offset * videoDuration) * 1000);
-                Log.d(TAG, "seekTo: " + timeMsec + " of " + (int)(videoDuration * 1000));
+                SwipeUtil.Log(TAG, "seekTo: " + timeMsec + " of " + (int)(videoDuration * 1000));
                 videoPlayer.seekTo(timeMsec);
                 videoPlayer.invalidate();
                 /* TODO
@@ -1544,7 +1557,7 @@ public class SwipeElement extends SwipeView {
                 if (src != null) {
                     URL url = delegate.makeFullURL(src);
                     if (info.optBoolean("stream")) {
-                        MyLog(TAG, "no need to cache streaming video " + url, 5);
+                        SwipeUtil.Log(TAG, "no need to cache streaming video " + url, 5);
                     } else {
                         resourceURLs.add(url);
                     }
