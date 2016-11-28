@@ -1,6 +1,6 @@
 {
     "elements": {
-        "ball": { "text":"😄", "fontSize":44 },
+        "ball": { "text":"😄", "fontSize":44 }
     },
     "pages": [
         {
@@ -17,7 +17,7 @@
                 { "text":"wiggle", "textAlign":"left", "y":50 },
                 { "element":"ball", "y":100, "loop":{ "style":"wiggle" } },
                 { "text":"spin", "textAlign":"left", "y":150 },
-                { "element":"ball", "y":200, "loop":{ "style":"spin" } },
+                { "element":"ball", "y":200, "loop":{ "style":"spin" } }
             ]
         },
         {
@@ -32,7 +32,7 @@
                 { "text":"\"count\":2", "textAlign":"left", "y":-50 },
                 { "element":"ball", "y":0, "loop":{ "style":"vibrate", "count":2 } },
                 { "text":"\"count\":4", "textAlign":"left", "y":50 },
-                { "element":"ball", "y":100, "loop":{ "style":"vibrate", "count":4 } },
+                { "element":"ball", "y":100, "loop":{ "style":"vibrate", "count":4 } }
             ]
         },
         {
@@ -47,7 +47,7 @@
                 { "text":"\"delta\":20", "textAlign":"left", "y":-50 },
                 { "element":"ball", "y":0, "loop":{ "style":"vibrate", "delta":20 } },
                 { "text":"\"delta\":40", "textAlign":"left", "y":50 },
-                { "element":"ball", "y":100, "loop":{ "style":"vibrate", "delta":40 } },
+                { "element":"ball", "y":100, "loop":{ "style":"vibrate", "delta":40 } }
             ]
         },
         {
@@ -62,7 +62,7 @@
                 { "text":"\"delta\":30", "textAlign":"left", "y":-50 },
                 { "element":"ball", "y":0, "loop":{ "style":"wiggle", "delta":30 } },
                 { "text":"\"delta\":60", "textAlign":"left", "y":50 },
-                { "element":"ball", "y":100, "loop":{ "style":"wiggle", "delta":60 } },
+                { "element":"ball", "y":100, "loop":{ "style":"wiggle", "delta":60 } }
             ]
         },
         {
@@ -75,8 +75,8 @@
                 { "text":"\"clockwise\":true (default)", "textAlign":"left", "y":-50 },
                 { "element":"ball", "y":0, "loop":{ "style":"spin" } },
                 { "text":"\"clockwise\":false", "textAlign":"left", "y":50 },
-                { "element":"ball", "y":100, "loop":{ "style":"spin", "clockwise":false } },
+                { "element":"ball", "y":100, "loop":{ "style":"spin", "clockwise":false } }
             ]
-        },
+        }
     ]
 }

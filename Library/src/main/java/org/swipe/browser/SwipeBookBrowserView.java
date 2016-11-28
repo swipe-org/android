@@ -2,17 +2,11 @@ package org.swipe.browser;
 
 import android.app.Activity;
 import android.graphics.Color;
-import android.graphics.RectF;
 import android.util.DisplayMetrics;
-import android.util.Log;
-import android.util.TypedValue;
-import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.RelativeLayout;
 
 import org.json.JSONObject;
-import org.swipe.core.CGSize;
 import org.swipe.core.SwipeBook;
 import org.swipe.network.SwipePrefetcher;
 
@@ -68,17 +62,8 @@ public class SwipeBookBrowserView extends SwipeBrowserView implements SwipeBook.
             fwidth = fheight;
             fheight = temp;
         }
-        Log.d(TAG, "display w=" + fwidth + " h=" + fheight);
 
         book = new SwipeBook(getContext(), fwidth, fheight, document, baseURL, this);
-
-        /* TODO
-        if let languages = self.book.languages(),
-                language = languages.first,
-                langId = language["id"] as? String {
-            self.book.langId = langId
-        }
-        */
 
         if (book.viewstate()) {
             book.setCurrentPageIndex(prefs.getInt("pageIndex", book.currentPageIndex()));

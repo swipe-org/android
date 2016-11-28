@@ -55,10 +55,8 @@ public class SwipeElement extends SwipeView {
 
     interface Delegate {
         double durationSec();
-        JSONObject prototypeWith(String name);
-        /* TODO
-        func pathWith(name:String?) -> AnyObject?
-        */
+        JSONObject prototypeWithName(String name);
+        Object pathWithName(String name);
         void onAction(SwipeElement element);
         boolean shouldRepeat(SwipeElement element);
         void didStartPlaying(SwipeElement element);
@@ -72,7 +70,7 @@ public class SwipeElement extends SwipeView {
         */
         boolean isCurrentPage();
         String localizedStringForKey(String key);
-        String languageIdentifier();
+        String langId();
     }
 
     private static final String TAG = "SwElem";
@@ -126,7 +124,7 @@ public class SwipeElement extends SwipeView {
             }
         }
 
-        super.info = SwipeParser.inheritProperties(info, delegate.prototypeWith(template));
+        super.info = SwipeParser.inheritProperties(info, delegate.prototypeWithName(template));
     }
 
 
@@ -1496,9 +1494,9 @@ public class SwipeElement extends SwipeView {
         }
         Object shape0 = shape;
         if (shape0 instanceof JSONObject) {
-            String key = ((JSONObject) shape0).optString("ref");
-            if (!key.isEmpty()) {
-                // TODO shape0 = delegate.pathWith(key)
+            String name = ((JSONObject) shape0).optString("ref");
+            if (!name.isEmpty()) {
+                shape0 = delegate.pathWithName(name);
             }
         }
 
@@ -1543,7 +1541,7 @@ public class SwipeElement extends SwipeView {
             }
         }
 
-        return SwipeParser.localizedString(params, delegate.languageIdentifier());
+        return SwipeParser.localizedString(params, delegate.langId());
     }
 
     @Override

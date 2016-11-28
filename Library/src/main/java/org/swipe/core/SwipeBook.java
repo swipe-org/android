@@ -70,6 +70,9 @@ public class SwipeBook implements SwipePage.Delegate {
     private Map<String, SwipePageTemplate> templatePages = new HashMap<>();
     private JSONObject templateElements = null;
     private JSONObject templates = null;
+    private JSONObject paths = null;
+    private JSONObject voices = null;
+    private JSONArray languages = null;
     private SwipeMarkdown markdown = null;
 
     public View getView() { return viewGroup; }
@@ -103,6 +106,15 @@ public class SwipeBook implements SwipePage.Delegate {
         paging = bookInfo.optString("paging", paging);
         horizontal = paging.equals("leftToRight");
         orientation = bookInfo.optString("orientation", orientation);
+        paths = bookInfo.optJSONObject("paths");
+        voices = bookInfo.optJSONObject("voices");
+
+        languages = bookInfo.optJSONArray("languages");
+        if (languages != null && languages.length() > 0) {
+            JSONObject language = languages.optJSONObject(0);
+            langId = language.optString("id", langId);
+        }
+
         templates = bookInfo.optJSONObject("templates");
         JSONObject pageTemplates = null;
         if (templates != null) {
@@ -665,8 +677,10 @@ public class SwipeBook implements SwipePage.Delegate {
         }
     }
 
+    public JSONArray getLanguages() { return languages; }
+
     @Override
-    public SwipePageTemplate pageTemplateWith(String name) {
+    public SwipePageTemplate pageTemplateWithName(String name) {
         String key = name == null || name.isEmpty() ? "*" : name;
         if (key == null) {
             return null;
@@ -676,7 +690,7 @@ public class SwipeBook implements SwipePage.Delegate {
     }
 
     @Override
-    public JSONObject prototypeWith(String name) {
+    public JSONObject prototypeWithName(String name) {
         if (name == null || templateElements == null) {
             return null;
         }
@@ -707,4 +721,31 @@ public class SwipeBook implements SwipePage.Delegate {
     public String langId() {
         return langId;
     }
+
+    @Override
+    public Object pathWithName(String name) {
+        if (paths != null) {
+            return paths.opt(name);
+        }
+        return null;
+    }
+
+    @Override
+    public Object voiceWithName(String name) {
+        if (voices != null) {
+            return voices.opt(name);
+        }
+        return null;
+    }
+
+    @Override
+    public void speak(Object utterance) {
+        
+    }
+
+    @Override
+    public void stopSpeaking() {
+
+    }
+
 }

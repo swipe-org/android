@@ -1,6 +1,6 @@
 {
     "elements": {
-        "ball": { "text":"⚽️", "textAlign":"left", "x":50 },
+        "ball": { "text":"⚽️", "textAlign":"left", "x":50 }
     },
     "pages": [
         {
@@ -18,7 +18,7 @@
                 { "text":"\"timing\": [0.5, 1.0]", "textAlign":"left", "y":50 },
                 { "element":"ball", "y":100, "to":{ "translate":[200, 0], "timing":[0.5, 1.0] } },
                 { "text":"\"timing\": [0.0, 1.0] (default)", "textAlign":"left", "y":150 },
-                { "element":"ball", "y":200, "to":{ "translate":[200, 0] } },
+                { "element":"ball", "y":200, "to":{ "translate":[200, 0] } }
             ]
         },
         {
@@ -36,7 +36,7 @@
                 { "text":"\"timing\": [0.5, 1.0]", "textAlign":"left", "y":50 },
                 { "element":"ball", "y":100, "to":{ "translate":[200, 0], "timing":[0.5, 1.0] } },
                 { "text":"\"timing\": [0.0, 1.0] (default)", "textAlign":"left", "y":150 },
-                { "element":"ball", "y":200, "to":{ "translate":[200, 0] } },
+                { "element":"ball", "y":200, "to":{ "translate":[200, 0] } }
             ]
         }
     ]

@@ -28,27 +28,18 @@ import java.util.List;
 class SwipePage extends SwipeView implements SwipeElement.Delegate {
 
     interface Delegate {
-        /* TODO
-        func dimension(page:SwipePage) -> CGSize
-        func scale(page:SwipePage) -> CGSize
-        */
-        JSONObject prototypeWith(String name);
-        SwipePageTemplate pageTemplateWith(String name);
-        /*
-        func pathWith(name:String?) -> AnyObject?
-        func speak(utterance:AVSpeechUtterance)
-        func stopSpeaking()
-        */
+        JSONObject prototypeWithName(String name);
+        SwipePageTemplate pageTemplateWithName(String name);
+        Object pathWithName(String name);
+        Object voiceWithName(String name);
+        void speak(Object utterance);
+        void stopSpeaking();
         int currentPageIndex();
         String langId();
         List<SwipeMarkdown.Element> parseMarkdown(Object markdowns);
         URL baseURL();
         URL map(URL url);
         URL makeFullURL(String url);
-        /*
-        func voice(k:String?) -> [String:AnyObject]
-        func tapped()
-        */
     }
 
     static final String didStartPlaying = "SwipePageDidStartPlaying";
@@ -77,6 +68,8 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     private boolean fEntered = false;
     private boolean fPausing = false;
     private Float offsetPaused = null;
+    private Object utterance = null;
+
     private MediaPlayer audioPlayer = null;
     private boolean fAudioSeeking = false;
     private boolean fAudioPrepared = false;
@@ -88,9 +81,9 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         index = _index;
         delegate = _delegate;
 
-        pageTemplate = delegate.pageTemplateWith(info.optString("template"));
+        pageTemplate = delegate.pageTemplateWithName(info.optString("template"));
         if (pageTemplate == null) {
-            pageTemplate = delegate.pageTemplateWith(info.optString("scene"));
+            pageTemplate = delegate.pageTemplateWithName(info.optString("scene"));
             if (pageTemplate != null) {
                 SwipeUtil.Log(TAG, "DEPRECATED 'scene'; use 'template'");
             }
@@ -235,12 +228,10 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     }
     void willLeave(boolean fAdvancing) {
         SwipeUtil.Log(TAG, "willLeave " + (index) + " " + fAdvancing, 2);
-        /* TODO
-        if let _ = self.utterance {
-            delegate.stopSpeaking()
-            prepareUtterance() // recreate a new utterance to avoid reusing itt
+        if (utterance != null) {
+            delegate.stopSpeaking();
+            prepareUtterance(); // recreate a new utterance to avoid reusing itt
         }
-        */
     }
 
     void pause(boolean fForceRewind) {
@@ -353,12 +344,11 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
 
     void play() {
         // REVIEW: Remove this block once we detect the end of speech
-        /* TOD)
         if (utterance != null) {
-            delegate.stopSpeaking()
-            prepareUtterance() // recreate a new utterance to avoid reusing it
+            delegate.stopSpeaking();
+            prepareUtterance(); // recreate a new utterance to avoid reusing it
         }
-        */
+
         autoPlay(false);
     }
 
@@ -473,6 +463,70 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         return false;
     }
 
+    private void prepareUtterance() {
+        JSONObject speech = info.optJSONObject("speech");
+        if (speech == null) return;
+
+        String text = parseText(this, speech, "text");
+        if (text == null) return;
+        /* TODO
+        let voice = self.delegate.voice(speech["voice"] as? String)
+        let utterance = AVSpeechUtterance(string: text)
+
+        // BCP-47 code
+        if let lang = voice["lang"] as? String {
+            // HACK: Work-around an iOS9 bug
+            // http://stackoverflow.com/questions/30794082/how-do-we-solve-an-axspeechassetdownloader-error-on-ios
+            // https://forums.developer.apple.com/thread/19079?q=AVSpeechSynthesisVoice
+            let voices = AVSpeechSynthesisVoice.speechVoices()
+            var theVoice:AVSpeechSynthesisVoice?
+            for voice in voices {
+                //NSLog("SWPage lang=\(voice.language)")
+                if lang == voice.language {
+                    theVoice = voice
+                    break;
+                }
+            }
+            if let voice = theVoice {
+                utterance.voice = voice
+            } else {
+                NSLog("SWPage  Voice for \(lang) is not available (iOS9 bug)")
+            }
+            // utterance.voice = AVSpeechSynthesisVoice(language: lang)
+        }
+
+        if let pitch = voice["pitch"] as? Float {
+            if pitch >= 0.5 && pitch < 2.0 {
+                utterance.pitchMultiplier = pitch
+            }
+        }
+        if let rate = voice["rate"] as? Float {
+            if rate >= 0.0 && rate <= 1.0 {
+                utterance.rate = AVSpeechUtteranceMinimumSpeechRate + (AVSpeechUtteranceDefaultSpeechRate - AVSpeechUtteranceMinimumSpeechRate) * rate
+            } else if rate > 1.0 && rate <= 2.0 {
+                utterance.rate = AVSpeechUtteranceDefaultSpeechRate + (AVSpeechUtteranceMaximumSpeechRate - AVSpeechUtteranceDefaultSpeechRate) * (rate - 1.0)
+            }
+        }
+        self.utterance = utterance
+    */
+    }
+
+    private String parseText(SwipeNode originator, JSONObject info, String key) {
+        if (info == null) return null;
+
+        Object text = info.opt(key);
+        if (text != null) return null;
+
+        if (text instanceof String) return (String) text;
+
+        if (text instanceof JSONObject) {
+            String ref = ((JSONObject) text).optString("ref", null);
+            return localizedStringForKey(ref);
+        }
+
+        return null;
+    }
+
     @Override
     public List<URL> getResourceURLs() {
         if (resourceURLs == null) {
@@ -511,7 +565,10 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     public double durationSec() { return duration; }
 
     @Override
-    public JSONObject prototypeWith(String name) { return delegate.prototypeWith(name); }
+    public JSONObject prototypeWithName(String name) { return delegate.prototypeWithName(name); }
+
+    @Override
+    public Object pathWithName(String name) { return delegate.pathWithName(name); }
 
     @Override
     public List<SwipeMarkdown.Element> parseMarkdown(Object markdowns) {
@@ -531,14 +588,19 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
 
     @Override
     public String localizedStringForKey(String key) {
-        // TODO
+        JSONObject strings = info.optJSONObject("strings");
+        if (strings != null) {
+            JSONObject texts = strings.optJSONObject(key);
+            if (texts != null) {
+                return SwipeParser.localizedString(texts, delegate.langId());
+            }
+        }
         return null;
     }
 
     @Override
-    public String languageIdentifier() {
-        // TODO
-        return null;
+    public String langId() {
+        return delegate.langId();
     }
 
     @Override
