@@ -249,6 +249,7 @@ public class SwipeBook implements SwipePage.Delegate {
                     didOverScroll = false;
                     canSmoothScroll = false;
                     downEvent = MotionEvent.obtain(event);
+                    prevPosition = pageIndex;
                     SwipeObjectAnimator.resetInstrumentation();
                     break;
                 case MotionEvent.ACTION_MOVE: {
@@ -258,7 +259,7 @@ public class SwipeBook implements SwipePage.Delegate {
                 case MotionEvent.ACTION_UP: {
                     SwipeUtil.Log(TAG, "onTouch ACTION_UP", 2);
 
-                    final int curPage = currentPageIndex();
+                    final int curPage = pageIndex;
                     int distance;
                     int pgSize;
 
@@ -740,7 +741,7 @@ public class SwipeBook implements SwipePage.Delegate {
 
     @Override
     public void speak(Object utterance) {
-        
+
     }
 
     @Override

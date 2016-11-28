@@ -6,22 +6,18 @@
     </shared>
   </component>
   <component name="AndroidLogFilters">
-    <option name="TOOL_WINDOW_CUSTOM_FILTER" value="langid" />
     <option name="TOOL_WINDOW_LOG_LEVEL" value="verbose" />
     <option name="TOOL_WINDOW_CONFIGURED_FILTER" value="Show only selected application" />
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f272061f-6ca5-4905-8d0b-948dcc1fea1a" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Library/src/main/java/org/swipe/browser/SwipeBookBrowserView.java" afterPath="$PROJECT_DIR$/Library/src/main/java/org/swipe/browser/SwipeBookBrowserView.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Library/src/main/AndroidManifest.xml" afterPath="$PROJECT_DIR$/Library/src/main/AndroidManifest.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeBook.java" afterPath="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeBook.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeElement.java" afterPath="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeElement.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipePage.java" afterPath="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipePage.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Sample/src/main/assets/details/details_index.swipe" afterPath="$PROJECT_DIR$/Sample/src/main/assets/details/details_index.swipe" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Sample/src/main/assets/details/loop_animation.swipe" afterPath="$PROJECT_DIR$/Sample/src/main/assets/details/loop_animation.swipe" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Sample/src/main/assets/details/multilingual_strings.swipe" afterPath="$PROJECT_DIR$/Sample/src/main/assets/details/multilingual_strings.swipe" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Sample/src/main/assets/details/transition_animation.swipe" afterPath="$PROJECT_DIR$/Sample/src/main/assets/details/transition_animation.swipe" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Sample/src/main/assets/speech.swipe" afterPath="$PROJECT_DIR$/Sample/src/main/assets/speech.swipe" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeUtil.java" afterPath="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeUtil.java" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Sample/src/main/assets/index.swipe" afterPath="$PROJECT_DIR$/Sample/src/main/assets/index.swipe" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Sample/src/main/assets/text.swipe" afterPath="$PROJECT_DIR$/Sample/src/main/assets/text.swipe" />
     </list>
     <ignored path="swipe-android.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -67,12 +63,12 @@
       <file leaf-file-name="SwipePage.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipePage.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="196">
-              <caret line="465" column="25" selection-start-line="465" selection-start-column="17" selection-end-line="465" selection-end-column="25" />
+            <state relative-caret-position="271">
+              <caret line="273" column="0" selection-start-line="273" selection-start-column="0" selection-end-line="273" selection-end-column="0" />
               <folding>
                 <element signature="imports" expanded="true" />
-                <element signature="e#21378#21379#0" expanded="true" />
-                <element signature="e#21418#21419#0" expanded="true" />
+                <element signature="e#21469#21470#0" expanded="true" />
+                <element signature="e#21509#21510#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -81,9 +77,24 @@
       <file leaf-file-name="SwipeBook.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeBook.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="390">
-              <caret line="742" column="8" selection-start-line="742" selection-start-column="8" selection-end-line="742" selection-end-column="8" />
-              <folding />
+            <state relative-caret-position="281">
+              <caret line="286" column="36" selection-start-line="286" selection-start-column="24" selection-end-line="286" selection-end-column="36" />
+              <folding>
+                <element signature="e#7998#7999#0" expanded="true" />
+                <element signature="e#8045#8046#0" expanded="true" />
+                <element signature="e#15167#18028#0" expanded="true" />
+                <element signature="e#18027#18028#0" expanded="true" />
+                <element signature="e#18757#18968#0" expanded="true" />
+                <element signature="e#18967#18968#0" expanded="true" />
+                <element signature="e#19126#19327#0" expanded="true" />
+                <element signature="e#19326#19327#0" expanded="true" />
+                <element signature="e#19401#20087#0" expanded="true" />
+                <element signature="e#20086#20087#0" expanded="true" />
+                <element signature="e#20216#20380#0" expanded="true" />
+                <element signature="e#20379#20380#0" expanded="true" />
+                <element signature="e#22221#22222#0" expanded="true" />
+                <element signature="e#22276#22277#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -2615,7 +2626,6 @@
         <option value="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/NotificationCenter.java" />
         <option value="$PROJECT_DIR$/Library/src/main/res/layout/layout.xml" />
         <option value="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeMarkdown.java" />
-        <option value="$PROJECT_DIR$/Library/src/main/AndroidManifest.xml" />
         <option value="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipePageTemplate.java" />
         <option value="$PROJECT_DIR$/Library/src/main/java/org/swipe/network/SwipePrefetcher.java" />
         <option value="$PROJECT_DIR$/Library/src/main/java/org/swipe/network/SwipeAssetManager.java" />
@@ -2630,7 +2640,6 @@
         <option value="$PROJECT_DIR$/Sample/build.gradle" />
         <option value="$PROJECT_DIR$/Library/src/main/res/values/colors.xml" />
         <option value="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeNode.java" />
-        <option value="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeUtil.java" />
         <option value="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeSpriteLayer.java" />
         <option value="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeShapeLayer.java" />
         <option value="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeObjectAnimator.java" />
@@ -2638,7 +2647,9 @@
         <option value="$PROJECT_DIR$/Sample/src/main/res/values/strings.xml" />
         <option value="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeElement.java" />
         <option value="$PROJECT_DIR$/Library/src/main/java/org/swipe/browser/SwipeBookBrowserView.java" />
+        <option value="$PROJECT_DIR$/Library/src/main/AndroidManifest.xml" />
         <option value="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipePage.java" />
+        <option value="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeUtil.java" />
         <option value="$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeBook.java" />
       </list>
     </option>
@@ -2735,6 +2746,20 @@
               <option name="myItemType" value="com.android.tools.idea.navigator.nodes.AndroidViewProjectNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
+              <option name="myItemId" value="Sample" />
+              <option name="myItemType" value="com.android.tools.idea.navigator.nodes.AndroidModuleNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="manifests" />
+              <option name="myItemType" value="com.android.tools.idea.navigator.nodes.AndroidManifestsGroupNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="swipe-android" />
+              <option name="myItemType" value="com.android.tools.idea.navigator.nodes.AndroidViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
               <option name="myItemId" value="Library" />
               <option name="myItemType" value="com.android.tools.idea.navigator.nodes.AndroidModuleNode" />
             </PATH_ELEMENT>
@@ -2819,6 +2844,10 @@
             <PATH_ELEMENT>
               <option name="myItemId" value="Library" />
               <option name="myItemType" value="com.android.tools.idea.navigator.nodes.AndroidModuleNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="manifests" />
+              <option name="myItemType" value="com.android.tools.idea.navigator.nodes.AndroidManifestsGroupNode" />
             </PATH_ELEMENT>
           </PATH>
         </subPane>
@@ -3211,7 +3240,7 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="3" y="23" width="1603" height="1027" extended-state="0" />
-    <editor active="true" />
+    <editor active="false" />
     <layout>
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32930845" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Nl-Palette" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
@@ -3232,10 +3261,10 @@
       <window_info id="Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.2005125" sideWeight="0.4917673" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Gradle" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Structure" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.15438822" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
+      <window_info id="Structure" active="true" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.15438822" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="Android Model" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="4" side_tool="true" content_ui="tabs" />
       <window_info id="Theme Preview" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.28100988" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.28100988" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
@@ -3288,27 +3317,22 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipePage.java</url>
-          <line>514</line>
+          <line>517</line>
           <properties />
           <option name="timeStamp" value="543" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipePage.java</url>
+          <line>273</line>
+          <properties />
+          <option name="timeStamp" value="547" />
+        </line-breakpoint>
       </breakpoints>
-      <option name="time" value="547" />
+      <option name="time" value="551" />
     </breakpoint-manager>
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/Library/src/main/AndroidManifest.xml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="120">
-          <caret line="8" column="35" selection-start-line="8" selection-start-column="35" selection-end-line="8" selection-end-column="35" />
-          <folding />
-        </state>
-      </provider>
-      <provider editor-type-id="android-manifest">
-        <state />
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/Library/Android/sdk/sources/android-23/android/app/Activity.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="212">
@@ -3489,17 +3513,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Sample/src/main/AndroidManifest.xml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="150">
-          <caret line="10" column="0" selection-start-line="10" selection-start-column="0" selection-end-line="10" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-      <provider editor-type-id="android-manifest">
-        <state />
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/Library/Android/sdk/sources/android-24/android/animation/ValueAnimator.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="239">
@@ -3535,14 +3548,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="165">
           <caret line="16" column="49" selection-start-line="16" selection-start-column="49" selection-end-line="16" selection-end-column="49" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeUtil.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="135">
-          <caret line="9" column="111" selection-start-line="9" selection-start-column="111" selection-end-line="9" selection-end-column="111" />
           <folding />
         </state>
       </provider>
@@ -3679,23 +3684,68 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/Sample/src/main/AndroidManifest.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="150">
+          <caret line="10" column="0" selection-start-line="10" selection-start-column="0" selection-end-line="10" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+      <provider editor-type-id="android-manifest">
+        <state />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Library/src/main/AndroidManifest.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="75">
+          <caret line="5" column="0" selection-start-line="5" selection-start-column="0" selection-end-line="5" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+      <provider editor-type-id="android-manifest">
+        <state />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeUtil.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="210">
+          <caret line="16" column="22" selection-start-line="16" selection-start-column="22" selection-end-line="16" selection-end-column="22" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipePage.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="196">
-          <caret line="465" column="25" selection-start-line="465" selection-start-column="17" selection-end-line="465" selection-end-column="25" />
+        <state relative-caret-position="271">
+          <caret line="273" column="0" selection-start-line="273" selection-start-column="0" selection-end-line="273" selection-end-column="0" />
           <folding>
             <element signature="imports" expanded="true" />
-            <element signature="e#21378#21379#0" expanded="true" />
-            <element signature="e#21418#21419#0" expanded="true" />
+            <element signature="e#21469#21470#0" expanded="true" />
+            <element signature="e#21509#21510#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Library/src/main/java/org/swipe/core/SwipeBook.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="390">
-          <caret line="742" column="8" selection-start-line="742" selection-start-column="8" selection-end-line="742" selection-end-column="8" />
-          <folding />
+        <state relative-caret-position="281">
+          <caret line="286" column="36" selection-start-line="286" selection-start-column="24" selection-end-line="286" selection-end-column="36" />
+          <folding>
+            <element signature="e#7998#7999#0" expanded="true" />
+            <element signature="e#8045#8046#0" expanded="true" />
+            <element signature="e#15167#18028#0" expanded="true" />
+            <element signature="e#18027#18028#0" expanded="true" />
+            <element signature="e#18757#18968#0" expanded="true" />
+            <element signature="e#18967#18968#0" expanded="true" />
+            <element signature="e#19126#19327#0" expanded="true" />
+            <element signature="e#19326#19327#0" expanded="true" />
+            <element signature="e#19401#20087#0" expanded="true" />
+            <element signature="e#20086#20087#0" expanded="true" />
+            <element signature="e#20216#20380#0" expanded="true" />
+            <element signature="e#20379#20380#0" expanded="true" />
+            <element signature="e#22221#22222#0" expanded="true" />
+            <element signature="e#22276#22277#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.media.MediaPlayer;
 import android.os.SystemClock;
+import android.os.Vibrator;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -270,6 +271,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     }
 
     private void playAudio() {
+        SwipeUtil.Log(TAG, "playAudio " + index + " ", 2);
         if (audioPlayer != null) {
             if (fAudioPrepared) {
                 if (fAudioSeeking) {
@@ -281,14 +283,15 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
                 fAudioStartWhenPrepared = true;
             }
         }
-        /* TODO
-        if let utterance = self.utterance {
-            delegate.speak(utterance)
+
+        if (utterance != null) {
+            delegate.speak(utterance);
         }
-        if self.vibrate {
-            AudioServicesPlayAlertSound(SystemSoundID(kSystemSoundID_Vibrate))
+
+        if (vibrate) {
+            Vibrator v = (Vibrator) this.context.getSystemService(Context.VIBRATOR_SERVICE);
+            v.vibrate(300);
         }
-        */
     }
 
     void didEnter(boolean fForward) {
