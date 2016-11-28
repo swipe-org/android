@@ -596,6 +596,12 @@ public class SwipeBook implements SwipePage.Delegate {
                 }
 
                 pagesView.addView(pgView, new LinearLayout.LayoutParams(viewWidthDIP, viewHeightDIP));
+                for (int c = 0; c < pages.size(); c++) {
+                    View v = pages.get(c).getView();
+                    if (v != null) {
+                        v.bringToFront();
+                    }
+                }
                 pgView.layout(0, 0, viewWidthDIP, viewHeightDIP);
             }
             page.prepare();
