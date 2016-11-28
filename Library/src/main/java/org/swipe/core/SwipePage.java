@@ -5,6 +5,9 @@ import android.graphics.Color;
 import android.media.MediaPlayer;
 import android.os.SystemClock;
 import android.os.Vibrator;
+import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
+import android.speech.tts.Voice;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,6 +22,8 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 /**
  * Created by pete on 10/5/16.
@@ -32,9 +37,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         JSONObject prototypeWithName(String name);
         SwipePageTemplate pageTemplateWithName(String name);
         Object pathWithName(String name);
-        Object voiceWithName(String name);
-        void speak(Object utterance);
-        void stopSpeaking();
+        JSONObject voiceWithName(String name);
         int currentPageIndex();
         String langId();
         List<SwipeMarkdown.Element> parseMarkdown(Object markdowns);
@@ -69,7 +72,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     private boolean fEntered = false;
     private boolean fPausing = false;
     private Float offsetPaused = null;
-    private Object utterance = null;
+    private String utterance = null;
 
     private MediaPlayer audioPlayer = null;
     private boolean fAudioSeeking = false;
@@ -205,6 +208,8 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
             }
         }
 
+        prepareUtterance();
+
         JSONArray elementsInfo = info.optJSONArray("elements");
         if (elementsInfo != null) {
             for (int i = 0; i < elementsInfo.length(); i++) {
@@ -230,7 +235,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     void willLeave(boolean fAdvancing) {
         SwipeUtil.Log(TAG, "willLeave " + (index) + " " + fAdvancing, 2);
         if (utterance != null) {
-            delegate.stopSpeaking();
+            stopSpeaking();
             prepareUtterance(); // recreate a new utterance to avoid reusing itt
         }
     }
@@ -285,7 +290,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         }
 
         if (utterance != null) {
-            delegate.speak(utterance);
+            speak(utterance);
         }
 
         if (vibrate) {
@@ -348,7 +353,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     void play() {
         // REVIEW: Remove this block once we detect the end of speech
         if (utterance != null) {
-            delegate.stopSpeaking();
+            stopSpeaking();
             prepareUtterance(); // recreate a new utterance to avoid reusing it
         }
 
@@ -466,59 +471,128 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         return false;
     }
 
+    private  TextToSpeech tts = null;
+    private boolean ttsPrepared = false;
+    private boolean ttsSpeekWhenPrepared = false;
+
     private void prepareUtterance() {
-        JSONObject speech = info.optJSONObject("speech");
+        ttsPrepared = false;
+
+        final JSONObject speech = info.optJSONObject("speech");
         if (speech == null) return;
 
-        String text = parseText(this, speech, "text");
+        final String text = parseText(this, speech, "text");
         if (text == null) return;
-        /* TODO
-        let voice = self.delegate.voice(speech["voice"] as? String)
-        let utterance = AVSpeechUtterance(string: text)
 
-        // BCP-47 code
-        if let lang = voice["lang"] as? String {
-            // HACK: Work-around an iOS9 bug
-            // http://stackoverflow.com/questions/30794082/how-do-we-solve-an-axspeechassetdownloader-error-on-ios
-            // https://forums.developer.apple.com/thread/19079?q=AVSpeechSynthesisVoice
-            let voices = AVSpeechSynthesisVoice.speechVoices()
-            var theVoice:AVSpeechSynthesisVoice?
-            for voice in voices {
-                //NSLog("SWPage lang=\(voice.language)")
-                if lang == voice.language {
-                    theVoice = voice
-                    break;
+        utterance = text;
+
+        if (tts != null) throw new AssertionError(TAG + "tts != null");
+
+        tts = new TextToSpeech(getContext(), new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                JSONObject voice = delegate.voiceWithName(speech.optString("voice", null));
+                if (voice != null) {
+                    String lang = voice.optString("lang");
+                    if (lang != null) {
+                        Set<Voice> voices = tts.getVoices();
+                        Voice theVoice = null;
+
+                        for (Voice v : voices) {
+                            Locale l = v.getLocale();
+
+                            if (lang.equalsIgnoreCase(l.toString().replace("_", "-"))) {
+                                theVoice = v;
+                                break;
+                            }
+                        }
+
+                        if (theVoice != null) {
+                            tts.setVoice(theVoice);
+                        }
+                    }
+
+                    Double pitch = voice.optDouble("pitch");
+                    if (!pitch.isNaN() && pitch >= 0.5 && pitch < 2.0) {
+                        tts.setPitch(pitch.floatValue());
+                    }
+
+                    Double rate = voice.optDouble("rate");
+                    if (!rate.isNaN() && rate >= 0.0 && rate <= 2.0) {
+                        tts.setSpeechRate(rate.floatValue());
+                    }
+                }
+
+                tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+                    @Override
+                    public void onStart(String utteranceId) {
+
+                    }
+
+                    @Override
+                    public void onDone(String utteranceId) {
+                        if (tts != null) {
+                            final TextToSpeech thisTts = tts;
+                            tts = null;
+
+                            getView().post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    thisTts.shutdown();
+                                }
+                            });
+                        }
+                    }
+
+                    @Override
+                    public void onError(String utteranceId) {
+
+                    }
+                });
+
+                ttsPrepared = true;
+                if (ttsSpeekWhenPrepared) {
+                    ttsSpeekWhenPrepared = false;
+                    speak(utterance);
                 }
             }
-            if let voice = theVoice {
-                utterance.voice = voice
-            } else {
-                NSLog("SWPage  Voice for \(lang) is not available (iOS9 bug)")
-            }
-            // utterance.voice = AVSpeechSynthesisVoice(language: lang)
-        }
+        });
+    }
 
-        if let pitch = voice["pitch"] as? Float {
-            if pitch >= 0.5 && pitch < 2.0 {
-                utterance.pitchMultiplier = pitch
+    private void speak(String utterance) {
+        SwipeUtil.Log(TAG, "speak " + index);
+        if (tts != null) {
+            if (ttsPrepared) {
+                tts.speak(utterance, TextToSpeech.QUEUE_FLUSH, null, "");
+            } else {
+                ttsSpeekWhenPrepared = true;
             }
         }
-        if let rate = voice["rate"] as? Float {
-            if rate >= 0.0 && rate <= 1.0 {
-                utterance.rate = AVSpeechUtteranceMinimumSpeechRate + (AVSpeechUtteranceDefaultSpeechRate - AVSpeechUtteranceMinimumSpeechRate) * rate
-            } else if rate > 1.0 && rate <= 2.0 {
-                utterance.rate = AVSpeechUtteranceDefaultSpeechRate + (AVSpeechUtteranceMaximumSpeechRate - AVSpeechUtteranceDefaultSpeechRate) * (rate - 1.0)
+    }
+
+    private void stopSpeaking() {
+        if (tts != null && ttsPrepared) {
+            tts.stop();
+
+            if (tts != null) {
+                final TextToSpeech thisTts = tts;
+                tts = null;
+
+                getView().post(new Runnable() {
+                    @Override
+                    public void run() {
+                        thisTts.shutdown();
+                    }
+                });
             }
         }
-        self.utterance = utterance
-    */
     }
 
     private String parseText(SwipeNode originator, JSONObject info, String key) {
         if (info == null) return null;
 
         Object text = info.opt(key);
-        if (text != null) return null;
+        if (text == null) return null;
 
         if (text instanceof String) return (String) text;
 

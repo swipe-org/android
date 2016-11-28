@@ -5,6 +5,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.os.SystemClock;
+import android.speech.tts.TextToSpeech;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutCompat;
 import android.util.DisplayMetrics;
@@ -25,6 +26,7 @@ import android.widget.ScrollView;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.swipe.browser.SwipeBrowserActivity;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -732,21 +734,10 @@ public class SwipeBook implements SwipePage.Delegate {
     }
 
     @Override
-    public Object voiceWithName(String name) {
+    public JSONObject voiceWithName(String name) {
         if (voices != null) {
-            return voices.opt(name);
+            return voices.optJSONObject(name == null ? "*" : name);
         }
         return null;
     }
-
-    @Override
-    public void speak(Object utterance) {
-
-    }
-
-    @Override
-    public void stopSpeaking() {
-
-    }
-
 }
