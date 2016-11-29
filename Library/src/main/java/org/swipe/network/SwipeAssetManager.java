@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.content.res.AssetFileDescriptor;
 import android.util.Log;
 
+import org.swipe.core.SwipeUtil;
+
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileInputStream;
@@ -125,7 +127,6 @@ public class SwipeAssetManager {
                             for (int i = 0; i < 6; i++) {
                                 sb.append((char)buffer[i]);
                             }
-                            Log.d(TAG, "header: '" + sb.toString() + "' " + fileName);
                         }
                         bufCnt++;
                         out.write(buffer, 0, len);
@@ -144,7 +145,65 @@ public class SwipeAssetManager {
         thread.start();
     }
 
-    void reduce() {
-        // TODO: Implement
+    public void reduce() {
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                SwipeUtil.Log(TAG, "reduce started");
+                long kbCnt = 0;
+
+                try {
+                    while (cacheDir == null) {
+                        // wait to be fully initialized
+                        Thread.sleep(100);
+                    }
+
+                    kbCnt = reduce(cacheDir);
+                } catch (InterruptedException e) {
+
+                }
+
+                SwipeUtil.Log(TAG, "reduce ended; kb used:" + kbCnt);
+            }
+        });
+        thread.start();
+    }
+
+    private long reduce(File dir) {
+        long kbCnt = 0;
+        Date now = new Date();
+
+        if (dir.exists() && dir.isDirectory()) {
+            File files[] = dir.listFiles();
+            long byteCnt = 0;
+            for (File file : files) {
+                Date modified = new Date(file.lastModified());
+                long delta = now.getTime() - modified.getTime();
+                SwipeUtil.Log(TAG, (file.isDirectory() ? "dir: " : "file: ") + file.getPath() + " " + modified + " delta: " + delta, 2);
+
+                if (file.isDirectory()) {
+                    long kb = reduce(file);
+
+                    if (file.listFiles().length == 0) {
+                        SwipeUtil.Log(TAG, "deleted dir " + file.getPath(), 1);
+                        file.delete();
+                    } else {
+                        kbCnt += kb;
+                    }
+                } else {
+                    if (delta > 604800000) {
+                        // Over a week old
+                        SwipeUtil.Log(TAG, "deleted file " + file.getPath(), 1);
+                        file.delete();
+                    } else {
+                        byteCnt += file.length();
+                    }
+                }
+            }
+
+            kbCnt += byteCnt / 1024;
+        }
+
+        return kbCnt;
     }
 }
