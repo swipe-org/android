@@ -167,23 +167,24 @@ public class SwipeTableBrowserView extends SwipeBrowserView {
                 }
 
                 // icon
+                final ImageView iv = (ImageView) view.findViewById(R.id.list_view_image);
+                iv.setImageBitmap(null); // default
                 String urlStr = items.get(position).optString("icon", null);
                 if (urlStr != null) {
                     URL localUrl = prefetcher.map(delegate.makeFullURL(urlStr));
                     if (localUrl != null) {
-                        final ImageView iv = (ImageView) view.findViewById(R.id.list_view_image);
                         SwipeAssetManager.sharedInstance().loadAsset(localUrl, false, new SwipeAssetManager.LoadAssetRunnable() {
                             @Override
                             public void run() {
-                            if (this.success) {
-                                iv.setImageBitmap(BitmapFactory.decodeStream(this.in));
-                                iv.getLayoutParams().width = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 60, dm);
-                                try {
-                                    this.in.close();
-                                } catch (IOException e) {
-                                    e.printStackTrace();
+                                if (this.success) {
+                                    iv.setImageBitmap(BitmapFactory.decodeStream(this.in));
+                                    iv.getLayoutParams().width = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 60, dm);
+                                    try {
+                                        this.in.close();
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
                                 }
-                            }
                             }
                         });
                     }

@@ -329,6 +329,8 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
     }
 
     void release() {
+        SwipeUtil.Log(TAG, "release " + (index), 2);
+
         for (SwipeNode c : children) {
             if (c instanceof SwipeElement) {
                 SwipeElement e = (SwipeElement)c;
@@ -430,7 +432,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
                 if (offsetForNextTick != null) {
                     timerTick(offsetForNextTick, fElementRepeatNext, startTime);
                 } else {
-                    SwipeUtil.Log(TAG, "skipped:" + skipCnt + " frames");
+                    if (skipCnt > 0) SwipeUtil.Log(TAG, "skipped:" + skipCnt + " frames");
                     SwipeObjectAnimator.printInstrumentation();
                     actualDuration = 0;
                     accum = 0;
@@ -458,7 +460,7 @@ class SwipePage extends SwipeView implements SwipeElement.Delegate {
         }
     }
 
-    private boolean isPlaying() { return cPlaying > 0; }
+    boolean isPlaying() { return cPlaying > 0; }
 
     private boolean hasRepeatElement() {
         for (SwipeNode c : children) {

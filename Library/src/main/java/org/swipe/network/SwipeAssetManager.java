@@ -179,7 +179,7 @@ public class SwipeAssetManager {
             for (File file : files) {
                 Date modified = new Date(file.lastModified());
                 long delta = now.getTime() - modified.getTime();
-                SwipeUtil.Log(TAG, (file.isDirectory() ? "dir: " : "file: ") + file.getPath() + " " + modified + " delta: " + delta, 2);
+                SwipeUtil.Log(TAG, (file.isDirectory() ? "dir: " : "file: ") + file.getPath() + " " + modified + " delta: " + delta, 4);
 
                 if (file.isDirectory()) {
                     long kb = reduce(file);

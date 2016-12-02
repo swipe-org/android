@@ -27,6 +27,8 @@ class SwipeShapeLayer extends View {
     private int strokeColor = Color.BLACK;
     private float lineWidth = 0;
     private float alpha = 1;
+    private float drawAlpha = 1;
+    private float blink = 1;
     private Paint.Cap lineCap = Paint.Cap.ROUND;
     private float strokeStart = 0;
     private float strokeEnd = 1;
@@ -43,9 +45,20 @@ class SwipeShapeLayer extends View {
     }
 
     @Override
-    public float getAlpha() { return alpha; }
+    public float getAlpha() { return drawAlpha; }
     @Override
-    public void setAlpha(float alpha) { this.alpha = alpha; invalidate(); }
+    public void setAlpha(float alpha) {
+        this.alpha = alpha;
+        this.drawAlpha = alpha * blink;
+        invalidate();
+    }
+
+    public float getBlink() { return alpha; }
+    public void setBlink(float blink) {
+        this.blink = blink;
+        this.drawAlpha = alpha * blink;
+        invalidate();
+    }
 
     private void updateDrawPath() {
         final float startD = pathLength * strokeStart;
@@ -114,33 +127,37 @@ class SwipeShapeLayer extends View {
 
     @Override
     public void draw(Canvas canvas) {
+        if (drawAlpha == 0) {
+            return;
+        }
+
         p.reset();
 
         if (shadowOffset != null) {
             p.setShadowLayer(shadowRadius, shadowOffset.width, shadowOffset.height, shadowColor);
         }
 
-        if (fillColor == strokeColor) {
+        int realFillColor = Color.argb((int) (Color.alpha(fillColor) * drawAlpha), Color.red(fillColor), Color.green(fillColor), Color.blue(fillColor));
+        int realStrokeColor = Color.argb((int) (Color.alpha(strokeColor) * drawAlpha), Color.red(strokeColor), Color.green(strokeColor), Color.blue(strokeColor));
+
+        if (realFillColor == realStrokeColor) {
             // Optimize by drawing both at the same time
             p.setStyle(Paint.Style.FILL_AND_STROKE);
-            int realFillColor = Color.argb((int) (Color.alpha(fillColor) * alpha), Color.red(fillColor), Color.green(fillColor), Color.blue(fillColor));
             p.setColor(realFillColor);
             p.setStrokeWidth(lineWidth);
             p.setStrokeCap(lineCap);
             canvas.drawPath(drawPath, p);
         } else {
-            if (Color.alpha(fillColor) != 0) {
+            if (Color.alpha(realFillColor) != 0) {
                 p.setStyle(Paint.Style.FILL);
-                int realFillColor = Color.argb((int) (Color.alpha(fillColor) * alpha), Color.red(fillColor), Color.green(fillColor), Color.blue(fillColor));
                 p.setColor(realFillColor);
                 canvas.drawPath(drawPath, p);
             }
 
-            if (lineWidth > 0) {
+            if (lineWidth > 0 && Color.alpha(realStrokeColor) != 0) {
                 p.setStyle(Paint.Style.STROKE);
                 p.setStrokeWidth(lineWidth);
                 p.setStrokeCap(lineCap);
-                int realStrokeColor = Color.argb((int) (Color.alpha(strokeColor) * alpha), Color.red(strokeColor), Color.green(strokeColor), Color.blue(strokeColor));
                 p.setColor(realStrokeColor);
                 canvas.drawPath(drawPath, p);
             } else {

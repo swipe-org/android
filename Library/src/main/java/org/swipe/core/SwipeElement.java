@@ -3,7 +3,6 @@ package org.swipe.core;
 import android.animation.ArgbEvaluator;
 import android.animation.ObjectAnimator;
 import android.animation.TypeEvaluator;
-import android.content.ContentProvider;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -14,19 +13,13 @@ import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.net.Uri;
-import android.text.GetChars;
 import android.util.DisplayMetrics;
-import android.util.Log;
-import android.view.Gravity;
 import android.view.MotionEvent;
-import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
-import android.view.animation.AlphaAnimation;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
@@ -36,9 +29,7 @@ import android.widget.VideoView;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.swipe.browser.SwipeBrowserActivity;
 import org.swipe.network.SwipeAssetManager;
-import org.w3c.dom.Text;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -1263,8 +1254,14 @@ public class SwipeElement extends SwipeView {
                         break;
                     }
                     case "blink": {
+                        String propertyName = "alpha";
+
+                        if (shapeLayer == loopLayer) {
+                            propertyName = "blink";
+                        }
+
                         for (int r = 0; r < repeatCount; r++) {
-                            ObjectAnimator ani = ObjectAnimator.ofFloat(loopLayer, "alpha", 1, 0, 1);
+                            ObjectAnimator ani = ObjectAnimator.ofFloat(loopLayer, propertyName, 1f, 0f, 1f);
                             animations.add(new SwipeObjectAnimator(ani, start + (r * repeatInterval), repeatInterval));
                         }
                         aniAlpha = true;
