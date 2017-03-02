@@ -34,20 +34,24 @@ public class SwipeBackgroundDrawable extends PaintDrawable {
 
     public void setBorderColor(int borderColor) {
         this.borderColor = borderColor;
+        invalidateSelf();
     }
 
     public void setBorderWidth(float borderWidth) {
         this.borderWidth = borderWidth;
+        invalidateSelf();
     }
 
     @Override
     public void setCornerRadius(float cornerRadious) {
         this.cornerRadious = cornerRadious;
         super.setCornerRadius(cornerRadious);
+        invalidateSelf();
     }
 
     public void setBackgroundColor(int color) {
         this.backgroundColor = color;
+        invalidateSelf();
     }
 
     @Override

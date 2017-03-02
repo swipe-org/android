@@ -82,6 +82,7 @@ public class SwipeBrowserActivity extends Activity implements SwipeBrowserView.D
 
     void openTimeLineUrl(final Uri dataUri) {
         final ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Loading timeline");
         progressDialog.show();
 
         Thread thread = new Thread(new Runnable() {

@@ -1,0 +1,23 @@
+{
+    "type":"net.swipe.list",
+    "dimension":[576,1024],
+    "rowHeight":"10%",
+    "title":"Examples",
+    "items":[
+        { "url":"https://d13aw484315aen.cloudfront.net/prod/media/2016-10-28/757/1477694419-wmUuNCaR.swipe", "title":"Basketball", "icon":"https://d13aw484315aen.cloudfront.net/prod/media/2016-10-28/10/1477651918-C6WOd_wo.png"},
+        { "url":"https://d13aw484315aen.cloudfront.net/prod/media/2016-11-19/453/1479524914-aMUe-7BN.swipe", "title":"The Mission", "icon":"https://d13aw484315aen.cloudfront.net/prod/media/2016-11-19/453/1479524542-jpTmPi2X.png" },
+        { "url":"https://d13aw484315aen.cloudfront.net/prod/media/2016-10-31/757/1477875834-Wd-_8M3f.swipe", "title":"The Tenth Prism", "icon":"https://d13aw484315aen.cloudfront.net/prod/media/2016-10-27/10/1477574061-txY4fIiL.png" },
+        { "url":"https://d13aw484315aen.cloudfront.net/prod/media/2016-11-23/10/1479900972-m1qtARQQ.swipe", "title":"人気者になりました（中）", "icon":"https://d13aw484315aen.cloudfront.net/prod/media/2016-11-19/10/1479561260-bKRvRopz.png"},
+        { "url":"https://d13aw484315aen.cloudfront.net/prod/media/2016-11-23/10/1479900886-gIw7BMUp.swipe", "title":"人気者になりました（前）", "icon":"https://d13aw484315aen.cloudfront.net/prod/media/2016-11-19/10/1479540812-6BE0I2C7.png"},
+        { "url":"https://d13aw484315aen.cloudfront.net/prod/media/2016-11-03/757/1478159559-1ZeMdWry.swipe", "title":"きもだめし", "icon":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-25/49/1477367119-Rk1jNseX.png"},
+        { "url":"https://d13aw484315aen.cloudfront.net/prod/media/2016-11-20/47/1479622421-ytkcGVcx.swipe", "title":"Bucky", "icon":"https://d13aw484315aen.cloudfront.net/prod/media/2016-10-29/757/1477705933-3izVEHHL.png"},
+        { "url":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-20/60/1476927485-tOievpnR.swipe", "title":"hirano", "icon":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-20/60/1476927460-f-Lawa9_.png"},
+        { "url":"https://d13aw484315aen.cloudfront.net/prod/media/2016-11-03/757/1478159535-qEYfimRo.swipe", "title":"ミニチュアゲーム", "icon":"https://d13aw484315aen.cloudfront.net/prod/media/2016-10-26/49/1477441671--nt9AwvV.png"},
+        { "url":"https://d13aw484315aen.cloudfront.net/prod/media/2016-10-31/757/1477901139-8QxB6TPS.swipe", "title":"Colors", "icon":"https://d13aw484315aen.cloudfront.net/prod/media/2016-10-22/64/1477125768-8WJSjMFw.png"},
+        { "url":"https://d13aw484315aen.cloudfront.net/prod/media/2016-10-26/757/1477494277-yogY3aUI.swipe", "title":"Dungeon Challenge", "icon":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-25/49/1477380070-y4cwbBF6.png" },
+        { "url":"https://d13aw484315aen.cloudfront.net/prod/media/2016-10-31/757/1477901188-MrjpJkP5.swipe", "title":"Castle", "icon":"https://d13aw484315aen.cloudfront.net/prod/media/2016-10-19/64/1476864292-jGZhecHN.png" },
+        { "url":"https://d13aw484315aen.cloudfront.net/prod/media/2016-11-15/64/1479168357-P6A2kPME.swipe", "title":"Hanabi", "icon":"https://d13aw484315aen.cloudfront.net/prod/media/2016-11-05/64/1478349069-ilURRAkj.png" },
+        
+        { "//":"Paste above"}
+    ]
+}

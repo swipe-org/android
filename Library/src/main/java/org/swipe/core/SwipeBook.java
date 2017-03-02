@@ -591,7 +591,7 @@ public class SwipeBook implements SwipePage.Delegate {
         scrollView.addView(fakeScrollContent, new ViewGroup.LayoutParams(lp));
         scrollView.measure(View.MeasureSpec.makeMeasureSpec(viewWidthDIP, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(viewHeightDIP, View.MeasureSpec.EXACTLY));
         viewGroup.addView(scrollView, new ViewGroup.LayoutParams(viewWidthDIP, viewHeightDIP));
-        viewGroup.setBackgroundColor(SwipeParser.parseColor(bookInfo, "bc", Color.BLACK));
+        viewGroup.setBackgroundColor(SwipeParser.parseColor(bookInfo, "bc", Color.WHITE));
 
         adjustIndex(pageIndex, true);
 

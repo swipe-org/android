@@ -14,7 +14,7 @@ public class SwipeUtil {
     }
 
     public static void Log(String tag, String text, int level) {
-        if (level <= 2) {
+        if (level <= 0) {
             Log.d(tag, text);
         }
     }

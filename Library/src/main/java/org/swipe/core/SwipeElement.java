@@ -77,6 +77,7 @@ public class SwipeElement extends SwipeView {
     private SwipeImageLayer imageLayer = null;
     private ViewGroup innerLayer = null;
     private SwipeSpriteLayer spriteLayer = null;
+
     private SwipeBackgroundDrawable bgDrawable = new SwipeBackgroundDrawable();
 
     // Video Element Specific
@@ -756,7 +757,6 @@ public class SwipeElement extends SwipeView {
             videoPlayer.setVideoURI(Uri.parse(mediaUrl.toString()));
 
             RelativeLayout rl = new RelativeLayout(getContext());
-            rl.setBackgroundColor(Color.GREEN);
             RelativeLayout.LayoutParams lp;
 
             if (fScaleToFill) {
@@ -1422,8 +1422,6 @@ public class SwipeElement extends SwipeView {
                 element.setTimeOffsetTo(offset, fResetForRepeat, fAutoPlay);
             }
         }
-
-        //viewGroup.invalidate();
 
         if (videoPlayer != null) {
             if (fAutoPlay) {

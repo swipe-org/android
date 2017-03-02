@@ -1,0 +1,27 @@
+{
+    "type":"net.swipe.list",
+    "dimension":[576,1024],
+    "rowHeight":"10%",
+    "title":"Studio Guides",
+    "items":[
+        { "url":"https://d13aw484315aen.cloudfront.net/pro/media/2016-09-11/60/1473552682-K046e-w2.swipe", "title":"(1)全体の流れ", "icon":"https://d13aw484315aen.cloudfront.net/pro/media/2016-09-28/60/1475030521-qzt7yHPb.png"},
+        { "url":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-24/748/1477285866-6-5W4aGu.swipe", "title":"1.The entire flow", "icon":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-18/10/1476803895-dAF9pV5L.png" },
+        { "url":"https://d13aw484315aen.cloudfront.net/pro/media/2016-09-11/60/1473552734-HmWbzqZn.swipe", "title":"(2)素材集作成画面", "icon":"https://d13aw484315aen.cloudfront.net/pro/media/2016-09-08/10/1473349885-cmlbBOnX.png"},
+        { "url":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-24/748/1477285899--jx-WLBd.swipe", "title":"2.How to create an asset group", "icon":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-18/10/1476803936-49_AJ4-H.png" },
+        { "url":"https://d13aw484315aen.cloudfront.net/pro/media/2016-09-11/60/1473552758-TyaJ3NpT.swipe", "title":"(3)プロジェクト作成画面", "icon":"https://d13aw484315aen.cloudfront.net/pro/media/2016-09-08/10/1473349983-UomoOFSE.png"},
+        { "url":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-24/748/1477285935-YmONgQOH.swipe", "title":"3.How to create a project", "icon":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-18/10/1476803980-bO28I8F8.png" },
+        { "url":"https://d13aw484315aen.cloudfront.net/pro/media/2016-09-11/60/1473552784-jLe4zxtK.swipe", "title":"(4)シーン作成画面", "icon":"https://d13aw484315aen.cloudfront.net/pro/media/2016-09-07/10/1473261155-ZFQRxRS0.png"},
+        { "url":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-24/748/1477285968-7h7n4-QL.swipe", "title":"4. How to create a Scene", "icon":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-18/10/1476804033-sEJZ714V.png" },
+        { "url":"https://d13aw484315aen.cloudfront.net/pro/media/2016-09-11/60/1473552805-O5JNTEh6.swipe", "title":"(5)ページ作成画面", "icon":"https://d13aw484315aen.cloudfront.net/pro/media/2016-09-07/10/1473276118-erqOcvxP.png"},
+        { "url":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-24/748/1477286018-GmBbYm3U.swipe", "title":"5. How to create pages（part1）", "icon":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-19/10/1476882251-j98bLlHw.png" },
+        { "url":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-24/748/1477285756-F-RhUvV9.swipe", "title":"(6)ページ作成画面説明（後半）", "icon":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-18/10/1476803323-sAuR7Col.png"},
+        { "url":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-24/748/1477286045-H000EOpg.swipe", "title":"6. How to create pages（part2）", "icon":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-19/47/1476854695-8x_fm0wZ.png" },
+        { "url":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-24/748/1477285776-fT86iPoZ.swipe", "title":"(7)ストアの説明", "icon":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-18/10/1476803644-KU_HvKs4.png"},
+        { "url":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-24/748/1477286070-zfzv24wk.swipe", "title":"7.Store", "icon":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-19/10/1476882266-oCdjvYgp.png" },
+        { "url":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-24/748/1477285804-S6gLvKmN.swipe", "title":"(8)作品の公開方法", "icon":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-18/10/1476805109-FPxxZ5tR.png"},
+        { "url":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-24/748/1477286100-rN_BbcyY.swipe", "title":"8.How to publish your Swipe works", "icon":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-18/10/1476804304-lNvohTMe.png" },
+        { "url":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-24/748/1477285837-VPVh5qF5.swipe", "title":"(9)効果的演出方法1", "icon":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-18/10/1476803563-B3YS8uAY.png"},
+        { "url":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-24/748/1477286126-R_GsXwM6.swipe", "title":"9.Effective Production Method 1", "icon":"https://d13aw484315aen.cloudfront.net/pro/media/2016-10-18/10/1476804341-DUa9nN30.png" },
+        {}
+    ]
+}
